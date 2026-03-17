@@ -248,10 +248,6 @@ try {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            user-select: none; /* Minden szöveg kijelölésének tiltása */
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
         }
 
         :root {
@@ -424,6 +420,7 @@ try {
             display: flex;
             align-items: center;
             gap: 0.4rem;
+            user-select: none;
             box-shadow: var(--shadow-deep);
             white-space: nowrap;
             text-decoration: none;
@@ -457,6 +454,7 @@ try {
             display: flex;
             align-items: center;
             gap: 0.4rem;
+            user-select: none;
             box-shadow: var(--shadow-deep);
             white-space: nowrap;
         }
@@ -496,6 +494,7 @@ try {
             display: flex;
             align-items: center;
             gap: 0.3rem;
+            user-select: none;
             box-shadow: var(--shadow-deep);
         }
 
@@ -563,6 +562,7 @@ try {
             display: flex;
             flex-direction: column;
             height: 100%;
+            user-select: none;
             position: relative;
             overflow: hidden;
             cursor: pointer;
@@ -574,6 +574,10 @@ try {
             box-shadow: var(--shadow-deep), 0 0 40px rgba(255, 140, 0, 0.2);
         }
 
+        .item-card * {
+            user-select: none;
+        }
+
         .item-image {
             width: 100%;
             height: 200px;
@@ -581,7 +585,6 @@ try {
             border-radius: 12px;
             margin-bottom: 1rem;
             border: 1px solid var(--glass-border);
-            pointer-events: none;
         }
 
         .item-title {
@@ -590,7 +593,6 @@ try {
             color: var(--orange-bright);
             margin-bottom: 0.5rem;
             word-wrap: break-word;
-            pointer-events: none;
         }
 
         .item-price {
@@ -599,7 +601,6 @@ try {
             color: var(--orange-bright);
             margin-bottom: 0.5rem;
             text-shadow: 0 0 10px var(--orange-glow);
-            pointer-events: none;
         }
 
         .item-seller {
@@ -607,20 +608,18 @@ try {
             color: var(--text-primary);
             opacity: 0.6;
             margin-bottom: 0.5rem;
-            pointer-events: none;
         }
 
         .item-date {
             font-size: 0.7rem;
             color: var(--text-primary);
             opacity: 0.4;
-            pointer-events: none;
         }
 
         .image-count-badge {
             position: absolute;
             top: 10px;
-            left: 10px; /* Módosítva bal oldalra */
+            right: 10px;
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(5px);
             padding: 0.3rem 0.6rem;
@@ -628,13 +627,12 @@ try {
             font-size: 0.7rem;
             border: 1px solid var(--orange-glow);
             color: var(--orange-bright);
-            pointer-events: none;
         }
 
-        /* Card Menu Styles - Módosítva hogy az X alatt legyen */
+        /* Card Menu Styles */
         .card-menu {
             position: absolute;
-            top: 50px; /* Az X alatt (image-count-badge magassága + margin) */
+            top: 10px;
             right: 10px;
             z-index: 10;
         }
@@ -647,19 +645,18 @@ try {
             cursor: pointer;
             font-size: 1.5rem;
             transition: all 0.3s ease;
-            width: 30px;
-            height: 30px;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-            border: 1px solid var(--orange-glow);
-            border-radius: 50%;
+            user-select: none;
+            width: auto;
+            height: auto;
+            background: transparent;
+            border: none;
+            backdrop-filter: none;
             padding: 0;
             line-height: 1;
         }
 
         .card-menu-button:hover {
             color: #ffaa33;
-            background: rgba(255, 140, 0, 0.2);
             transform: scale(1.1);
         }
 
@@ -668,9 +665,9 @@ try {
             top: 40px;
             right: 0;
             min-width: 150px;
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(10px);
-            border: 1px solid var(--orange-bright);
+            border: 1px solid var(--glass-border);
             border-radius: 8px;
             padding: 0.5rem;
             box-shadow: var(--shadow-deep), var(--shadow-orange);
@@ -875,6 +872,7 @@ try {
             padding: 0.75rem 1rem;
             border-radius: 8px;
             transition: all 0.2s ease;
+            user-select: none;
         }
 
         .logout-button span:hover {
@@ -887,6 +885,7 @@ try {
             color: var(--text-primary);
             font-size: 0.9rem;
             padding: 0.75rem 1rem;
+            user-select: none;
         }
 
         .user-info strong {
@@ -899,6 +898,11 @@ try {
             height: 1px;
             background: linear-gradient(90deg, transparent, var(--orange-bright), transparent);
             margin: 0.5rem 0;
+        }
+
+        .unselectable {
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         /* =====================
@@ -956,6 +960,7 @@ try {
             cursor: pointer;
             line-height: 1;
             transition: color 0.2s;
+            user-select: none;
             padding: 0.2rem 0.4rem;
             border-radius: 6px;
         }
@@ -1147,6 +1152,7 @@ try {
             font-weight: 600;
             font-size: 0.95rem;
             pointer-events: none;
+            user-select: none;
         }
 
         /* Validation error inline */
@@ -1215,7 +1221,9 @@ try {
             transform: translateY(0);
         }
 
-        /* Product Modal Styles */
+        /* =====================
+           PRODUCT MODAL - JAVÍTVA
+        ===================== */
         .product-modal-overlay {
             position: fixed;
             inset: 0;
@@ -1257,16 +1265,25 @@ try {
             transform: scale(1);
         }
 
-        .product-modal-close {
+        /* Fejléc konténer a jobb felső gombokhoz */
+        .product-modal-header {
             position: absolute;
             top: 1rem;
             right: 1rem;
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            gap: 0.5rem;
+            z-index: 10;
+        }
+
+        .product-modal-close {
+            position: relative;
+            top: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--orange-glow);
+            color: var(--orange-bright);
             font-size: 1.5rem;
             cursor: pointer;
-            z-index: 10;
             width: 40px;
             height: 40px;
             display: flex;
@@ -1274,11 +1291,83 @@ try {
             justify-content: center;
             border-radius: 50%;
             transition: all 0.2s ease;
+            margin: 0;
         }
 
         .product-modal-close:hover {
+            background: var(--orange-bright);
+            color: black;
+        }
+
+        /* Product menu - finomhangolva */
+        .product-menu {
+            position: relative;
+            z-index: 10;
+        }
+
+        .product-menu-button {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--orange-glow);
+            border-radius: 50%;
             color: var(--orange-bright);
-            background: rgba(255, 140, 0, 0.1);
+            font-size: 1.8rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            margin: 0;
+        }
+
+        .product-menu-button:hover {
+            background: var(--orange-bright);
+            color: black;
+            transform: scale(1.1);
+        }
+
+        .product-menu-content {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            min-width: 150px;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--orange-bright);
+            border-radius: 8px;
+            padding: 0.5rem;
+            box-shadow: var(--shadow-deep), var(--shadow-orange);
+            display: none;
+            z-index: 30;
+        }
+
+        .product-menu-content.show {
+            display: block;
+        }
+
+        .product-menu-item {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            color: white;
+            text-align: left;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .product-menu-item:hover {
+            background: rgba(255, 140, 0, 0.2);
+            color: var(--orange-bright);
+        }
+
+        .product-menu-item.delete:hover {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff0000;
         }
 
         /* Galéria stílusok */
@@ -1300,7 +1389,6 @@ try {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            pointer-events: none;
         }
 
         .gallery-nav {
@@ -1371,7 +1459,6 @@ try {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            pointer-events: none;
         }
 
         /* Termék adatok */
@@ -1394,7 +1481,6 @@ try {
             margin: 0;
             word-break: break-word;
             line-height: 1.2;
-            pointer-events: none;
         }
 
         .product-price {
@@ -1402,13 +1488,11 @@ try {
             font-weight: bold;
             color: var(--orange-bright);
             text-shadow: 0 0 20px var(--orange-glow);
-            pointer-events: none;
         }
 
         .product-seller {
             font-size: 1rem;
             color: rgba(255, 255, 255, 0.7);
-            pointer-events: none;
         }
 
         .product-seller strong {
@@ -1418,7 +1502,6 @@ try {
         .product-date {
             font-size: 0.9rem;
             color: rgba(255, 255, 255, 0.4);
-            pointer-events: none;
         }
 
         .product-description {
@@ -1432,7 +1515,6 @@ try {
             max-height: 300px;
             overflow-y: auto;
             white-space: pre-wrap;
-            pointer-events: none;
         }
 
         .product-buy-btn {
@@ -1455,68 +1537,6 @@ try {
         .product-buy-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(0, 200, 0, 0.4);
-        }
-
-        /* Menü a modálban */
-        .product-menu {
-            position: relative;
-            z-index: 20;
-        }
-
-        .product-menu-button {
-            color: var(--orange-bright);
-            font-size: 2rem;
-            line-height: 1;
-            cursor: pointer;
-            padding: 0 0.5rem;
-            transition: all 0.2s ease;
-        }
-
-        .product-menu-button:hover {
-            color: #ffaa33;
-            transform: scale(1.1);
-        }
-
-        .product-menu-content {
-            position: absolute;
-            top: 40px;
-            right: 0;
-            min-width: 150px;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--orange-bright);
-            border-radius: 8px;
-            padding: 0.5rem;
-            box-shadow: var(--shadow-deep), var(--shadow-orange);
-            display: none;
-            z-index: 30;
-        }
-
-        .product-menu-content.show {
-            display: block;
-        }
-
-        .product-menu-item {
-            width: 100%;
-            padding: 0.5rem 1rem;
-            background: transparent;
-            border: none;
-            color: white;
-            text-align: left;
-            font-size: 0.9rem;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-        }
-
-        .product-menu-item:hover {
-            background: rgba(255, 140, 0, 0.2);
-            color: var(--orange-bright);
-        }
-
-        .product-menu-item.delete:hover {
-            background: rgba(255, 0, 0, 0.2);
-            color: #ff0000;
         }
 
         /* =====================
@@ -1594,6 +1614,11 @@ try {
             .upload-btn .button-text,
             .admin-btn .button-text {
                 display: none;
+            }
+
+            .product-modal-header {
+                top: 0.5rem;
+                right: 0.5rem;
             }
         }
 
@@ -1762,10 +1787,23 @@ try {
         </div>
     </div>
 
-    <!-- Product Detail Modal -->
+    <!-- Product Detail Modal - JAVÍTVA -->
     <div class="product-modal-overlay" id="productModal">
         <div class="product-modal-card">
-            <button class="product-modal-close" id="closeProductModalBtn">✕</button>
+            <!-- Új header konténer a jobb felső gomboknak -->
+            <div class="product-modal-header">
+                <!-- Hárompontos menü a modálban -->
+                <div class="product-menu" id="productMenuContainer" style="display: none;">
+                    <div class="product-menu-button" onclick="toggleProductMenu(this)">⋮</div>
+                    <div class="product-menu-content" id="productMenuContent">
+                        <button class="product-menu-item" id="productReportBtn">⚠️ Bejelentés</button>
+                        <button class="product-menu-item delete" id="productDeleteBtn" style="display: none;">🗑️ Törlés</button>
+                    </div>
+                </div>
+                
+                <!-- Bezáró gomb -->
+                <button class="product-modal-close" id="closeProductModalBtn">✕</button>
+            </div>
             
             <!-- Képgaléria -->
             <div class="product-gallery">
@@ -1781,15 +1819,7 @@ try {
             <div class="product-details">
                 <div class="product-details-header">
                     <h2 class="product-title" id="productTitle"></h2>
-                    
-                    <!-- Hárompontos menü a modálban -->
-                    <div class="product-menu" id="productMenuContainer" style="display: none;">
-                        <div class="product-menu-button" onclick="toggleProductMenu(this)">⋮</div>
-                        <div class="product-menu-content" id="productMenuContent">
-                            <button class="product-menu-item" id="productReportBtn">⚠️ Bejelentés</button>
-                            <button class="product-menu-item delete" id="productDeleteBtn" style="display: none;">🗑️ Törlés</button>
-                        </div>
-                    </div>
+                    <!-- A menü ELTÁVOLÍTVA innen, mert feljebb került a header-be -->
                 </div>
 
                 <div class="product-price" id="productPrice"></div>
@@ -1834,12 +1864,7 @@ try {
                          data-item-images='<?php echo json_encode($allImages); ?>'
                          data-item-user-id="<?php echo $item['user_id']; ?>">
                         
-                        <!-- Képek száma jelző bal oldalon -->
-                        <?php if ($imageCount > 1): ?>
-                            <div class="image-count-badge">+<?php echo $imageCount - 1; ?> kép</div>
-                        <?php endif; ?>
-
-                        <!-- Hárompontos menü az X alatt -->
+                        <!-- Hárompontos menü -->
                         <?php
                         // Csak akkor jelenítjük meg a menüt, ha nem a saját termékünk, vagy ha admin vagyunk
                         $showMenu = ($item['user_id'] != $_SESSION['user_id'] || $isAdmin);
@@ -1873,6 +1898,10 @@ try {
                             <div class="item-image" style="background: rgba(255,140,0,0.1); display: flex; align-items: center; justify-content: center;">
                                 <span style="color: var(--orange-bright); opacity: 0.5;">📷 Nincs kép</span>
                             </div>
+                        <?php endif; ?>
+
+                        <?php if ($imageCount > 1): ?>
+                            <div class="image-count-badge">+<?php echo $imageCount - 1; ?> kép</div>
                         <?php endif; ?>
 
                         <div class="item-title"><?php echo htmlspecialchars($item['title']); ?></div>
@@ -2158,8 +2187,7 @@ try {
                     const thumbnail = document.createElement('div');
                     thumbnail.className = `product-thumbnail ${index === 0 ? 'active' : ''}`;
                     thumbnail.innerHTML = `<img src="${img}" alt="Thumbnail ${index + 1}">`;
-                    thumbnail.addEventListener('click', (e) => {
-                        e.stopPropagation();
+                    thumbnail.addEventListener('click', () => {
                         setMainImage(index);
                     });
                     thumbnailsContainer.appendChild(thumbnail);
@@ -2191,8 +2219,7 @@ try {
                         menuContainer.style.display = 'block';
                         
                         // Configure report button
-                        reportBtn.onclick = (e) => {
-                            e.stopPropagation();
+                        reportBtn.onclick = () => {
                             closeProductModal();
                             openReportModal(productId);
                         };
@@ -2200,8 +2227,7 @@ try {
                         // Configure delete button (admin only)
                         if (isAdmin) {
                             deleteBtn.style.display = 'block';
-                            deleteBtn.onclick = (e) => {
-                                e.stopPropagation();
+                            deleteBtn.onclick = () => {
                                 if (confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) {
                                     // Create and submit delete form
                                     const form = document.createElement('form');
@@ -2290,8 +2316,7 @@ try {
         });
 
         // Vásárlás gomb (még nem csinál semmit)
-        document.getElementById('productBuyBtn').addEventListener('click', (e) => {
-            e.stopPropagation();
+        document.getElementById('productBuyBtn').addEventListener('click', () => {
             alert('Vásárlás funkció még nem elérhető!');
         });
 
