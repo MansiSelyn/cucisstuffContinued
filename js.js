@@ -1,4 +1,34 @@
-// Status üzenet automatikus eltüntetése 3 másodperc után
+// ── TÉMA KEZELÉS ──
+
+/**
+ * Téma betöltése és alkalmazása
+ * @param {string} theme - 'dark' vagy 'light'
+ */
+function applyTheme(theme) {
+    const link = document.getElementById('themeStylesheet');
+    link.href = theme === 'light' ? 'theme-light.css' : 'theme-dark.css';
+    localStorage.setItem('theme', theme);
+}
+
+/**
+ * Mentett téma betöltése oldal betöltésekor
+ */
+(function initTheme() {
+    const saved = localStorage.getItem('theme') || 'dark';
+    applyTheme(saved);
+})();
+
+/**
+ * Témaváltó gomb eseménykezelője
+ */
+document.getElementById('themeToggle').addEventListener('click', function () {
+    const current = localStorage.getItem('theme') || 'dark';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+
+// ── STATUS ÜZENET ──
+
 const status = document.getElementById("statusMessage");
 if (status) {
     setTimeout(() => {
@@ -10,16 +40,18 @@ if (status) {
     }, 3000);
 }
 
+
+// ── REGISZTRÁCIÓS ŰRLAP ──
+
 /**
  * Regisztrációs űrlap megjelenítése
- * Eltávolítja a bejelentkezési űrlapot és létrehozza a regisztrációs űrlapot
  */
 function register() {
     const loginForm = document.getElementById("loginForm");
     if (loginForm) {
         loginForm.remove();
     }
-    
+
     let registerForm = document.createElement("form");
     registerForm.id = "registerForm";
     registerForm.method = "post";
@@ -39,14 +71,13 @@ function register() {
 
 /**
  * Visszatérés a bejelentkezési űrlaphoz
- * Eltávolítja a regisztrációs űrlapot és visszaállítja a bejelentkezési űrlapot
  */
 function loginBack() {
     const registerForm = document.getElementById("registerForm");
     if (registerForm) {
         registerForm.remove();
     }
-    
+
     let loginForm = document.createElement("form");
     loginForm.id = "loginForm";
     loginForm.method = "post";
@@ -58,9 +89,7 @@ function loginBack() {
         <div class="or-separator"><span>VAGY</span></div>
         <button type="button" onclick="register()">Regisztráció</button>
     `;
-    
+
     const h1 = document.querySelector('h1');
     h1.insertAdjacentElement('afterend', loginForm);
 }
-
-// Az afterLogin függvényt eltávolítottuk, mert a szerveroldali átirányítás megoldja

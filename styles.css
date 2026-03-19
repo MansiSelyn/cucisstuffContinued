@@ -1,20 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
 
-:root {
-    --orange-bright:   #ff9a1f;
-    --orange-mid:      #e07800;
-    --orange-deep:     #b35500;
-    --orange-glow:     rgba(255, 140, 0, 0.55);
-    --orange-subtle:   rgba(255, 140, 0, 0.12);
-    --glass-bg:        rgba(6, 6, 6, 0.78);
-    --glass-border:    rgba(255, 140, 0, 0.18);
-    --glass-shine:     rgba(255, 255, 255, 0.06);
-    --text-primary:    #f5f0e8;
-    --text-muted:      #8a7a65;
-    --input-bg:        rgba(20, 16, 10, 0.92);
-    --shadow-orange:   0 0 40px rgba(255, 120, 0, 0.22);
-    --shadow-deep:     0 30px 80px rgba(0, 0, 0, 0.9);
-}
+/* ── THEME IMPORT ── */
+/* Az aktív téma a <head>-ben van betöltve JS által (theme-dark.css / theme-light.css) */
 
 *, *::before, *::after {
     box-sizing: border-box;
@@ -29,7 +16,7 @@ html {
 body {
     min-height: 100vh;
     font-family: 'Frutiger', 'Nunito', 'Helvetica Neue', sans-serif;
-    background: #000;
+    background: var(--body-bg);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -39,36 +26,30 @@ body {
     padding-top: 70px;
     position: relative;
     overflow-x: hidden;
+    transition: background 0.4s ease, color 0.4s ease;
 }
 
 /* ── LAYERED BACKGROUND ── */
 
-/* Base dark gradient */
 body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background:
-        radial-gradient(ellipse 80% 60% at 18% 12%, #7a3800 0%, transparent 55%),
-        radial-gradient(ellipse 60% 50% at 85% 80%, #3a1800 0%, transparent 50%),
-        radial-gradient(ellipse 100% 100% at 50% 50%, #0d0d0d 0%, #000 100%);
     z-index: 0;
+    transition: background 0.4s ease;
 }
 
-/* Atmospheric orange haze */
 body::after {
     content: '';
     position: fixed;
     inset: 0;
-    background:
-        radial-gradient(ellipse 500px 300px at 15% 10%, rgba(255, 100, 0, 0.18) 0%, transparent 70%),
-        radial-gradient(ellipse 400px 400px at 90% 90%, rgba(180, 60, 0, 0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 300px 200px at 50% 0%, rgba(255, 140, 0, 0.08) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
+    transition: background 0.4s ease;
 }
 
-/* Noise grain overlay */
+/* ── NOISE GRAIN ── */
+
 .noise {
     position: fixed;
     inset: -50%;
@@ -81,37 +62,74 @@ body::after {
     mix-blend-mode: overlay;
 }
 
-/* Floating light orb — top left */
+/* ── FLOATING ORBS ── */
+
 .orb-1 {
     position: fixed;
     top: -80px;
     left: -80px;
     width: 420px;
     height: 420px;
-    background: radial-gradient(circle, rgba(255, 140, 0, 0.25) 0%, rgba(255, 80, 0, 0.08) 45%, transparent 70%);
     border-radius: 50%;
     pointer-events: none;
     z-index: 1;
     animation: orbPulse 8s ease-in-out infinite alternate;
+    transition: background 0.4s ease;
 }
 
-/* Second orb — bottom right */
 .orb-2 {
     position: fixed;
     bottom: -120px;
     right: -120px;
     width: 500px;
     height: 500px;
-    background: radial-gradient(circle, rgba(180, 60, 0, 0.20) 0%, rgba(100, 30, 0, 0.06) 50%, transparent 70%);
     border-radius: 50%;
     pointer-events: none;
     z-index: 1;
     animation: orbPulse 11s ease-in-out infinite alternate-reverse;
+    transition: background 0.4s ease;
 }
 
 @keyframes orbPulse {
     from { transform: scale(1) translate(0, 0); opacity: 0.8; }
     to   { transform: scale(1.15) translate(20px, 15px); opacity: 1; }
+}
+
+/* ── THEME TOGGLE BUTTON ── */
+
+#themeToggle {
+    position: fixed;
+    top: 14px;
+    right: 20px;
+    z-index: 1001;
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: var(--orange-bright);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0;
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 400;
+    transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
+    box-shadow: none;
+}
+
+#themeToggle:hover {
+    background: var(--orange-subtle);
+    border-color: var(--orange-bright);
+    box-shadow: 0 0 14px var(--orange-glow);
+    transform: none;
+}
+
+#themeToggle::after {
+    display: none;
 }
 
 /* ── TOP STATUS BAR ── */
@@ -122,12 +140,6 @@ body::after {
     left: 0;
     width: 100%;
     padding: 14px 0;
-    background: linear-gradient(180deg, rgba(10, 6, 0, 0.98) 0%, rgba(0, 0, 0, 0.92) 100%);
-    border-bottom: 1px solid rgba(255, 140, 0, 0.25);
-    box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.04) inset,
-        0 4px 30px rgba(0, 0, 0, 0.8),
-        0 0 60px rgba(255, 100, 0, 0.06);
     text-align: center;
     font-size: 0.78rem;
     font-weight: 700;
@@ -136,6 +148,7 @@ body::after {
     color: var(--orange-bright);
     z-index: 1000;
     text-shadow: 0 0 12px var(--orange-glow), 0 0 30px rgba(255, 140, 0, 0.3);
+    transition: background 0.4s ease;
 }
 
 /* ── HEADING ── */
@@ -145,6 +158,7 @@ h1 {
     font-weight: 300;
     letter-spacing: 4px;
     text-transform: uppercase;
+    color: var(--text-primary);
     text-shadow:
         0 0 10px rgba(255, 140, 0, 0.6),
         0 0 30px rgba(255, 80, 0, 0.3),
@@ -154,6 +168,7 @@ h1 {
     margin-bottom: 30px;
     user-select: none;
     animation: titleFadeIn 0.8s ease both;
+    transition: color 0.4s ease;
 }
 
 h1 span {
@@ -178,19 +193,13 @@ form {
     flex-direction: column;
     gap: 16px;
 
-    background: var(--glass-bg);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     border-radius: 24px;
-    border: 1px solid var(--glass-border);
-    box-shadow:
-        var(--shadow-deep),
-        var(--shadow-orange),
-        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-        0 1px 0 rgba(255, 255, 255, 0.05) inset;
 
     animation: cardRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: 0.1s;
+    transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
 }
 
 @keyframes cardRise {
@@ -198,7 +207,6 @@ form {
     to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Top specular shine strip */
 form::before {
     content: '';
     position: absolute;
@@ -206,19 +214,18 @@ form::before {
     left: 8%;
     width: 84%;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), rgba(255, 200, 100, 0.14), transparent);
     border-radius: 50%;
     pointer-events: none;
+    transition: background 0.4s ease;
 }
 
-/* Inner glow vignette */
 form::after {
     content: '';
     position: absolute;
     inset: 0;
     border-radius: 24px;
-    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 140, 0, 0.07) 0%, transparent 60%);
     pointer-events: none;
+    transition: background 0.4s ease;
 }
 
 /* ── SECTION LABEL ── */
@@ -238,34 +245,15 @@ form::after {
 input {
     padding: 14px 20px;
     border-radius: 50px;
-    border: 1px solid rgba(255, 140, 0, 0.15);
     outline: none;
     font-size: 0.95rem;
     font-family: inherit;
-    background: var(--input-bg);
-    color: var(--text-primary);
     transition: all 0.25s ease;
-    box-shadow:
-        0 4px 16px rgba(0, 0, 0, 0.6),
-        0 1px 0 rgba(255, 255, 255, 0.04) inset,
-        0 -1px 0 rgba(0, 0, 0, 0.5) inset;
     position: relative;
     z-index: 1;
 }
 
-input:focus {
-    border-color: rgba(255, 140, 0, 0.5);
-    background: rgba(15, 10, 4, 0.95);
-    box-shadow:
-        0 0 0 3px rgba(255, 120, 0, 0.18),
-        0 0 20px rgba(255, 100, 0, 0.25),
-        0 4px 16px rgba(0, 0, 0, 0.6),
-        0 1px 0 rgba(255, 200, 100, 0.06) inset;
-    color: #fff;
-}
-
 input::placeholder {
-    color: #5a4c3a;
     font-style: italic;
     font-size: 0.9rem;
 }
@@ -328,7 +316,6 @@ button {
     overflow: hidden;
 }
 
-/* Shimmer sweep on hover */
 button::after {
     content: '';
     position: absolute;
@@ -345,54 +332,12 @@ button:hover::after {
     left: 160%;
 }
 
-/* Primary — submit */
-button[type="submit"] {
-    background: linear-gradient(180deg, #ffab35 0%, #e07800 50%, #b35500 100%);
-    color: #0a0500;
-    box-shadow:
-        0 8px 0 #6b3000,
-        0 12px 30px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(255, 200, 100, 0.3) inset,
-        0 1px 0 rgba(255, 230, 150, 0.4) inset;
-    text-shadow: 0 1px 0 rgba(255, 200, 80, 0.4);
-}
-
 button[type="submit"]:hover {
-    background: linear-gradient(180deg, #ffbe55 0%, #f08800 50%, #c06000 100%);
     transform: translateY(-2px);
-    box-shadow:
-        0 10px 0 #6b3000,
-        0 15px 40px rgba(0, 0, 0, 0.6),
-        0 0 30px rgba(255, 140, 0, 0.3),
-        0 0 0 1px rgba(255, 200, 100, 0.35) inset;
 }
 
 button[type="submit"]:active {
     transform: translateY(6px);
-    box-shadow:
-        0 2px 0 #6b3000,
-        0 8px 20px rgba(0, 0, 0, 0.4);
-}
-
-/* Secondary — ghost */
-button[type="button"] {
-    background: transparent;
-    color: var(--orange-bright);
-    border: 1px solid rgba(255, 140, 0, 0.3);
-    box-shadow:
-        0 0 0 0 transparent,
-        0 2px 12px rgba(0, 0, 0, 0.4);
-    text-shadow: 0 0 8px rgba(255, 140, 0, 0.4);
-}
-
-button[type="button"]:hover {
-    background: rgba(255, 120, 0, 0.08);
-    border-color: rgba(255, 140, 0, 0.6);
-    color: #fff;
-    box-shadow:
-        0 0 20px rgba(255, 100, 0, 0.2),
-        0 0 0 1px rgba(255, 140, 0, 0.15) inset;
-    text-shadow: 0 0 12px rgba(255, 160, 0, 0.7);
 }
 
 /* ── OR SEPARATOR ── */
@@ -424,7 +369,7 @@ button[type="button"]:hover {
     z-index: 1;
 }
 
-/* ── EXTRA DETAIL: bottom tagline ── */
+/* ── CARD FOOTER ── */
 
 .card-footer {
     margin-top: 6px;
@@ -436,12 +381,12 @@ button[type="button"]:hover {
     user-select: none;
 }
 
-/* ── SCROLLBAR STYLING ── */
+/* ── SCROLLBAR ── */
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0a0a0a; }
-::-webkit-scrollbar-thumb { background: rgba(255, 120, 0, 0.3); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 140, 0, 0.5); }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 /* ── SELECTION ── */
 
@@ -452,168 +397,90 @@ button[type="button"]:hover {
 
 /* ── RESZPONZÍV ── */
 
-/* Alapértelmezett (mobil első) beállítások - 1200px-ig MINDEN nagyobb */
 @media (max-width: 1200px) {
     body {
         padding: 24px;
         padding-top: 80px;
     }
-
     h1 {
-        font-size: 3.2rem;        /* még nagyobb cím */
+        font-size: 3.2rem;
         margin-bottom: 40px;
         letter-spacing: 8px;
     }
-
     form {
-        max-width: 680px;         /* sokkal szélesebb űrlap */
+        max-width: 680px;
         width: 100%;
-        padding: 60px 56px 54px;  /* sokkal több belső tér */
-        gap: 28px;                /* nagyobb távolságok */
-        border-radius: 36px;      /* nagyobb sarkok */
+        padding: 60px 56px 54px;
+        gap: 28px;
+        border-radius: 36px;
     }
-
     .form-label {
-        font-size: 0.9rem;        /* nagyobb label */
+        font-size: 0.9rem;
         letter-spacing: 4px;
         margin-bottom: -2px;
     }
-
     input {
-        padding: 22px 28px;       /* sokkal magasabb input mezők */
-        font-size: 1.3rem;        /* sokkal nagyobb betűméret */
+        padding: 22px 28px;
+        font-size: 1.3rem;
         border-radius: 70px;
     }
-
     .input-group svg {
         width: 24px;
         height: 24px;
         right: 26px;
         opacity: 0.7;
     }
-
     .input-group input {
         padding-right: 60px;
     }
-
     input::placeholder {
-        font-size: 1.2rem;        /* nagyobb placeholder */
+        font-size: 1.2rem;
     }
-
     .forgot-link {
-        font-size: 1rem;          /* nagyobb link */
+        font-size: 1rem;
         margin-top: 0;
         padding-right: 10px;
     }
-
     button {
-        padding: 24px;            /* sokkal magasabb gombok */
-        font-size: 1.3rem;        /* nagyobb gombszöveg */
+        padding: 24px;
+        font-size: 1.3rem;
         letter-spacing: 4px;
         border-radius: 70px;
     }
-
-    button[type="submit"] {
-        box-shadow: 0 12px 0 #6b3000, 0 20px 50px rgba(0, 0, 0, 0.7);
-    }
-
     .or-separator {
         margin: 18px 0 12px;
     }
-
     .or-separator span {
-        font-size: 0.9rem;        /* nagyobb OR szöveg */
+        font-size: 0.9rem;
         padding: 0 24px;
     }
-
     .card-footer {
-        font-size: 0.85rem;       /* nagyobb lábléc */
+        font-size: 0.85rem;
         margin-top: 20px;
         letter-spacing: 3px;
     }
 }
 
-/* Nagyon nagy mobil/tablet (pl. iPad Pro fekvőben) */
 @media (min-width: 1201px) and (max-width: 1600px) {
-    body {
-        padding-top: 70px;
-    }
-
-    form {
-        max-width: 520px;         /* közepes méret */
-        padding: 48px 50px 44px;
-    }
-
-    h1 {
-        font-size: 2.8rem;
-    }
-
-    input {
-        padding: 18px 24px;
-        font-size: 1.1rem;
-    }
-
-    button {
-        padding: 18px;
-        font-size: 1.1rem;
-    }
+    body { padding-top: 70px; }
+    form { max-width: 520px; padding: 48px 50px 44px; }
+    h1 { font-size: 2.8rem; }
+    input { padding: 18px 24px; font-size: 1.1rem; }
+    button { padding: 18px; font-size: 1.1rem; }
 }
 
-/* Asztali nézet - 1600px felett kisebb */
 @media (min-width: 1601px) {
-    form {
-        max-width: 480px;         /* asztalon visszavesszük a méretet */
-        padding: 42px 48px 38px;
-    }
-
-    h1 {
-        font-size: 2.6rem;
-    }
-
-    input {
-        padding: 14px 20px;
-        font-size: 0.95rem;
-    }
-
-    button {
-        padding: 15px;
-        font-size: 0.9rem;
-    }
+    form { max-width: 480px; padding: 42px 48px 38px; }
+    h1 { font-size: 2.6rem; }
+    input { padding: 14px 20px; font-size: 0.95rem; }
+    button { padding: 15px; font-size: 0.9rem; }
 }
 
-/* Extrém kis méretű kijelzők (400px alatt) - optimalizálva */
 @media (max-width: 400px) {
-    body {
-        padding: 16px;
-        padding-top: 70px;
-    }
-
-    h1 {
-        font-size: 2.4rem;
-        margin-bottom: 30px;
-        letter-spacing: 5px;
-    }
-
-    form {
-        max-width: 100%;
-        padding: 36px 24px 32px;
-        gap: 20px;
-        border-radius: 28px;
-    }
-
-    input {
-        padding: 18px 22px;
-        font-size: 1.1rem;
-    }
-
-    button {
-        padding: 20px;
-        font-size: 1.1rem;
-    }
-
-    .input-group svg {
-        width: 20px;
-        height: 20px;
-        right: 20px;
-    }
+    body { padding: 16px; padding-top: 70px; }
+    h1 { font-size: 2.4rem; margin-bottom: 30px; letter-spacing: 5px; }
+    form { max-width: 100%; padding: 36px 24px 32px; gap: 20px; border-radius: 28px; }
+    input { padding: 18px 22px; font-size: 1.1rem; }
+    button { padding: 20px; font-size: 1.1rem; }
+    .input-group svg { width: 20px; height: 20px; right: 20px; }
 }

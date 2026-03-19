@@ -12,7 +12,6 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Megnézzük, melyik űrlapot küldték el
     if (isset($_POST['login'])) {
         $mode = 'login';
     } elseif (isset($_POST['register'])) {
@@ -69,7 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($conn->connect_error) {
                 $status = "Adatbázis hiba";
             } else {
-                // Ellenőrizzük, hogy létezik-e már az email vagy a felhasználónév
                 $stmt = $conn->prepare("SELECT email, username FROM users WHERE email = ? OR username = ? LIMIT 1");
                 $stmt->bind_param("ss", $_POST['email'], $_POST['felhasznalonev']);
                 $stmt->execute();
@@ -83,21 +81,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $status = "Felhasználónév már foglalt";
                     }
                 } else {
-                    // Jelszó hash-elése
                     $hash = password_hash($_POST['jelszo'], PASSWORD_DEFAULT);
                     
-                    // Jelszó beszúrása a passwords táblába
                     $stmt = $conn->prepare("INSERT INTO passwords (password_hash) VALUES (?)");
                     $stmt->bind_param("s", $hash);
                     $stmt->execute();
                     $password_id = $stmt->insert_id;
                     
-                    // Felhasználó beszúrása a users táblába
                     $stmt = $conn->prepare("INSERT INTO users (email, username, password_id) VALUES (?, ?, ?)");
                     $stmt->bind_param("ssi", $_POST['email'], $_POST['felhasznalonev'], $password_id);
                     
                     if ($stmt->execute()) {
-                        // Sikeres regisztráció után átváltunk login módra
                         $mode = 'login';
                         $status = "Sikeres regisztráció";
                     } else {
@@ -118,10 +112,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Cuci's Stuff - Bejelentkezés</title>
+    <!-- Alap stílusok -->
     <link rel="stylesheet" href="styles.css">
+    <!-- Aktív téma — JS felülírja href-jét azonnal, de dark az alapértelmezett FOUC ellen -->
+    <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css">
+    <script>
+        // FOUC (villanás) megelőzése: téma alkalmazása a DOM renderelés előtt
+        (function() {
+            const saved = localStorage.getItem('theme') || 'dark';
+            document.getElementById('themeStylesheet').href =
+                saved === 'light' ? 'theme-light.css' : 'theme-dark.css';
+        })();
+    </script>
 </head>
 
 <body>
+
+    <!-- Háttér elemek -->
+    <div class="noise"></div>
+    <div class="orb-1"></div>
+    <div class="orb-2"></div>
+
+    <!-- Témaváltó gomb -->
+    <button id="themeToggle" title="Témaváltás" type="button">
+        <span class="icon-sun">☀️</span>
+        <span class="icon-moon">🌙</span>
+    </button>
 
     <?php if (!empty($status)): ?>
         <div class="login-status" id="statusMessage"><?php echo htmlspecialchars($status); ?></div>

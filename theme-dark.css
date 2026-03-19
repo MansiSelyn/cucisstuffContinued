@@ -1,0 +1,154 @@
+/* ── DARK THEME ── */
+
+:root {
+    --orange-bright:   #ff9a1f;
+    --orange-mid:      #e07800;
+    --orange-deep:     #b35500;
+    --orange-glow:     rgba(255, 140, 0, 0.55);
+    --orange-subtle:   rgba(255, 140, 0, 0.12);
+    --glass-bg:        rgba(6, 6, 6, 0.78);
+    --glass-border:    rgba(255, 140, 0, 0.18);
+    --glass-shine:     rgba(255, 255, 255, 0.06);
+    --text-primary:    #f5f0e8;
+    --text-muted:      #8a7a65;
+    --input-bg:        rgba(20, 16, 10, 0.92);
+    --shadow-orange:   0 0 40px rgba(255, 120, 0, 0.22);
+    --shadow-deep:     0 30px 80px rgba(0, 0, 0, 0.9);
+
+    --body-bg:         #000;
+    --scrollbar-track: #0a0a0a;
+    --scrollbar-thumb: rgba(255, 120, 0, 0.3);
+    --scrollbar-thumb-hover: rgba(255, 140, 0, 0.5);
+    --placeholder-color: #5a4c3a;
+    --input-focus-bg:  rgba(15, 10, 4, 0.95);
+    --status-bg-from:  rgba(10, 6, 0, 0.98);
+    --status-bg-to:    rgba(0, 0, 0, 0.92);
+}
+
+/* Base dark gradient */
+body::before {
+    background:
+        radial-gradient(ellipse 80% 60% at 18% 12%, #7a3800 0%, transparent 55%),
+        radial-gradient(ellipse 60% 50% at 85% 80%, #3a1800 0%, transparent 50%),
+        radial-gradient(ellipse 100% 100% at 50% 50%, #0d0d0d 0%, #000 100%);
+}
+
+/* Atmospheric orange haze */
+body::after {
+    background:
+        radial-gradient(ellipse 500px 300px at 15% 10%, rgba(255, 100, 0, 0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 400px at 90% 90%, rgba(180, 60, 0, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 300px 200px at 50% 0%, rgba(255, 140, 0, 0.08) 0%, transparent 60%);
+}
+
+/* Orbs */
+.orb-1 {
+    background: radial-gradient(circle, rgba(255, 140, 0, 0.25) 0%, rgba(255, 80, 0, 0.08) 45%, transparent 70%);
+}
+.orb-2 {
+    background: radial-gradient(circle, rgba(180, 60, 0, 0.20) 0%, rgba(100, 30, 0, 0.06) 50%, transparent 70%);
+}
+
+/* Status bar */
+.login-status {
+    background: linear-gradient(180deg, var(--status-bg-from) 0%, var(--status-bg-to) 100%);
+    border-bottom: 1px solid rgba(255, 140, 0, 0.25);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.04) inset,
+        0 4px 30px rgba(0, 0, 0, 0.8),
+        0 0 60px rgba(255, 100, 0, 0.06);
+}
+
+/* Form */
+form {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+        var(--shadow-deep),
+        var(--shadow-orange),
+        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+        0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+
+form::before {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), rgba(255, 200, 100, 0.14), transparent);
+}
+
+form::after {
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 140, 0, 0.07) 0%, transparent 60%);
+}
+
+/* Input */
+input {
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 140, 0, 0.15);
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.6),
+        0 1px 0 rgba(255, 255, 255, 0.04) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.5) inset;
+}
+
+input:focus {
+    border-color: rgba(255, 140, 0, 0.5);
+    background: var(--input-focus-bg);
+    box-shadow:
+        0 0 0 3px rgba(255, 120, 0, 0.18),
+        0 0 20px rgba(255, 100, 0, 0.25),
+        0 4px 16px rgba(0, 0, 0, 0.6),
+        0 1px 0 rgba(255, 200, 100, 0.06) inset;
+    color: #fff;
+}
+
+input::placeholder {
+    color: var(--placeholder-color);
+}
+
+/* Submit button */
+button[type="submit"] {
+    background: linear-gradient(180deg, #ffab35 0%, #e07800 50%, #b35500 100%);
+    color: #0a0500;
+    box-shadow:
+        0 8px 0 #6b3000,
+        0 12px 30px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 200, 100, 0.3) inset,
+        0 1px 0 rgba(255, 230, 150, 0.4) inset;
+}
+
+button[type="submit"]:hover {
+    background: linear-gradient(180deg, #ffbe55 0%, #f08800 50%, #c06000 100%);
+    box-shadow:
+        0 10px 0 #6b3000,
+        0 15px 40px rgba(0, 0, 0, 0.6),
+        0 0 30px rgba(255, 140, 0, 0.3),
+        0 0 0 1px rgba(255, 200, 100, 0.35) inset;
+}
+
+button[type="submit"]:active {
+    box-shadow:
+        0 2px 0 #6b3000,
+        0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Ghost button */
+button[type="button"] {
+    background: transparent;
+    color: var(--orange-bright);
+    border: 1px solid rgba(255, 140, 0, 0.3);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 0 8px rgba(255, 140, 0, 0.4);
+}
+
+button[type="button"]:hover {
+    background: rgba(255, 120, 0, 0.08);
+    border-color: rgba(255, 140, 0, 0.6);
+    color: #fff;
+    box-shadow:
+        0 0 20px rgba(255, 100, 0, 0.2),
+        0 0 0 1px rgba(255, 140, 0, 0.15) inset;
+    text-shadow: 0 0 12px rgba(255, 160, 0, 0.7);
+}
+
+/* Theme toggle button (dark mode — show sun icon) */
+#themeToggle .icon-moon { display: none; }
+#themeToggle .icon-sun  { display: inline; }

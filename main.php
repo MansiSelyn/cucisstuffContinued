@@ -243,6 +243,14 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Főoldal - Termékek</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css">
+    <script>
+        (function() {
+            var saved = localStorage.getItem('theme') || 'dark';
+            document.getElementById('themeStylesheet').href =
+                saved === 'light' ? 'theme-light.css' : 'theme-dark.css';
+        })();
+    </script>
     <style>
         * {
             box-sizing: border-box;
@@ -551,6 +559,56 @@ try {
             width: 100%;
         }
 
+        /* Reszponzív rács - tájolás alapú */
+        @media (orientation: portrait) {
+            .items-grid {
+                grid-template-columns: repeat(5, 1fr) !important;
+            }
+        }
+        
+        @media (orientation: landscape) {
+            .items-grid {
+                grid-template-columns: repeat(8, 1fr) !important;
+            }
+        }
+
+        /* Meglévő szélesség alapú töréspontok */
+        @media (max-width: 1800px) {
+            .items-grid {
+                grid-template-columns: repeat(7, 1fr);
+            }
+        }
+
+        @media (max-width: 1600px) {
+            .items-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .items-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .items-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .items-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 800px) {
+            .items-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         .item-card {
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(20px);
@@ -585,6 +643,23 @@ try {
             border-radius: 12px;
             margin-bottom: 1rem;
             border: 1px solid var(--glass-border);
+        }
+
+        .item-image-placeholder {
+            width: 100%;
+            height: 200px;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 140, 0, 0.1);
+        }
+
+        .item-image-placeholder .placeholder-text {
+            color: var(--orange-bright);
+            opacity: 0.5;
         }
 
         .item-title {
@@ -903,6 +978,70 @@ try {
         .unselectable {
             user-select: none;
             -webkit-user-select: none;
+        }
+
+        /* Theme toggle inside dropdown */
+        .theme-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            user-select: none;
+        }
+
+        .theme-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            opacity: 0.8;
+        }
+
+        .theme-switch {
+            position: relative;
+            width: 42px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .theme-switch-track {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: background 0.3s, border-color 0.3s;
+            cursor: pointer;
+        }
+
+        .theme-switch input:checked + .theme-switch-track {
+            background: rgba(176, 203, 31, 0.25);
+            border-color: #B0CB1F;
+        }
+
+        .theme-switch-thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            transition: transform 0.3s, background 0.3s;
+            pointer-events: none;
+        }
+
+        .theme-switch input:checked ~ .theme-switch-thumb {
+            transform: translateX(18px);
+            background: #B0CB1F;
         }
 
         /* =====================
@@ -1567,7 +1706,7 @@ try {
         }
 
         /* =====================
-           LIGHTBOX A KÉPEKHEZ
+           LIGHTBOX A KÉPEKHEZ - X a KÉP MELLETT
         ===================== */
         .lightbox-overlay {
             position: fixed;
@@ -1588,13 +1727,15 @@ try {
         }
 
         .lightbox-content {
-            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
             max-width: 95vw;
             max-height: 95vh;
         }
 
         .lightbox-image {
-            max-width: 100%;
+            max-width: calc(95vw - 70px);
             max-height: 95vh;
             width: auto;
             height: auto;
@@ -1604,9 +1745,6 @@ try {
         }
 
         .lightbox-close {
-            position: absolute;
-            top: -50px;
-            right: 0;
             background: rgba(20, 20, 20, 0.9);
             border: 1px solid var(--orange-bright);
             color: var(--orange-bright);
@@ -1619,6 +1757,7 @@ try {
             justify-content: center;
             border-radius: 50%;
             transition: all 0.2s ease;
+            flex-shrink: 0;
         }
 
         .lightbox-close:hover {
@@ -1630,42 +1769,6 @@ try {
         /* =====================
            RESPONSIVE
         ===================== */
-        @media (max-width: 1800px) {
-            .items-grid {
-                grid-template-columns: repeat(7, 1fr);
-            }
-        }
-
-        @media (max-width: 1600px) {
-            .items-grid {
-                grid-template-columns: repeat(6, 1fr);
-            }
-        }
-
-        @media (max-width: 1400px) {
-            .items-grid {
-                grid-template-columns: repeat(5, 1fr);
-            }
-        }
-
-        @media (max-width: 1200px) {
-            .items-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-
-        @media (max-width: 1000px) {
-            .items-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        @media (max-width: 800px) {
-            .items-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
         @media (max-width: 1200px) {
             .product-modal-card {
                 grid-template-columns: 1fr;
@@ -1744,6 +1847,17 @@ try {
                 top: 0.5rem;
                 right: 0.5rem;
             }
+
+            /* Mobil lightbox */
+            .lightbox-content {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .lightbox-image {
+                max-width: 95vw;
+                max-height: calc(95vh - 70px);
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -1791,6 +1905,15 @@ try {
             <div class="account-dropdown">
                 <div class="user-info unselectable">
                     <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>
+                </div>
+                <div class="dropdown-divider"></div>
+                <div class="theme-toggle-row">
+                    <span class="theme-toggle-label">☀️ Világos mód</span>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="themeSwitchMain">
+                        <span class="theme-switch-track"></span>
+                        <span class="theme-switch-thumb"></span>
+                    </label>
                 </div>
                 <div class="dropdown-divider"></div>
                 <form method="post" style="width:100%;margin:0;padding:0;">
@@ -1956,7 +2079,7 @@ try {
         </div>
     </div>
 
-    <!-- Lightbox a képek nagyításához -->
+    <!-- Lightbox a képek nagyításához - X a KÉP MELLETT -->
     <div class="lightbox-overlay" id="lightboxOverlay">
         <div class="lightbox-content">
             <img src="" alt="Nagyított kép" class="lightbox-image" id="lightboxImage">
@@ -2024,8 +2147,8 @@ try {
                         <?php if ($primaryImage): ?>
                             <img src="<?php echo htmlspecialchars($primaryImage['image_path']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" class="item-image">
                         <?php else: ?>
-                            <div class="item-image" style="background: rgba(255,140,0,0.1); display: flex; align-items: center; justify-content: center;">
-                                <span style="color: var(--orange-bright); opacity: 0.5;">📷 Nincs kép</span>
+                            <div class="item-image-placeholder">
+                                <span class="placeholder-text">📷 Nincs kép</span>
                             </div>
                         <?php endif; ?>
 
@@ -2504,7 +2627,7 @@ try {
             });
         }
 
-        // Lightbox functionality
+        // Lightbox functionality - X a kép mellett
         const productMainImage = document.getElementById('productMainImage');
         
         productMainImage.addEventListener('click', (e) => {
@@ -2532,7 +2655,28 @@ try {
                 closeLightbox();
             }
         });
+        // ── TÉMAVÁLTÓ ──
+        (function() {
+            const checkbox = document.getElementById('themeSwitchMain');
+            const themeLink = document.getElementById('themeStylesheet');
+
+            function applyTheme(theme) {
+                themeLink.href = theme === 'light' ? 'theme-light.css' : 'theme-dark.css';
+                localStorage.setItem('theme', theme);
+                checkbox.checked = (theme === 'light');
+
+                // Orb és body szín frissítés a main.php saját CSS-éhez
+                document.body.dataset.theme = theme;
+            }
+
+            // Kezdeti állapot
+            const saved = localStorage.getItem('theme') || 'dark';
+            applyTheme(saved);
+
+            checkbox.addEventListener('change', function() {
+                applyTheme(this.checked ? 'light' : 'dark');
+            });
+        })();
     </script>
-</body>
 
 </html>
