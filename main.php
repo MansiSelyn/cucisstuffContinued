@@ -619,7 +619,7 @@ try {
         .image-count-badge {
             position: absolute;
             top: 10px;
-            right: 10px;
+            left: 10px;
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(5px);
             padding: 0.3rem 0.6rem;
@@ -1222,20 +1222,20 @@ try {
         }
 
         /* =====================
-           PRODUCT MODAL - JAVÍTVA
+           PRODUCT MODAL - TELJES KÉPERNYŐS VÁLTOZAT
         ===================== */
         .product-modal-overlay {
             position: fixed;
             inset: 0;
             z-index: 4000;
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(0, 0, 0, 0.98);
             backdrop-filter: blur(10px);
             display: none;
             align-items: center;
             justify-content: center;
-            padding: 1rem;
             opacity: 0;
             transition: opacity 0.3s ease;
+            padding: 0;
         }
 
         .product-modal-overlay.active {
@@ -1244,21 +1244,18 @@ try {
         }
 
         .product-modal-card {
-            width: 100%;
-            max-width: 1200px;
-            max-height: 90vh;
-            background: rgba(10, 10, 10, 0.98);
-            border: 1px solid var(--orange-bright);
-            border-radius: 24px;
-            overflow-y: auto;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 5, 5, 0.99);
             position: relative;
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1.5fr 1fr;
             gap: 2rem;
             padding: 2rem;
-            transform: scale(0.95);
+            transform: scale(0.98);
             transition: transform 0.3s ease;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 140, 0, 0.2);
+            box-shadow: none;
+            overflow: hidden;
         }
 
         .product-modal-overlay.active .product-modal-card {
@@ -1268,58 +1265,55 @@ try {
         /* Fejléc konténer a jobb felső gombokhoz */
         .product-modal-header {
             position: absolute;
-            top: 1rem;
-            right: 1rem;
+            top: 1.5rem;
+            right: 1.5rem;
             display: flex;
-            gap: 0.5rem;
-            z-index: 10;
+            gap: 1rem;
+            z-index: 100;
         }
 
         .product-modal-close {
-            position: relative;
-            top: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--orange-glow);
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid var(--orange-bright);
             color: var(--orange-bright);
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             cursor: pointer;
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
             transition: all 0.2s ease;
-            margin: 0;
+            backdrop-filter: blur(5px);
         }
 
         .product-modal-close:hover {
             background: var(--orange-bright);
             color: black;
+            transform: scale(1.1);
         }
 
-        /* Product menu - finomhangolva */
+        /* Product menu */
         .product-menu {
             position: relative;
-            z-index: 10;
         }
 
         .product-menu-button {
-            width: 40px;
-            height: 40px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--orange-glow);
+            width: 48px;
+            height: 48px;
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid var(--orange-bright);
             border-radius: 50%;
             color: var(--orange-bright);
-            font-size: 1.8rem;
+            font-size: 2rem;
             line-height: 1;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
-            margin: 0;
+            backdrop-filter: blur(5px);
         }
 
         .product-menu-button:hover {
@@ -1330,17 +1324,17 @@ try {
 
         .product-menu-content {
             position: absolute;
-            top: 45px;
+            top: 55px;
             right: 0;
-            min-width: 150px;
-            background: rgba(0, 0, 0, 0.95);
+            min-width: 180px;
+            background: rgba(10, 10, 10, 0.95);
             backdrop-filter: blur(10px);
             border: 1px solid var(--orange-bright);
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 0.5rem;
-            box-shadow: var(--shadow-deep), var(--shadow-orange);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 140, 0, 0.2);
             display: none;
-            z-index: 30;
+            z-index: 101;
         }
 
         .product-menu-content.show {
@@ -1349,14 +1343,14 @@ try {
 
         .product-menu-item {
             width: 100%;
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1rem;
             background: transparent;
             border: none;
             color: white;
             text-align: left;
-            font-size: 0.9rem;
+            font-size: 1rem;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 6px;
             transition: all 0.2s ease;
         }
 
@@ -1370,25 +1364,44 @@ try {
             color: #ff0000;
         }
 
-        /* Galéria stílusok */
+        /* Galéria stílusok - nagyobb, teljes képernyőhöz igazítva */
         .product-gallery {
             position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 24px;
+            padding: 1rem;
+            min-height: 0;
         }
 
         .product-main-image-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 1;
-            border-radius: 16px;
+            border-radius: 20px;
             overflow: hidden;
             border: 1px solid var(--glass-border);
             margin-bottom: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* A magasságot JavaScript állítja be */
         }
 
         .product-main-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .product-main-image:hover {
+            opacity: 0.9;
         }
 
         .gallery-nav {
@@ -1397,30 +1410,32 @@ try {
             transform: translateY(-50%);
             background: rgba(0, 0, 0, 0.7);
             color: white;
-            border: 1px solid var(--orange-bright);
-            width: 40px;
-            height: 40px;
+            border: 2px solid var(--orange-bright);
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             transition: all 0.2s ease;
-            z-index: 5;
+            z-index: 10;
+            backdrop-filter: blur(5px);
         }
 
         .gallery-nav:hover {
             background: var(--orange-bright);
             color: black;
+            transform: translateY(-50%) scale(1.1);
         }
 
         .gallery-nav.prev {
-            left: 10px;
+            left: 20px;
         }
 
         .gallery-nav.next {
-            right: 10px;
+            right: 20px;
         }
 
         .gallery-nav.hidden {
@@ -1429,18 +1444,19 @@ try {
 
         .product-thumbnails {
             display: flex;
-            gap: 0.5rem;
+            gap: 1rem;
             overflow-x: auto;
-            padding-bottom: 0.5rem;
+            padding: 0.5rem 0;
+            min-height: 100px;
         }
 
         .product-thumbnail {
-            width: 80px;
-            height: 80px;
-            border-radius: 8px;
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
             overflow: hidden;
             cursor: pointer;
-            border: 2px solid transparent;
+            border: 3px solid transparent;
             transition: all 0.2s ease;
             flex-shrink: 0;
         }
@@ -1452,7 +1468,7 @@ try {
 
         .product-thumbnail.active {
             border-color: var(--orange-bright);
-            box-shadow: 0 0 15px var(--orange-glow);
+            box-shadow: 0 0 20px var(--orange-glow);
         }
 
         .product-thumbnail img {
@@ -1461,11 +1477,18 @@ try {
             object-fit: cover;
         }
 
-        /* Termék adatok */
+        /* Termék adatok - jobb oldali panel */
         .product-details {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 2rem;
+            padding: 2rem;
+            background: rgba(10, 10, 10, 0.8);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            height: 100%;
+            overflow-y: auto;
+            user-select: none;
         }
 
         .product-details-header {
@@ -1476,67 +1499,132 @@ try {
         }
 
         .product-title {
-            font-size: 2rem;
+            font-size: 2.5rem;
             color: var(--orange-bright);
             margin: 0;
             word-break: break-word;
             line-height: 1.2;
+            font-weight: bold;
         }
 
         .product-price {
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: bold;
             color: var(--orange-bright);
-            text-shadow: 0 0 20px var(--orange-glow);
+            text-shadow: 0 0 30px var(--orange-glow);
         }
 
         .product-seller {
-            font-size: 1rem;
+            font-size: 1.2rem;
             color: rgba(255, 255, 255, 0.7);
         }
 
         .product-seller strong {
             color: var(--orange-bright);
+            font-size: 1.4rem;
         }
 
         .product-date {
-            font-size: 0.9rem;
+            font-size: 1rem;
             color: rgba(255, 255, 255, 0.4);
         }
 
         .product-description {
-            font-size: 1rem;
-            line-height: 1.6;
+            font-size: 1.1rem;
+            line-height: 1.8;
             color: rgba(255, 255, 255, 0.9);
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            padding: 2rem;
             border: 1px solid var(--glass-border);
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
             white-space: pre-wrap;
+            user-select: none;
         }
 
         .product-buy-btn {
             background: linear-gradient(135deg, #00c851, #007e33);
             border: none;
-            border-radius: 12px;
-            padding: 1rem 2rem;
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-top: 1rem;
+            margin-top: auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 1rem;
+            user-select: none;
         }
 
         .product-buy-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 200, 0, 0.4);
+            box-shadow: 0 10px 30px rgba(0, 200, 0, 0.4);
+        }
+
+        /* =====================
+           LIGHTBOX A KÉPEKHEZ
+        ===================== */
+        .lightbox-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .lightbox-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 95vw;
+            max-height: 95vh;
+        }
+
+        .lightbox-image {
+            max-width: 100%;
+            max-height: 95vh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border: 2px solid var(--orange-bright);
+            border-radius: 8px;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: -50px;
+            right: 0;
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid var(--orange-bright);
+            color: var(--orange-bright);
+            font-size: 2rem;
+            cursor: pointer;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .lightbox-close:hover {
+            background: var(--orange-bright);
+            color: black;
+            transform: scale(1.1);
         }
 
         /* =====================
@@ -1578,6 +1666,31 @@ try {
             }
         }
 
+        @media (max-width: 1200px) {
+            .product-modal-card {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 1rem;
+                overflow-y: auto;
+            }
+            
+            .product-gallery {
+                height: 50vh;
+            }
+            
+            .product-title {
+                font-size: 2rem;
+            }
+            
+            .product-price {
+                font-size: 2.5rem;
+            }
+            
+            .product-description {
+                max-height: 300px;
+            }
+        }
+
         @media (max-width: 600px) {
             .items-grid {
                 grid-template-columns: 1fr;
@@ -1597,17 +1710,28 @@ try {
             }
 
             .product-modal-card {
-                grid-template-columns: 1fr;
-                padding: 1rem;
-                gap: 1rem;
+                padding: 0.5rem;
             }
-
+            
+            .product-gallery {
+                height: 40vh;
+            }
+            
+            .product-details {
+                padding: 1rem;
+            }
+            
             .product-title {
                 font-size: 1.5rem;
             }
-
+            
             .product-price {
                 font-size: 2rem;
+            }
+            
+            .product-description {
+                padding: 1rem;
+                font-size: 1rem;
             }
 
             /* Mobil: csak az ikon jelenjen meg a gombokon */
@@ -1787,10 +1911,10 @@ try {
         </div>
     </div>
 
-    <!-- Product Detail Modal - JAVÍTVA -->
+    <!-- Product Detail Modal - TELJES KÉPERNYŐS VÁLTOZAT -->
     <div class="product-modal-overlay" id="productModal">
         <div class="product-modal-card">
-            <!-- Új header konténer a jobb felső gomboknak -->
+            <!-- Fejléc konténer a jobb felső gomboknak -->
             <div class="product-modal-header">
                 <!-- Hárompontos menü a modálban -->
                 <div class="product-menu" id="productMenuContainer" style="display: none;">
@@ -1817,10 +1941,7 @@ try {
 
             <!-- Termék adatok -->
             <div class="product-details">
-                <div class="product-details-header">
-                    <h2 class="product-title" id="productTitle"></h2>
-                    <!-- A menü ELTÁVOLÍTVA innen, mert feljebb került a header-be -->
-                </div>
+                <h2 class="product-title" id="productTitle"></h2>
 
                 <div class="product-price" id="productPrice"></div>
                 <div class="product-seller" id="productSeller"></div>
@@ -1832,6 +1953,14 @@ try {
                     🛒 Vásárlás
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Lightbox a képek nagyításához -->
+    <div class="lightbox-overlay" id="lightboxOverlay">
+        <div class="lightbox-content">
+            <img src="" alt="Nagyított kép" class="lightbox-image" id="lightboxImage">
+            <button class="lightbox-close" id="lightboxClose">✕</button>
         </div>
     </div>
 
@@ -2134,6 +2263,11 @@ try {
         const productModal = document.getElementById('productModal');
         const closeProductModalBtn = document.getElementById('closeProductModalBtn');
         
+        // Lightbox elements
+        const lightboxOverlay = document.getElementById('lightboxOverlay');
+        const lightboxImage = document.getElementById('lightboxImage');
+        const lightboxClose = document.getElementById('lightboxClose');
+        
         // Current product data
         let currentProductImages = [];
         let currentImageIndex = 0;
@@ -2256,9 +2390,17 @@ try {
         function openProductModal() {
             productModal.classList.add('active');
             document.body.style.overflow = 'hidden';
+            
+            // Kis késleltetéssel hívjuk meg, hogy a DOM frissüljön
+            setTimeout(() => {
+                adjustImageContainerHeight();
+            }, 100);
         }
 
         function closeProductModal() {
+            if (lightboxOverlay.classList.contains('active')) {
+                closeLightbox();
+            }
             productModal.classList.remove('active');
             document.body.style.overflow = '';
         }
@@ -2266,7 +2408,13 @@ try {
         function setMainImage(index) {
             if (index >= 0 && index < currentProductImages.length) {
                 currentImageIndex = index;
-                document.getElementById('productMainImage').src = currentProductImages[index];
+                const mainImage = document.getElementById('productMainImage');
+                mainImage.src = currentProductImages[index];
+                
+                // Kép betöltése után állítsuk be a konténer magasságát
+                mainImage.onload = function() {
+                    adjustImageContainerHeight();
+                };
                 
                 // Update active thumbnail
                 document.querySelectorAll('.product-thumbnail').forEach((thumb, i) => {
@@ -2279,6 +2427,32 @@ try {
             }
         }
 
+        function adjustImageContainerHeight() {
+            const mainImage = document.getElementById('productMainImage');
+            const imageContainer = document.querySelector('.product-main-image-container');
+            const gallery = document.querySelector('.product-gallery');
+            const thumbnails = document.querySelector('.product-thumbnails');
+            
+            if (mainImage.complete && mainImage.naturalHeight > 0) {
+                // Számoljuk ki a rendelkezésre álló helyet
+                const galleryPadding = 32; // 2rem padding (1rem felül + 1rem alul)
+                const thumbnailsHeight = thumbnails ? thumbnails.offsetHeight : 100;
+                const availableHeight = gallery.clientHeight - galleryPadding - thumbnailsHeight - 20; // 20px margó
+                
+                // A kép magassága ne legyen nagyobb, mint a rendelkezésre álló hely
+                const imageHeight = Math.min(mainImage.naturalHeight, availableHeight);
+                
+                imageContainer.style.height = imageHeight + 'px';
+            }
+        }
+
+        // Ablak átméretezéskor is igazítsuk
+        window.addEventListener('resize', () => {
+            if (productModal.classList.contains('active')) {
+                adjustImageContainerHeight();
+            }
+        });
+
         // Gallery navigation
         document.getElementById('galleryPrev').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -2286,7 +2460,7 @@ try {
             if (newIndex >= 0) {
                 setMainImage(newIndex);
             } else {
-                setMainImage(currentProductImages.length - 1); // Loop to last
+                setMainImage(currentProductImages.length - 1);
             }
         });
 
@@ -2296,7 +2470,7 @@ try {
             if (newIndex < currentProductImages.length) {
                 setMainImage(newIndex);
             } else {
-                setMainImage(0); // Loop to first
+                setMainImage(0);
             }
         });
 
@@ -2315,7 +2489,7 @@ try {
             }
         });
 
-        // Vásárlás gomb (még nem csinál semmit)
+        // Vásárlás gomb
         document.getElementById('productBuyBtn').addEventListener('click', () => {
             alert('Vásárlás funkció még nem elérhető!');
         });
@@ -2325,11 +2499,39 @@ try {
             const menu = button.nextElementSibling;
             menu.classList.toggle('show');
             
-            // Close other menus
             document.querySelectorAll('.product-menu-content').forEach(m => {
                 if (m !== menu) m.classList.remove('show');
             });
         }
+
+        // Lightbox functionality
+        const productMainImage = document.getElementById('productMainImage');
+        
+        productMainImage.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (productMainImage.src && !productMainImage.src.includes('svg')) {
+                lightboxImage.src = productMainImage.src;
+                lightboxOverlay.classList.add('active');
+            }
+        });
+
+        function closeLightbox() {
+            lightboxOverlay.classList.remove('active');
+        }
+
+        lightboxClose.addEventListener('click', closeLightbox);
+        
+        lightboxOverlay.addEventListener('click', (e) => {
+            if (e.target === lightboxOverlay) {
+                closeLightbox();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightboxOverlay.classList.contains('active')) {
+                closeLightbox();
+            }
+        });
     </script>
 </body>
 
