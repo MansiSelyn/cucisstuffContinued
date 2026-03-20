@@ -1,28 +1,28 @@
 /* ── DARK THEME ── */
 
 :root {
-    --orange-bright:   #ff9a1f;
-    --orange-mid:      #e07800;
-    --orange-deep:     #b35500;
-    --orange-glow:     rgba(255, 140, 0, 0.55);
-    --orange-subtle:   rgba(255, 140, 0, 0.12);
-    --glass-bg:        rgba(6, 6, 6, 0.78);
-    --glass-border:    rgba(255, 140, 0, 0.18);
-    --glass-shine:     rgba(255, 255, 255, 0.06);
-    --text-primary:    #f5f0e8;
-    --text-muted:      #8a7a65;
-    --input-bg:        rgba(20, 16, 10, 0.92);
-    --shadow-orange:   0 0 40px rgba(255, 120, 0, 0.22);
-    --shadow-deep:     0 30px 80px rgba(0, 0, 0, 0.9);
+    --orange-bright: #ff9a1f;
+    --orange-mid: #e07800;
+    --orange-deep: #b35500;
+    --orange-glow: rgba(255, 140, 0, 0.55);
+    --orange-subtle: rgba(255, 140, 0, 0.12);
+    --glass-bg: rgba(6, 6, 6, 0.78);
+    --glass-border: rgba(255, 140, 0, 0.18);
+    --glass-shine: rgba(255, 255, 255, 0.06);
+    --text-primary: #f5f0e8;
+    --text-muted: #8a7a65;
+    --input-bg: rgba(20, 16, 10, 0.92);
+    --shadow-orange: 0 0 40px rgba(255, 120, 0, 0.22);
+    --shadow-deep: 0 30px 80px rgba(0, 0, 0, 0.9);
 
-    --body-bg:         #000;
+    --body-bg: #000;
     --scrollbar-track: #0a0a0a;
     --scrollbar-thumb: rgba(255, 120, 0, 0.3);
     --scrollbar-thumb-hover: rgba(255, 140, 0, 0.5);
     --placeholder-color: #5a4c3a;
-    --input-focus-bg:  rgba(15, 10, 4, 0.95);
-    --status-bg-from:  rgba(10, 6, 0, 0.98);
-    --status-bg-to:    rgba(0, 0, 0, 0.92);
+    --input-focus-bg: rgba(15, 10, 4, 0.95);
+    --status-bg-from: rgba(10, 6, 0, 0.98);
+    --status-bg-to: rgba(0, 0, 0, 0.92);
 }
 
 /* Base dark gradient */
@@ -45,6 +45,7 @@ body::after {
 .orb-1 {
     background: radial-gradient(circle, rgba(255, 140, 0, 0.25) 0%, rgba(255, 80, 0, 0.08) 45%, transparent 70%);
 }
+
 .orb-2 {
     background: radial-gradient(circle, rgba(180, 60, 0, 0.20) 0%, rgba(100, 30, 0, 0.06) 50%, transparent 70%);
 }
@@ -150,8 +151,13 @@ button[type="button"]:hover {
 }
 
 /* Theme toggle button (dark mode — show sun icon) */
-#themeToggle .icon-moon { display: none; }
-#themeToggle .icon-sun  { display: inline; }
+#themeToggle .icon-moon {
+    display: none;
+}
+
+#themeToggle .icon-sun {
+    display: inline;
+}
 
 /* ============================================
    MAIN.PHP DARK THEME OVERRIDES

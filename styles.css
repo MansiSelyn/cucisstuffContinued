@@ -3,7 +3,9 @@
 /* ── THEME IMPORT ── */
 /* Az aktív téma a <head>-ben van betöltve JS által (theme-dark.css / theme-light.css) */
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -70,8 +72,15 @@ body {
 }
 
 @keyframes orbPulse {
-    from { transform: scale(1) translate(0, 0); opacity: 0.8; }
-    to   { transform: scale(1.15) translate(20px, 15px); opacity: 1; }
+    from {
+        transform: scale(1) translate(0, 0);
+        opacity: 0.8;
+    }
+
+    to {
+        transform: scale(1.15) translate(20px, 15px);
+        opacity: 1;
+    }
 }
 
 /* ── THEME TOGGLE BUTTON ── */
@@ -153,8 +162,15 @@ h1 span {
 }
 
 @keyframes titleFadeIn {
-    from { opacity: 0; transform: translateY(-12px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ── GLASSMORPHIC CARD ── */
@@ -178,8 +194,15 @@ form {
 }
 
 @keyframes cardRise {
-    from { opacity: 0; transform: translateY(24px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 form::before {
@@ -289,10 +312,22 @@ button[type="submit"]:active {
 }
 
 /* ── SCROLLBAR ── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--scrollbar-track); }
-::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
 
 /* ── SELECTION ── */
 ::selection {
@@ -314,11 +349,13 @@ button[type="submit"]:active {
         padding: 24px;
         padding-top: 80px;
     }
+
     h1 {
         font-size: 3.2rem;
         margin-bottom: 40px;
         letter-spacing: 8px;
     }
+
     form {
         max-width: 680px;
         width: 100%;
@@ -326,23 +363,28 @@ button[type="submit"]:active {
         gap: 28px;
         border-radius: 36px;
     }
+
     input {
         padding: 22px 28px;
         font-size: 1.3rem;
         border-radius: 70px;
     }
+
     input::placeholder {
         font-size: 1.2rem;
     }
+
     button {
         padding: 24px;
         font-size: 1.3rem;
         letter-spacing: 4px;
         border-radius: 70px;
     }
+
     .or-separator {
         margin: 18px 0 12px;
     }
+
     .or-separator span {
         font-size: 0.9rem;
         padding: 0 24px;
@@ -350,24 +392,77 @@ button[type="submit"]:active {
 }
 
 @media (min-width: 1201px) and (max-width: 1600px) {
-    body { padding-top: 70px; }
-    form { max-width: 520px; padding: 48px 50px 44px; }
-    h1 { font-size: 2.8rem; }
-    input { padding: 18px 24px; font-size: 1.1rem; }
-    button { padding: 18px; font-size: 1.1rem; }
+    body {
+        padding-top: 70px;
+    }
+
+    form {
+        max-width: 520px;
+        padding: 48px 50px 44px;
+    }
+
+    h1 {
+        font-size: 2.8rem;
+    }
+
+    input {
+        padding: 18px 24px;
+        font-size: 1.1rem;
+    }
+
+    button {
+        padding: 18px;
+        font-size: 1.1rem;
+    }
 }
 
 @media (min-width: 1601px) {
-    form { max-width: 480px; padding: 42px 48px 38px; }
-    h1 { font-size: 2.6rem; }
-    input { padding: 14px 20px; font-size: 0.95rem; }
-    button { padding: 15px; font-size: 0.9rem; }
+    form {
+        max-width: 480px;
+        padding: 42px 48px 38px;
+    }
+
+    h1 {
+        font-size: 2.6rem;
+    }
+
+    input {
+        padding: 14px 20px;
+        font-size: 0.95rem;
+    }
+
+    button {
+        padding: 15px;
+        font-size: 0.9rem;
+    }
 }
 
 @media (max-width: 400px) {
-    body { padding: 16px; padding-top: 70px; }
-    h1 { font-size: 2.4rem; margin-bottom: 30px; letter-spacing: 5px; }
-    form { max-width: 100%; padding: 36px 24px 32px; gap: 20px; border-radius: 28px; }
-    input { padding: 18px 22px; font-size: 1.1rem; }
-    button { padding: 20px; font-size: 1.1rem; }
+    body {
+        padding: 16px;
+        padding-top: 70px;
+    }
+
+    h1 {
+        font-size: 2.4rem;
+        margin-bottom: 30px;
+        letter-spacing: 5px;
+    }
+
+    form {
+        max-width: 100%;
+        padding: 36px 24px 32px;
+        gap: 20px;
+        border-radius: 28px;
+    }
+
+    input {
+        padding: 18px 22px;
+        font-size: 1.1rem;
+    }
+
+    button {
+        padding: 20px;
+        font-size: 1.1rem;
+    }
 }

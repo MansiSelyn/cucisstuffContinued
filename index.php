@@ -1,4 +1,4 @@
-<?php 
+<?php
 session_start();
 $status = '';
 
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param("ss", $_POST['felhasznalonev'], $_POST['felhasznalonev']);
                 $stmt->execute();
                 $result = $stmt->get_result();
-                
+
                 if ($result->num_rows === 1) {
                     $row = $result->fetch_assoc();
                     if (password_verify($_POST['jelszo'], $row['password_hash'])) {
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $status = "Hiányzó felhasználónév/email vagy jelszó";
         }
     }
-    
+
     // REGISZTRÁCIÓ KEZELÉSE
     if (isset($_POST['register'])) {
         if (empty($_POST['felhasznalonev']) || empty($_POST['email']) || empty($_POST['jelszo']) || empty($_POST['jelszo2'])) {
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param("ss", $_POST['email'], $_POST['felhasznalonev']);
                 $stmt->execute();
                 $result = $stmt->get_result();
-                
+
                 if ($result->num_rows > 0) {
                     $row = $result->fetch_assoc();
                     if ($row['email'] == $_POST['email']) {
@@ -82,15 +82,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 } else {
                     $hash = password_hash($_POST['jelszo'], PASSWORD_DEFAULT);
-                    
+
                     $stmt = $conn->prepare("INSERT INTO passwords (password_hash) VALUES (?)");
                     $stmt->bind_param("s", $hash);
                     $stmt->execute();
                     $password_id = $stmt->insert_id;
-                    
+
                     $stmt = $conn->prepare("INSERT INTO users (email, username, password_id) VALUES (?, ?, ?)");
                     $stmt->bind_param("ssi", $_POST['email'], $_POST['felhasznalonev'], $password_id);
-                    
+
                     if ($stmt->execute()) {
                         $mode = 'login';
                         $status = "Sikeres regisztráció";
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-} 
+}
 ?>
 
 <!DOCTYPE html>
@@ -148,8 +148,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php if ($mode === 'login'): ?>
         <!-- BEJELENTKEZÉSI ŰRLAP -->
         <form action="" method="post" id="loginForm">
-            <input type="text" name="felhasznalonev" placeholder="Felhasználónév vagy email" 
-                   value="<?php echo isset($_POST['felhasznalonev']) ? htmlspecialchars($_POST['felhasznalonev']) : ''; ?>">
+            <input type="text" name="felhasznalonev" placeholder="Felhasználónév vagy email"
+                value="<?php echo isset($_POST['felhasznalonev']) ? htmlspecialchars($_POST['felhasznalonev']) : ''; ?>">
             <input type="password" name="jelszo" placeholder="Jelszó">
             <button type="submit" name="login">Bejelentkezés</button>
             <div class="or-separator"><span>VAGY</span></div>
@@ -158,10 +158,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php elseif ($mode === 'register'): ?>
         <!-- REGISZTRÁCIÓS ŰRLAP -->
         <form action="" method="post" id="registerForm">
-            <input type="text" name="felhasznalonev" placeholder="Felhasználónév" 
-                   value="<?php echo isset($_POST['felhasznalonev']) ? htmlspecialchars($_POST['felhasznalonev']) : ''; ?>">
-            <input type="email" name="email" placeholder="Email" 
-                   value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+            <input type="text" name="felhasznalonev" placeholder="Felhasználónév"
+                value="<?php echo isset($_POST['felhasznalonev']) ? htmlspecialchars($_POST['felhasznalonev']) : ''; ?>">
+            <input type="email" name="email" placeholder="Email"
+                value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
             <input type="password" name="jelszo" placeholder="Jelszó">
             <input type="password" name="jelszo2" placeholder="Jelszó megerősítése">
             <button type="submit" name="register">Regisztráció</button>
