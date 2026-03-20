@@ -537,7 +537,6 @@ try {
                 opacity: 0;
                 transform: translateY(-10px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -554,56 +553,54 @@ try {
             z-index: 1;
         }
 
-        /* Items grid - reszponzív rács */
+        /* Items grid - reszponzív rács tájolás alapján */
         .items-grid {
             display: grid;
             gap: 1.5rem;
             width: 100%;
         }
 
-        /* Alapértelmezett rács - legnagyobb képernyők */
-        .items-grid {
-            grid-template-columns: repeat(8, 1fr);
-        }
-
-        /* Szélesség alapú töréspontok */
-        @media (max-width: 1800px) {
+        /* Landscape mód (szélesebb, mint magas) - 8 oszlop */
+        @media (orientation: landscape) {
             .items-grid {
-                grid-template-columns: repeat(7, 1fr);
+                grid-template-columns: repeat(8, 1fr);
             }
         }
 
-        @media (max-width: 1600px) {
-            .items-grid {
-                grid-template-columns: repeat(6, 1fr);
-            }
-        }
-
-        @media (max-width: 1400px) {
-            .items-grid {
-                grid-template-columns: repeat(5, 1fr);
-            }
-        }
-
-        @media (max-width: 1200px) {
+        /* Portrait mód (magasabb, mint széles) - 4 oszlop */
+        @media (orientation: portrait) {
             .items-grid {
                 grid-template-columns: repeat(4, 1fr);
             }
         }
 
-        @media (max-width: 1000px) {
+        /* Extra nagy landscape képernyőkre további oszlopok */
+        @media (orientation: landscape) and (min-width: 2000px) {
+            .items-grid {
+                grid-template-columns: repeat(10, 1fr);
+            }
+        }
+
+        @media (orientation: landscape) and (min-width: 2500px) {
+            .items-grid {
+                grid-template-columns: repeat(12, 1fr);
+            }
+        }
+
+        /* Extra kis portrait képernyőkre kevesebb oszlop */
+        @media (orientation: portrait) and (max-width: 800px) {
             .items-grid {
                 grid-template-columns: repeat(3, 1fr);
             }
         }
 
-        @media (max-width: 800px) {
+        @media (orientation: portrait) and (max-width: 600px) {
             .items-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
 
-        @media (max-width: 600px) {
+        @media (orientation: portrait) and (max-width: 400px) {
             .items-grid {
                 grid-template-columns: 1fr;
             }
@@ -1802,10 +1799,6 @@ try {
         }
 
         @media (max-width: 600px) {
-            .items-grid {
-                grid-template-columns: 1fr;
-            }
-
             .pagination-container {
                 padding: 0.5rem 1rem;
             }
