@@ -152,3 +152,377 @@ button[type="button"]:hover {
 /* Theme toggle button (dark mode — show sun icon) */
 #themeToggle .icon-moon { display: none; }
 #themeToggle .icon-sun  { display: inline; }
+
+/* ============================================
+   MAIN.PHP DARK THEME OVERRIDES
+   ============================================ */
+
+body[data-theme="dark"] {
+    background: #000 !important;
+    color: #f5f0e8 !important;
+}
+
+body[data-theme="dark"] .account-summary {
+    border-color: rgba(255, 140, 0, 0.38);
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .account-summary:hover {
+    background: rgba(255, 140, 0, 0.1);
+    border-color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .account-dropdown {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 140, 0, 0.25);
+}
+
+body[data-theme="dark"] .user-info {
+    color: var(--text-primary);
+}
+
+body[data-theme="dark"] .user-info strong {
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .dropdown-divider {
+    background: linear-gradient(90deg, transparent, var(--orange-bright), transparent);
+}
+
+body[data-theme="dark"] .logout-button span:hover {
+    background: rgba(255, 140, 0, 0.15);
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .upload-btn {
+    background: rgba(255, 140, 0, 0.12);
+    border-color: rgba(255, 140, 0, 0.3);
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .upload-btn:hover {
+    background: rgba(255, 140, 0, 0.25);
+    border-color: var(--orange-bright);
+    box-shadow: 0 0 16px rgba(255, 140, 0, 0.35);
+}
+
+body[data-theme="dark"] .admin-btn {
+    background: rgba(255, 215, 0, 0.12);
+    border-color: rgba(255, 215, 0, 0.3);
+    color: #ffd700;
+}
+
+body[data-theme="dark"] .admin-btn:hover {
+    background: rgba(255, 215, 0, 0.25);
+    border-color: #ffd700;
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.35);
+}
+
+body[data-theme="dark"] .item-card {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 140, 0, 0.2);
+    box-shadow: 0 0 30px rgba(255, 140, 0, 0.1);
+    color: var(--text-primary);
+}
+
+body[data-theme="dark"] .item-card:hover {
+    border-color: var(--orange-bright);
+    box-shadow: 0 0 40px rgba(255, 140, 0, 0.2);
+}
+
+body[data-theme="dark"] .item-title,
+body[data-theme="dark"] .item-price {
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .item-seller,
+body[data-theme="dark"] .item-date {
+    color: var(--text-primary);
+    opacity: 0.6;
+}
+
+body[data-theme="dark"] .item-image {
+    border-color: rgba(255, 140, 0, 0.2);
+}
+
+body[data-theme="dark"] .item-image-placeholder {
+    background: rgba(255, 140, 0, 0.1);
+    border: 1px solid rgba(255, 140, 0, 0.2);
+}
+
+body[data-theme="dark"] .item-image-placeholder .placeholder-text {
+    color: var(--orange-bright);
+    opacity: 0.5;
+}
+
+body[data-theme="dark"] .image-count-badge {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: rgba(255, 140, 0, 0.3);
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .card-menu-button {
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .card-menu-button:hover {
+    color: #ffaa33;
+}
+
+body[data-theme="dark"] .card-menu-content {
+    background: rgba(0, 0, 0, 0.9);
+    border-color: rgba(255, 140, 0, 0.3);
+}
+
+body[data-theme="dark"] .card-menu-item {
+    color: var(--text-primary);
+}
+
+body[data-theme="dark"] .card-menu-item:hover {
+    background: rgba(255, 140, 0, 0.2);
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .pagination-container {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: rgba(255, 140, 0, 0.2);
+}
+
+body[data-theme="dark"] .pagination-btn {
+    background: rgba(255, 140, 0, 0.1);
+    border-color: rgba(255, 140, 0, 0.3);
+    color: var(--text-primary);
+}
+
+body[data-theme="dark"] .pagination-btn:hover {
+    background: rgba(255, 140, 0, 0.2);
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .modal-card {
+    background: rgba(10, 10, 10, 0.92);
+    border-color: rgba(255, 140, 0, 0.35);
+    color: var(--text-primary);
+}
+
+body[data-theme="dark"] .modal-title {
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .modal-close {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+body[data-theme="dark"] .modal-close:hover {
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .form-label {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+body[data-theme="dark"] .report-modal-content {
+    background: rgba(10, 10, 10, 0.95);
+    border-color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .report-modal-title {
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .report-form-textarea {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 140, 0, 0.3);
+    color: var(--text-primary);
+}
+
+body[data-theme="dark"] .report-form-textarea:focus {
+    border-color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .report-submit-btn {
+    background: linear-gradient(135deg, var(--orange-bright), #ff5500);
+}
+
+body[data-theme="dark"] .report-submit-btn:hover {
+    box-shadow: 0 5px 20px rgba(255, 140, 0, 0.4);
+}
+
+/* ============================================
+   PRODUCT MODAL - DARK THEME
+   ============================================ */
+body[data-theme="dark"] .product-modal-overlay {
+    background: rgba(0, 0, 0, 0.98) !important;
+}
+
+body[data-theme="dark"] .product-modal-card {
+    background: rgba(5, 5, 5, 0.99) !important;
+    border-color: rgba(255, 140, 0, 0.3) !important;
+}
+
+body[data-theme="dark"] .product-modal-close {
+    background: rgba(20, 20, 20, 0.8);
+    border-color: var(--orange-bright);
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .product-modal-close:hover {
+    background: var(--orange-bright);
+    color: black;
+}
+
+body[data-theme="dark"] .product-gallery {
+    background: rgba(0, 0, 0, 0.3) !important;
+}
+
+body[data-theme="dark"] .product-main-image-container {
+    background: rgba(0, 0, 0, 0.5) !important;
+    border-color: rgba(255, 140, 0, 0.2) !important;
+}
+
+body[data-theme="dark"] .product-details {
+    background: rgba(10, 10, 10, 0.8) !important;
+    border-color: rgba(255, 140, 0, 0.2) !important;
+}
+
+body[data-theme="dark"] .product-title {
+    color: var(--orange-bright) !important;
+}
+
+body[data-theme="dark"] .product-price {
+    color: var(--orange-bright) !important;
+    text-shadow: 0 0 30px var(--orange-glow) !important;
+}
+
+body[data-theme="dark"] .product-seller {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+body[data-theme="dark"] .product-seller strong {
+    color: var(--orange-bright) !important;
+}
+
+body[data-theme="dark"] .product-date {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+body[data-theme="dark"] .product-description {
+    background: rgba(0, 0, 0, 0.5) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(255, 140, 0, 0.2) !important;
+}
+
+body[data-theme="dark"] .product-buy-btn {
+    background: linear-gradient(135deg, #00c851, #007e33) !important;
+}
+
+body[data-theme="dark"] .product-buy-btn:hover {
+    box-shadow: 0 10px 30px rgba(0, 200, 0, 0.4) !important;
+}
+
+body[data-theme="dark"] .product-thumbnail {
+    border-color: transparent;
+}
+
+body[data-theme="dark"] .product-thumbnail.active {
+    border-color: var(--orange-bright) !important;
+    box-shadow: 0 0 20px var(--orange-glow) !important;
+}
+
+body[data-theme="dark"] .gallery-nav {
+    background: rgba(0, 0, 0, 0.7) !important;
+    border-color: var(--orange-bright) !important;
+    color: white !important;
+}
+
+body[data-theme="dark"] .gallery-nav:hover {
+    background: var(--orange-bright) !important;
+    color: black !important;
+}
+
+body[data-theme="dark"] .product-menu-button {
+    background: rgba(20, 20, 20, 0.8) !important;
+    border-color: var(--orange-bright) !important;
+    color: var(--orange-bright) !important;
+}
+
+body[data-theme="dark"] .product-menu-button:hover {
+    background: var(--orange-bright) !important;
+    color: black !important;
+}
+
+body[data-theme="dark"] .product-menu-content {
+    background: rgba(10, 10, 10, 0.95) !important;
+    border-color: var(--orange-bright) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 140, 0, 0.2) !important;
+}
+
+body[data-theme="dark"] .product-menu-item {
+    color: white !important;
+}
+
+body[data-theme="dark"] .product-menu-item:hover {
+    background: rgba(255, 140, 0, 0.2) !important;
+    color: var(--orange-bright) !important;
+}
+
+body[data-theme="dark"] .product-menu-item.delete:hover {
+    background: rgba(255, 0, 0, 0.2) !important;
+    color: #ff0000 !important;
+}
+
+/* ============================================
+   LIGHTBOX - DARK THEME
+   ============================================ */
+body[data-theme="dark"] .lightbox-overlay {
+    background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body[data-theme="dark"] .lightbox-image {
+    border-color: var(--orange-bright) !important;
+}
+
+body[data-theme="dark"] .lightbox-close {
+    background: rgba(20, 20, 20, 0.9) !important;
+    border-color: var(--orange-bright) !important;
+    color: var(--orange-bright) !important;
+}
+
+body[data-theme="dark"] .lightbox-close:hover {
+    background: var(--orange-bright) !important;
+    color: black !important;
+}
+
+/* ============================================
+   H1 TEXT-SHADOW - DARK THEME
+   ============================================ */
+body[data-theme="dark"] h1 {
+    text-shadow:
+        0 0 10px rgba(255, 140, 0, 0.6),
+        0 0 30px rgba(255, 80, 0, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* ============================================
+   SCROLLBAR - DARK THEME (EGYSZERŰSÍTVE)
+   ============================================ */
+body[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+body[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: rgba(255, 120, 0, 0.3);
+}
+
+body[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 140, 0, 0.5);
+}
+
+/* ============================================
+   SELECTION - DARK THEME
+   ============================================ */
+body[data-theme="dark"] ::selection {
+    background: rgba(255, 120, 0, 0.35);
+    color: #fff;
+}

@@ -266,6 +266,8 @@ try {
             --text-primary: #ffffff;
             --shadow-deep: 0 10px 30px rgba(0, 0, 0, 0.5);
             --shadow-orange: 0 0 20px rgba(255, 140, 0, 0.2);
+            --placeholder-bg: rgba(255, 140, 0, 0.1);
+            --placeholder-text: rgba(255, 140, 0, 0.7);
         }
 
         body {
@@ -552,27 +554,19 @@ try {
             z-index: 1;
         }
 
+        /* Items grid - reszponzív rács */
         .items-grid {
             display: grid;
-            grid-template-columns: repeat(8, 1fr);
             gap: 1.5rem;
             width: 100%;
         }
 
-        /* Reszponzív rács - tájolás alapú */
-        @media (orientation: portrait) {
-            .items-grid {
-                grid-template-columns: repeat(5, 1fr) !important;
-            }
-        }
-        
-        @media (orientation: landscape) {
-            .items-grid {
-                grid-template-columns: repeat(8, 1fr) !important;
-            }
+        /* Alapértelmezett rács - legnagyobb képernyők */
+        .items-grid {
+            grid-template-columns: repeat(8, 1fr);
         }
 
-        /* Meglévő szélesség alapú töréspontok */
+        /* Szélesség alapú töréspontok */
         @media (max-width: 1800px) {
             .items-grid {
                 grid-template-columns: repeat(7, 1fr);
@@ -606,6 +600,12 @@ try {
         @media (max-width: 800px) {
             .items-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .items-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -654,12 +654,24 @@ try {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 140, 0, 0.1);
+            background: var(--placeholder-bg);
         }
 
         .item-image-placeholder .placeholder-text {
+            color: var(--placeholder-text);
+        }
+
+        .image-count-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            border: 1px solid var(--orange-glow);
             color: var(--orange-bright);
-            opacity: 0.5;
         }
 
         .item-title {
@@ -689,19 +701,6 @@ try {
             font-size: 0.7rem;
             color: var(--text-primary);
             opacity: 0.4;
-        }
-
-        .image-count-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            padding: 0.3rem 0.6rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            border: 1px solid var(--orange-glow);
-            color: var(--orange-bright);
         }
 
         /* Card Menu Styles */
@@ -1022,7 +1021,7 @@ try {
             cursor: pointer;
         }
 
-        .theme-switch input:checked + .theme-switch-track {
+        .theme-switch input:checked+.theme-switch-track {
             background: rgba(176, 203, 31, 0.25);
             border-color: #B0CB1F;
         }
@@ -1034,12 +1033,12 @@ try {
             width: 16px;
             height: 16px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.5);
+            background: rgba(255, 255, 255, 0.5);
             transition: transform 0.3s, background 0.3s;
             pointer-events: none;
         }
 
-        .theme-switch input:checked ~ .theme-switch-thumb {
+        .theme-switch input:checked~.theme-switch-thumb {
             transform: translateX(18px);
             background: #B0CB1F;
         }
@@ -1526,7 +1525,7 @@ try {
             display: flex;
             align-items: center;
             justify-content: center;
-            /* A magasságot JavaScript állítja be */
+            min-height: 300px;
         }
 
         .product-main-image {
@@ -1541,6 +1540,14 @@ try {
 
         .product-main-image:hover {
             opacity: 0.9;
+        }
+
+        .product-no-image-placeholder {
+            text-align: center;
+            font-size: 1.2rem;
+            padding: 2rem;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .gallery-nav {
@@ -1776,19 +1783,19 @@ try {
                 padding: 1rem;
                 overflow-y: auto;
             }
-            
+
             .product-gallery {
                 height: 50vh;
             }
-            
+
             .product-title {
                 font-size: 2rem;
             }
-            
+
             .product-price {
                 font-size: 2.5rem;
             }
-            
+
             .product-description {
                 max-height: 300px;
             }
@@ -1815,23 +1822,23 @@ try {
             .product-modal-card {
                 padding: 0.5rem;
             }
-            
+
             .product-gallery {
                 height: 40vh;
             }
-            
+
             .product-details {
                 padding: 1rem;
             }
-            
+
             .product-title {
                 font-size: 1.5rem;
             }
-            
+
             .product-price {
                 font-size: 2rem;
             }
-            
+
             .product-description {
                 padding: 1rem;
                 font-size: 1rem;
@@ -1853,7 +1860,7 @@ try {
                 flex-direction: column;
                 align-items: center;
             }
-            
+
             .lightbox-image {
                 max-width: 95vw;
                 max-height: calc(95vh - 70px);
@@ -2047,15 +2054,18 @@ try {
                         <button class="product-menu-item delete" id="productDeleteBtn" style="display: none;">🗑️ Törlés</button>
                     </div>
                 </div>
-                
+
                 <!-- Bezáró gomb -->
                 <button class="product-modal-close" id="closeProductModalBtn">✕</button>
             </div>
-            
+
             <!-- Képgaléria -->
             <div class="product-gallery">
                 <div class="product-main-image-container">
-                    <img src="" alt="Termék képe" class="product-main-image" id="productMainImage">
+                    <img src="" alt="Termék képe" class="product-main-image" id="productMainImage" style="display: none;">
+                    <div class="product-no-image-placeholder unselectable" id="productNoImagePlaceholder" style="display: none;">
+                        📷 Nincs kép
+                    </div>
                     <button class="gallery-nav prev" id="galleryPrev">❮</button>
                     <button class="gallery-nav next" id="galleryNext">❯</button>
                 </div>
@@ -2100,22 +2110,22 @@ try {
                     $countStmt = $conn->prepare("SELECT COUNT(*) as image_count FROM item_images WHERE item_id = ?");
                     $countStmt->execute([$item['id']]);
                     $imageCount = $countStmt->fetch(PDO::FETCH_ASSOC)['image_count'];
-                    
+
                     // Get all images for this item (for the modal)
                     $allImagesStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? ORDER BY sort_order");
                     $allImagesStmt->execute([$item['id']]);
                     $allImages = $allImagesStmt->fetchAll(PDO::FETCH_COLUMN);
                 ?>
-                    <div class="item-card" 
-                         data-item-id="<?php echo $item['id']; ?>"
-                         data-item-title="<?php echo htmlspecialchars($item['title']); ?>"
-                         data-item-price="<?php echo number_format($item['price'], 0, ',', ' '); ?> Ft"
-                         data-item-seller="<?php echo htmlspecialchars($item['seller_name']); ?>"
-                         data-item-date="<?php echo date('Y-m-d', strtotime($item['created_at'])); ?>"
-                         data-item-description="<?php echo htmlspecialchars($item['description']); ?>"
-                         data-item-images='<?php echo json_encode($allImages); ?>'
-                         data-item-user-id="<?php echo $item['user_id']; ?>">
-                        
+                    <div class="item-card"
+                        data-item-id="<?php echo $item['id']; ?>"
+                        data-item-title="<?php echo htmlspecialchars($item['title']); ?>"
+                        data-item-price="<?php echo number_format($item['price'], 0, ',', ' '); ?> Ft"
+                        data-item-seller="<?php echo htmlspecialchars($item['seller_name']); ?>"
+                        data-item-date="<?php echo date('Y-m-d', strtotime($item['created_at'])); ?>"
+                        data-item-description="<?php echo htmlspecialchars($item['description']); ?>"
+                        data-item-images='<?php echo json_encode($allImages); ?>'
+                        data-item-user-id="<?php echo $item['user_id']; ?>">
+
                         <!-- Hárompontos menü -->
                         <?php
                         // Csak akkor jelenítjük meg a menüt, ha nem a saját termékünk, vagy ha admin vagyunk
@@ -2185,6 +2195,12 @@ try {
     </div>
 
     <script>
+        // Current product data - globális változók
+        let currentProductImages = [];
+        let currentImageIndex = 0;
+        let currentProductId = null;
+        let currentProductUserId = null;
+
         // Upload modal functionality
         const modal = document.getElementById('uploadModal');
         const openBtn = document.getElementById('openModalBtn');
@@ -2385,17 +2401,65 @@ try {
         // Product modal functionality
         const productModal = document.getElementById('productModal');
         const closeProductModalBtn = document.getElementById('closeProductModalBtn');
-        
+        const productMainImage = document.getElementById('productMainImage');
+        const productNoImagePlaceholder = document.getElementById('productNoImagePlaceholder');
+
         // Lightbox elements
         const lightboxOverlay = document.getElementById('lightboxOverlay');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
-        
-        // Current product data
-        let currentProductImages = [];
-        let currentImageIndex = 0;
-        let currentProductId = null;
-        let currentProductUserId = null;
+
+        // Set main image function
+        function setMainImage(index) {
+            if (index >= 0 && index < currentProductImages.length && currentProductImages[index]) {
+                productMainImage.style.display = 'block';
+                productNoImagePlaceholder.style.display = 'none';
+                productMainImage.src = currentProductImages[index];
+                currentImageIndex = index;
+                
+                productMainImage.onload = function() {
+                    adjustImageContainerHeight();
+                };
+                
+                productMainImage.onerror = function() {
+                    productMainImage.style.display = 'none';
+                    productNoImagePlaceholder.style.display = 'block';
+                    adjustImageContainerHeight();
+                };
+                
+                // Update active thumbnail
+                document.querySelectorAll('.product-thumbnail').forEach((thumb, i) => {
+                    if (i === index) {
+                        thumb.classList.add('active');
+                    } else {
+                        thumb.classList.remove('active');
+                    }
+                });
+            } else {
+                productMainImage.style.display = 'none';
+                productNoImagePlaceholder.style.display = 'block';
+                adjustImageContainerHeight();
+            }
+        }
+
+        function adjustImageContainerHeight() {
+            const imageContainer = document.querySelector('.product-main-image-container');
+            const gallery = document.querySelector('.product-gallery');
+            const thumbnails = document.querySelector('.product-thumbnails');
+
+            if (imageContainer) {
+                const galleryPadding = 32;
+                const thumbnailsHeight = thumbnails ? thumbnails.offsetHeight : 100;
+                const availableHeight = gallery.clientHeight - galleryPadding - thumbnailsHeight - 20;
+                
+                if (productMainImage.style.display !== 'none' && productMainImage.complete && productMainImage.naturalHeight > 0) {
+                    const imageHeight = Math.min(productMainImage.naturalHeight, availableHeight);
+                    imageContainer.style.height = imageHeight + 'px';
+                } else {
+                    imageContainer.style.height = Math.max(300, availableHeight) + 'px';
+                }
+            }
+        }
 
         // Add click event to all item cards
         document.querySelectorAll('.item-card').forEach(card => {
@@ -2404,7 +2468,7 @@ try {
                 if (e.target.closest('.card-menu') || e.target.closest('.report-modal')) {
                     return;
                 }
-                
+
                 // Get product data from data attributes
                 const productId = this.dataset.itemId;
                 const title = this.dataset.itemTitle;
@@ -2414,46 +2478,46 @@ try {
                 const description = this.dataset.itemDescription;
                 const images = JSON.parse(this.dataset.itemImages || '[]');
                 const userId = this.dataset.itemUserId;
-                
+
                 // Store current product data
                 currentProductId = productId;
                 currentProductUserId = userId;
                 currentProductImages = images;
                 currentImageIndex = 0;
-                
+
                 // Set product details in modal
                 document.getElementById('productTitle').textContent = title;
                 document.getElementById('productPrice').textContent = price;
                 document.getElementById('productSeller').innerHTML = `Eladó: <strong>${seller}</strong>`;
                 document.getElementById('productDate').textContent = date;
                 document.getElementById('productDescription').textContent = description;
-                
-                // Set main image
-                const mainImage = document.getElementById('productMainImage');
-                if (images.length > 0) {
-                    mainImage.src = images[0];
-                } else {
-                    mainImage.src = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22200%22%20height%3D%22200%22%20viewBox%3D%220%200%20200%20200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20fill%3D%22%23333%22%2F%3E%3Ctext%20x%3D%2250%22%20y%3D%22115%22%20font-family%3D%22Arial%22%20font-size%3D%2220%22%20fill%3D%22%23ff8c00%22%3E📷 Nincs kép%3C%2Ftext%3E%3C%2Fsvg%3E';
-                }
-                
+
                 // Setup thumbnails
                 const thumbnailsContainer = document.getElementById('productThumbnails');
                 thumbnailsContainer.innerHTML = '';
-                
-                images.forEach((img, index) => {
-                    const thumbnail = document.createElement('div');
-                    thumbnail.className = `product-thumbnail ${index === 0 ? 'active' : ''}`;
-                    thumbnail.innerHTML = `<img src="${img}" alt="Thumbnail ${index + 1}">`;
-                    thumbnail.addEventListener('click', () => {
-                        setMainImage(index);
+
+                if (images.length > 0) {
+                    images.forEach((img, index) => {
+                        const thumbnail = document.createElement('div');
+                        thumbnail.className = `product-thumbnail ${index === 0 ? 'active' : ''}`;
+                        thumbnail.innerHTML = `<img src="${img}" alt="Thumbnail ${index + 1}">`;
+                        thumbnail.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            setMainImage(index);
+                        });
+                        thumbnailsContainer.appendChild(thumbnail);
                     });
-                    thumbnailsContainer.appendChild(thumbnail);
-                });
-                
+                    
+                    // Set main image
+                    setMainImage(0);
+                } else {
+                    setMainImage(-1);
+                }
+
                 // Show/hide navigation based on number of images
                 const prevBtn = document.getElementById('galleryPrev');
                 const nextBtn = document.getElementById('galleryNext');
-                
+
                 if (images.length <= 1) {
                     prevBtn.classList.add('hidden');
                     nextBtn.classList.add('hidden');
@@ -2461,32 +2525,31 @@ try {
                     prevBtn.classList.remove('hidden');
                     nextBtn.classList.remove('hidden');
                 }
-                
+
                 // Setup menu based on user permissions
                 <?php if (isset($_SESSION['user_id'])): ?>
                     const isOwner = (parseInt(userId) === <?php echo $_SESSION['user_id']; ?>);
                     const isAdmin = <?php echo $isAdmin ? 'true' : 'false'; ?>;
-                    
+
                     const menuContainer = document.getElementById('productMenuContainer');
                     const reportBtn = document.getElementById('productReportBtn');
                     const deleteBtn = document.getElementById('productDeleteBtn');
-                    
+
                     // Show menu if not owner or is admin
                     if (!isOwner || isAdmin) {
                         menuContainer.style.display = 'block';
-                        
+
                         // Configure report button
                         reportBtn.onclick = () => {
                             closeProductModal();
                             openReportModal(productId);
                         };
-                        
+
                         // Configure delete button (admin only)
                         if (isAdmin) {
                             deleteBtn.style.display = 'block';
                             deleteBtn.onclick = () => {
                                 if (confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) {
-                                    // Create and submit delete form
                                     const form = document.createElement('form');
                                     form.method = 'POST';
                                     form.innerHTML = `
@@ -2504,7 +2567,7 @@ try {
                         menuContainer.style.display = 'none';
                     }
                 <?php endif; ?>
-                
+
                 // Open modal
                 openProductModal();
             });
@@ -2513,8 +2576,7 @@ try {
         function openProductModal() {
             productModal.classList.add('active');
             document.body.style.overflow = 'hidden';
-            
-            // Kis késleltetéssel hívjuk meg, hogy a DOM frissüljön
+
             setTimeout(() => {
                 adjustImageContainerHeight();
             }, 100);
@@ -2527,54 +2589,6 @@ try {
             productModal.classList.remove('active');
             document.body.style.overflow = '';
         }
-
-        function setMainImage(index) {
-            if (index >= 0 && index < currentProductImages.length) {
-                currentImageIndex = index;
-                const mainImage = document.getElementById('productMainImage');
-                mainImage.src = currentProductImages[index];
-                
-                // Kép betöltése után állítsuk be a konténer magasságát
-                mainImage.onload = function() {
-                    adjustImageContainerHeight();
-                };
-                
-                // Update active thumbnail
-                document.querySelectorAll('.product-thumbnail').forEach((thumb, i) => {
-                    if (i === index) {
-                        thumb.classList.add('active');
-                    } else {
-                        thumb.classList.remove('active');
-                    }
-                });
-            }
-        }
-
-        function adjustImageContainerHeight() {
-            const mainImage = document.getElementById('productMainImage');
-            const imageContainer = document.querySelector('.product-main-image-container');
-            const gallery = document.querySelector('.product-gallery');
-            const thumbnails = document.querySelector('.product-thumbnails');
-            
-            if (mainImage.complete && mainImage.naturalHeight > 0) {
-                // Számoljuk ki a rendelkezésre álló helyet
-                const galleryPadding = 32; // 2rem padding (1rem felül + 1rem alul)
-                const thumbnailsHeight = thumbnails ? thumbnails.offsetHeight : 100;
-                const availableHeight = gallery.clientHeight - galleryPadding - thumbnailsHeight - 20; // 20px margó
-                
-                // A kép magassága ne legyen nagyobb, mint a rendelkezésre álló hely
-                const imageHeight = Math.min(mainImage.naturalHeight, availableHeight);
-                
-                imageContainer.style.height = imageHeight + 'px';
-            }
-        }
-
-        // Ablak átméretezéskor is igazítsuk
-        window.addEventListener('resize', () => {
-            if (productModal.classList.contains('active')) {
-                adjustImageContainerHeight();
-            }
-        });
 
         // Gallery navigation
         document.getElementById('galleryPrev').addEventListener('click', (e) => {
@@ -2621,18 +2635,16 @@ try {
         function toggleProductMenu(button) {
             const menu = button.nextElementSibling;
             menu.classList.toggle('show');
-            
+
             document.querySelectorAll('.product-menu-content').forEach(m => {
                 if (m !== menu) m.classList.remove('show');
             });
         }
 
-        // Lightbox functionality - X a kép mellett
-        const productMainImage = document.getElementById('productMainImage');
-        
+        // Lightbox functionality
         productMainImage.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (productMainImage.src && !productMainImage.src.includes('svg')) {
+            if (productMainImage.src && productMainImage.style.display !== 'none' && !productMainImage.src.includes('svg')) {
                 lightboxImage.src = productMainImage.src;
                 lightboxOverlay.classList.add('active');
             }
@@ -2643,7 +2655,7 @@ try {
         }
 
         lightboxClose.addEventListener('click', closeLightbox);
-        
+
         lightboxOverlay.addEventListener('click', (e) => {
             if (e.target === lightboxOverlay) {
                 closeLightbox();
@@ -2655,6 +2667,14 @@ try {
                 closeLightbox();
             }
         });
+
+        // Ablak átméretezéskor is igazítsuk
+        window.addEventListener('resize', () => {
+            if (productModal.classList.contains('active')) {
+                adjustImageContainerHeight();
+            }
+        });
+
         // ── TÉMAVÁLTÓ ──
         (function() {
             const checkbox = document.getElementById('themeSwitchMain');
@@ -2665,8 +2685,39 @@ try {
                 localStorage.setItem('theme', theme);
                 checkbox.checked = (theme === 'light');
 
-                // Orb és body szín frissítés a main.php saját CSS-éhez
                 document.body.dataset.theme = theme;
+
+                // Placeholder színének dinamikus állítása
+                const placeholder = document.getElementById('productNoImagePlaceholder');
+                if (placeholder) {
+                    if (theme === 'light') {
+                        placeholder.style.color = '#2e7d32'; // zöld szín világos módban
+                    } else {
+                        placeholder.style.color = '#ff8c00'; // narancs szín sötét módban
+                    }
+                }
+
+                // Ha a termék modal nyitva van, frissítsük a képeket
+                if (productModal && productModal.classList.contains('active') && currentProductImages && currentProductImages.length > 0) {
+                    // Frissítsük a fő képet
+                    if (productMainImage && currentProductImages[currentImageIndex]) {
+                        productMainImage.src = currentProductImages[currentImageIndex];
+                    }
+                    
+                    // Frissítsük a thumbnailöket
+                    const thumbnailsContainer = document.getElementById('productThumbnails');
+                    if (thumbnailsContainer) {
+                        const thumbnails = thumbnailsContainer.querySelectorAll('.product-thumbnail');
+                        currentProductImages.forEach((img, index) => {
+                            if (thumbnails[index]) {
+                                const thumbnailImg = thumbnails[index].querySelector('img');
+                                if (thumbnailImg) {
+                                    thumbnailImg.src = img;
+                                }
+                            }
+                        });
+                    }
+                }
             }
 
             // Kezdeti állapot
@@ -2679,4 +2730,5 @@ try {
         })();
     </script>
 
+</body>
 </html>

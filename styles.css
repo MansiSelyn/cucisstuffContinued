@@ -29,27 +29,7 @@ body {
     transition: background 0.4s ease, color 0.4s ease;
 }
 
-/* ── LAYERED BACKGROUND ── */
-
-body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    transition: background 0.4s ease;
-}
-
-body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    transition: background 0.4s ease;
-}
-
 /* ── NOISE GRAIN ── */
-
 .noise {
     position: fixed;
     inset: -50%;
@@ -63,7 +43,6 @@ body::after {
 }
 
 /* ── FLOATING ORBS ── */
-
 .orb-1 {
     position: fixed;
     top: -80px;
@@ -96,7 +75,6 @@ body::after {
 }
 
 /* ── THEME TOGGLE BUTTON ── */
-
 #themeToggle {
     position: fixed;
     top: 14px;
@@ -133,7 +111,6 @@ body::after {
 }
 
 /* ── TOP STATUS BAR ── */
-
 .login-status {
     position: fixed;
     top: 0;
@@ -152,7 +129,6 @@ body::after {
 }
 
 /* ── HEADING ── */
-
 h1 {
     font-size: 2.6rem;
     font-weight: 300;
@@ -182,7 +158,6 @@ h1 span {
 }
 
 /* ── GLASSMORPHIC CARD ── */
-
 form {
     position: relative;
     z-index: 2;
@@ -228,20 +203,7 @@ form::after {
     transition: background 0.4s ease;
 }
 
-/* ── SECTION LABEL ── */
-
-.form-label {
-    font-size: 0.68rem;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    padding-left: 4px;
-    margin-bottom: -8px;
-    margin-top: 4px;
-}
-
 /* ── INPUTS ── */
-
 input {
     padding: 14px 20px;
     border-radius: 50px;
@@ -258,49 +220,7 @@ input::placeholder {
     font-size: 0.9rem;
 }
 
-/* ── INPUT ICON WRAPPER ── */
-
-.input-group {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input-group svg {
-    position: absolute;
-    right: 18px;
-    width: 16px;
-    height: 16px;
-    opacity: 0.3;
-    pointer-events: none;
-    color: var(--orange-bright);
-}
-
-.input-group input {
-    width: 100%;
-    padding-right: 44px;
-}
-
-/* ── FORGOT LINK ── */
-
-.forgot-link {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-align: right;
-    text-decoration: none;
-    letter-spacing: 0.5px;
-    transition: color 0.2s;
-    padding-right: 4px;
-    margin-top: -4px;
-}
-
-.forgot-link:hover {
-    color: var(--orange-bright);
-    text-shadow: 0 0 8px var(--orange-glow);
-}
-
 /* ── BUTTONS ── */
-
 button {
     padding: 15px;
     border-radius: 50px;
@@ -341,7 +261,6 @@ button[type="submit"]:active {
 }
 
 /* ── OR SEPARATOR ── */
-
 .or-separator {
     display: flex;
     align-items: center;
@@ -369,34 +288,27 @@ button[type="submit"]:active {
     z-index: 1;
 }
 
-/* ── CARD FOOTER ── */
-
-.card-footer {
-    margin-top: 6px;
-    text-align: center;
-    font-size: 0.68rem;
-    color: rgba(255, 140, 0, 0.18);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    user-select: none;
-}
-
 /* ── SCROLLBAR ── */
-
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
 ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 /* ── SELECTION ── */
-
 ::selection {
     background: rgba(255, 120, 0, 0.35);
     color: #fff;
 }
 
-/* ── RESZPONZÍV ── */
+/* ── UNSELECTABLE ── */
+.unselectable {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
 
+/* ── RESZPONZÍV ── */
 @media (max-width: 1200px) {
     body {
         padding: 24px;
@@ -414,32 +326,13 @@ button[type="submit"]:active {
         gap: 28px;
         border-radius: 36px;
     }
-    .form-label {
-        font-size: 0.9rem;
-        letter-spacing: 4px;
-        margin-bottom: -2px;
-    }
     input {
         padding: 22px 28px;
         font-size: 1.3rem;
         border-radius: 70px;
     }
-    .input-group svg {
-        width: 24px;
-        height: 24px;
-        right: 26px;
-        opacity: 0.7;
-    }
-    .input-group input {
-        padding-right: 60px;
-    }
     input::placeholder {
         font-size: 1.2rem;
-    }
-    .forgot-link {
-        font-size: 1rem;
-        margin-top: 0;
-        padding-right: 10px;
     }
     button {
         padding: 24px;
@@ -453,11 +346,6 @@ button[type="submit"]:active {
     .or-separator span {
         font-size: 0.9rem;
         padding: 0 24px;
-    }
-    .card-footer {
-        font-size: 0.85rem;
-        margin-top: 20px;
-        letter-spacing: 3px;
     }
 }
 
@@ -482,5 +370,4 @@ button[type="submit"]:active {
     form { max-width: 100%; padding: 36px 24px 32px; gap: 20px; border-radius: 28px; }
     input { padding: 18px 22px; font-size: 1.1rem; }
     button { padding: 20px; font-size: 1.1rem; }
-    .input-group svg { width: 20px; height: 20px; right: 20px; }
 }

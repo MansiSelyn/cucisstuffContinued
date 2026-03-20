@@ -248,17 +248,20 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Cuci's Stuff</title>
-    <link rel="stylesheet" href="styles.css">
     <style>
-        /* Global select none */
+        /* ============================================
+           ALAP STÍLUSOK - DARK MÓD ALAPÉRTELMEZETT
+        ============================================ */
         * {
             user-select: none;
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        /* Engedélyezzük a kijelölést input mezőkben */
         input, textarea {
             user-select: text;
             -webkit-user-select: text;
@@ -266,7 +269,68 @@ try {
             -ms-user-select: text;
         }
 
-        /* Admin specifikus stílusok */
+        body {
+            background: #0a0a0a;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            position: relative;
+            overflow-x: hidden;
+            transition: background 0.3s ease;
+        }
+
+        /* Háttér elemek */
+        .noise {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            width: 200%;
+            height: 200%;
+            background: transparent url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noise)" opacity="0.08"/%3E%3C/svg%3E') repeat;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        .orb-1, .orb-2 {
+            position: fixed;
+            width: min(60vw, 600px);
+            height: min(60vw, 600px);
+            border-radius: 50%;
+            filter: blur(min(8vw, 80px));
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.3;
+        }
+
+        .orb-1 {
+            top: -20vh;
+            left: -20vw;
+            background: radial-gradient(circle at 30% 30%, #ff8c00, transparent 70%);
+            animation: float1 20s infinite ease-in-out;
+        }
+
+        .orb-2 {
+            bottom: -20vh;
+            right: -20vw;
+            background: radial-gradient(circle at 70% 70%, #ff5500, transparent 70%);
+            animation: float2 25s infinite ease-in-out;
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(10vw, 10vh) scale(1.1); }
+            66% { transform: translate(-5vw, 15vh) scale(0.9); }
+        }
+
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-10vw, -10vh) scale(1.2); }
+            66% { transform: translate(5vw, -15vh) scale(0.8); }
+        }
+
+        /* Admin konténer */
         .admin-container {
             max-width: 1600px;
             margin: 0 auto;
@@ -275,6 +339,7 @@ try {
             z-index: 10;
         }
 
+        /* Header */
         .admin-header {
             display: flex;
             justify-content: space-between;
@@ -286,11 +351,12 @@ try {
 
         .admin-title {
             font-size: 2rem;
-            color: var(--orange-bright);
-            text-shadow: 0 0 20px var(--orange-glow);
+            color: #ff8c00;
+            text-shadow: 0 0 20px rgba(255, 140, 0, 0.5);
             margin: 0;
         }
 
+        /* Gombok */
         .admin-buttons {
             display: flex;
             gap: 1rem;
@@ -300,9 +366,9 @@ try {
         .admin-btn {
             padding: 0.75rem 1.5rem;
             background: rgba(255, 140, 0, 0.1);
-            border: 1px solid var(--orange-glow);
+            border: 1px solid rgba(255, 140, 0, 0.3);
             border-radius: 50px;
-            color: var(--text-primary);
+            color: #fff;
             font-size: 1rem;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -314,15 +380,15 @@ try {
 
         .admin-btn:hover {
             background: rgba(255, 140, 0, 0.25);
-            border-color: var(--orange-bright);
+            border-color: #ff8c00;
             transform: translateY(-2px);
             box-shadow: 0 0 20px rgba(255, 140, 0, 0.3);
         }
 
         .admin-btn.active {
             background: rgba(255, 140, 0, 0.3);
-            border-color: var(--orange-bright);
-            color: var(--orange-bright);
+            border-color: #ff8c00;
+            color: #ff8c00;
         }
 
         .back-btn {
@@ -335,12 +401,12 @@ try {
             border-color: rgba(255, 255, 255, 0.3);
         }
 
-        /* Admin táblázat */
+        /* Táblázat */
         .admin-table {
             width: 100%;
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
+            border: 1px solid rgba(255, 140, 0, 0.2);
             border-radius: 16px;
             overflow-x: auto;
             margin-bottom: 2rem;
@@ -354,18 +420,18 @@ try {
 
         .admin-table th {
             background: rgba(255, 140, 0, 0.15);
-            color: var(--orange-bright);
+            color: #ff8c00;
             font-weight: 600;
             text-align: left;
             padding: 1rem;
-            border-bottom: 2px solid var(--orange-glow);
+            border-bottom: 2px solid rgba(255, 140, 0, 0.3);
             white-space: nowrap;
         }
 
         .admin-table td {
             padding: 1rem;
-            border-bottom: 1px solid var(--glass-border);
-            color: var(--text-primary);
+            border-bottom: 1px solid rgba(255, 140, 0, 0.1);
+            color: #fff;
             white-space: nowrap;
         }
 
@@ -382,7 +448,7 @@ try {
             background: rgba(255, 140, 0, 0.05);
         }
 
-        /* Action buttons */
+        /* Action gombok */
         .action-btn {
             padding: 0.5rem 1rem;
             border: none;
@@ -408,7 +474,6 @@ try {
             background: rgba(0, 123, 255, 0.3);
             border-color: #0066ff;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
         }
 
         .delete-btn {
@@ -421,22 +486,20 @@ try {
             background: rgba(255, 0, 0, 0.3);
             border-color: #ff0000;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
         }
 
         .view-btn {
             background: rgba(255, 140, 0, 0.2);
-            color: var(--orange-bright);
-            border: 1px solid var(--orange-glow);
+            color: #ff8c00;
+            border: 1px solid rgba(255, 140, 0, 0.3);
         }
 
         .view-btn:hover {
             background: rgba(255, 140, 0, 0.3);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2);
         }
 
-        /* Message banners */
+        /* Üzenetek */
         .message-banner {
             background: rgba(0, 200, 0, 0.1);
             border: 1px solid rgba(0, 200, 0, 0.3);
@@ -483,7 +546,7 @@ try {
             border: 1px solid rgba(108, 117, 125, 0.3);
         }
 
-        /* Pagination */
+        /* Lapozás */
         .pagination {
             display: flex;
             justify-content: center;
@@ -497,7 +560,7 @@ try {
             backdrop-filter: blur(20px);
             padding: 0.75rem 1.5rem;
             border-radius: 50px;
-            border: 1px solid var(--glass-border);
+            border: 1px solid rgba(255, 140, 0, 0.2);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             z-index: 100;
         }
@@ -505,9 +568,9 @@ try {
         .pagination-btn {
             padding: 0.5rem 1.5rem;
             background: rgba(255, 140, 0, 0.1);
-            border: 1px solid var(--orange-glow);
+            border: 1px solid rgba(255, 140, 0, 0.3);
             border-radius: 50px;
-            color: var(--text-primary);
+            color: #fff;
             text-decoration: none;
             transition: all 0.3s ease;
             font-weight: 500;
@@ -517,9 +580,8 @@ try {
 
         .pagination-btn:hover:not(.disabled) {
             background: rgba(255, 140, 0, 0.2);
-            color: var(--orange-bright);
+            color: #ff8c00;
             transform: translateY(-2px);
-            box-shadow: 0 0 20px rgba(255, 140, 0, 0.3);
         }
 
         .pagination-btn.disabled {
@@ -530,27 +592,27 @@ try {
         }
 
         .page-info {
-            color: var(--text-primary);
+            color: #fff;
             padding: 0.5rem 1rem;
             background: rgba(255, 140, 0, 0.1);
             border-radius: 50px;
             font-weight: 500;
         }
 
-        /* Edit card */
+        /* Szerkesztő kártya */
         .edit-card {
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
+            border: 1px solid rgba(255, 140, 0, 0.2);
             border-radius: 24px;
             padding: 2rem;
             max-width: 600px;
             margin: 0 auto 2rem;
-            box-shadow: var(--shadow-deep), var(--shadow-orange);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 140, 0, 0.1);
         }
 
         .edit-card h2 {
-            color: var(--orange-bright);
+            color: #ff8c00;
             margin-bottom: 1.5rem;
             font-size: 1.5rem;
         }
@@ -562,7 +624,7 @@ try {
         .edit-card .form-label {
             display: block;
             margin-bottom: 0.5rem;
-            color: var(--text-primary);
+            color: #fff;
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -573,9 +635,9 @@ try {
             width: 100%;
             padding: 0.75rem 1rem;
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
+            border: 1px solid rgba(255, 140, 0, 0.2);
             border-radius: 8px;
-            color: var(--text-primary);
+            color: #fff;
             font-size: 1rem;
             transition: all 0.3s ease;
         }
@@ -583,7 +645,7 @@ try {
         .edit-card .form-input:focus,
         .edit-card .form-textarea:focus {
             outline: none;
-            border-color: var(--orange-bright);
+            border-color: #ff8c00;
             background: rgba(255, 140, 0, 0.1);
         }
 
@@ -600,7 +662,7 @@ try {
 
         .save-btn {
             padding: 0.75rem 2rem;
-            background: linear-gradient(135deg, var(--orange-bright), #ff5500);
+            background: linear-gradient(135deg, #ff8c00, #ff5500);
             border: none;
             border-radius: 50px;
             color: white;
@@ -617,16 +679,213 @@ try {
         .cancel-btn {
             padding: 0.75rem 2rem;
             background: transparent;
-            border: 1px solid var(--glass-border);
+            border: 1px solid rgba(255, 140, 0, 0.2);
             border-radius: 50px;
-            color: var(--text-primary);
+            color: #fff;
             text-decoration: none;
             transition: all 0.3s ease;
         }
 
         .cancel-btn:hover {
-            border-color: var(--orange-bright);
-            color: var(--orange-bright);
+            border-color: #ff8c00;
+            color: #ff8c00;
+        }
+
+        /* Téma váltó gomb */
+        .theme-toggle-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+        }
+
+        .theme-toggle-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 140, 0, 0.3);
+            color: #ff8c00;
+            font-size: 1.4rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-toggle-btn:hover {
+            transform: scale(1.1);
+            background: rgba(255, 140, 0, 0.2);
+            border-color: #ff8c00;
+        }
+
+        /* ============================================
+           VILÁGOS MÓD STÍLUSOK
+        ============================================ */
+        body.light-theme {
+            background: #d8e0b0;
+        }
+
+        body.light-theme .admin-title {
+            color: #7a9200;
+            text-shadow: 0 0 20px rgba(176, 203, 31, 0.45);
+        }
+
+        body.light-theme .admin-btn {
+            background: rgba(176, 203, 31, 0.15);
+            border-color: rgba(140, 170, 10, 0.3);
+            color: #1a1f00;
+        }
+
+        body.light-theme .admin-btn:hover {
+            background: rgba(176, 203, 31, 0.3);
+            border-color: #B0CB1F;
+            color: #7a9200;
+        }
+
+        body.light-theme .admin-btn.active {
+            background: rgba(176, 203, 31, 0.35);
+            border-color: #B0CB1F;
+            color: #7a9200;
+        }
+
+        body.light-theme .back-btn {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.15);
+            color: #1a1f00;
+        }
+
+        body.light-theme .back-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        body.light-theme .admin-table {
+            background: rgba(240, 248, 210, 0.85);
+            border-color: rgba(140, 170, 10, 0.25);
+        }
+
+        body.light-theme .admin-table th {
+            background: rgba(176, 203, 31, 0.2);
+            color: #7a9200;
+            border-bottom-color: #B0CB1F;
+        }
+
+        body.light-theme .admin-table td {
+            color: #1a1f00;
+            border-bottom-color: rgba(140, 170, 10, 0.2);
+        }
+
+        body.light-theme .admin-table tr:hover {
+            background: rgba(176, 203, 31, 0.1);
+        }
+
+        body.light-theme .message-banner {
+            background: rgba(0, 200, 0, 0.15);
+            border-color: rgba(0, 200, 0, 0.4);
+            color: #2e7d32;
+        }
+
+        body.light-theme .error-banner {
+            background: rgba(255, 0, 0, 0.1);
+            border-color: rgba(255, 0, 0, 0.3);
+            color: #c62828;
+        }
+
+        body.light-theme .pagination {
+            background: rgba(240, 248, 210, 0.95);
+            border-color: rgba(140, 170, 10, 0.3);
+        }
+
+        body.light-theme .pagination-btn {
+            background: rgba(176, 203, 31, 0.15);
+            border-color: rgba(140, 170, 10, 0.3);
+            color: #1a1f00;
+        }
+
+        body.light-theme .pagination-btn:hover:not(.disabled) {
+            background: rgba(176, 203, 31, 0.3);
+            color: #7a9200;
+        }
+
+        body.light-theme .page-info {
+            color: #1a1f00;
+            background: rgba(176, 203, 31, 0.15);
+        }
+
+        body.light-theme .edit-card {
+            background: rgba(240, 248, 210, 0.92);
+            border-color: rgba(140, 170, 10, 0.3);
+        }
+
+        body.light-theme .edit-card h2 {
+            color: #7a9200;
+        }
+
+        body.light-theme .edit-card .form-label {
+            color: #1a1f00;
+        }
+
+        body.light-theme .edit-card .form-input,
+        body.light-theme .edit-card .form-textarea {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(140, 170, 10, 0.3);
+            color: #1a1f00;
+        }
+
+        body.light-theme .edit-card .form-input:focus,
+        body.light-theme .edit-card .form-textarea:focus {
+            border-color: #B0CB1F;
+            background: rgba(176, 203, 31, 0.1);
+        }
+
+        body.light-theme .save-btn {
+            background: linear-gradient(135deg, #B0CB1F, #8aA000);
+            color: #1a1f00;
+        }
+
+        body.light-theme .cancel-btn {
+            color: #1a1f00;
+            border-color: rgba(140, 170, 10, 0.3);
+        }
+
+        body.light-theme .cancel-btn:hover {
+            border-color: #B0CB1F;
+            color: #7a9200;
+        }
+
+        body.light-theme .theme-toggle-btn {
+            background: rgba(240, 248, 210, 0.9);
+            border-color: #B0CB1F;
+            color: #7a9200;
+        }
+
+        body.light-theme .theme-toggle-btn:hover {
+            background: #B0CB1F;
+            color: #1a1f00;
+        }
+
+        body.light-theme .status-pending {
+            background: rgba(255, 193, 7, 0.25);
+            color: #b26500;
+        }
+
+        body.light-theme .status-resolved {
+            background: rgba(40, 167, 69, 0.2);
+            color: #1b5e20;
+        }
+
+        body.light-theme .status-dismissed {
+            background: rgba(108, 117, 125, 0.2);
+            color: #495057;
+        }
+
+        body.light-theme .orb-1,
+        body.light-theme .orb-2,
+        body.light-theme .noise {
+            opacity: 0.5;
         }
     </style>
 </head>
@@ -635,6 +894,11 @@ try {
     <div class="noise"></div>
     <div class="orb-1"></div>
     <div class="orb-2"></div>
+
+    <!-- Téma váltó gomb -->
+    <div class="theme-toggle-container">
+        <button class="theme-toggle-btn" id="themeToggleBtn" title="Témaváltás">🌙</button>
+    </div>
 
     <div class="admin-container">
         <div class="admin-header">
@@ -721,33 +985,33 @@ try {
         <!-- FŐOLDAL NÉZET -->
         <?php elseif ($view == 'main'): ?>
             <div style="text-align: center; padding: 3rem; background: rgba(0,0,0,0.3); border-radius: 24px;">
-                <h2 style="color: var(--orange-bright); margin-bottom: 1rem;">Üdvözöljük az Admin Panelben!</h2>
-                <p style="color: var(--text-primary); margin-bottom: 2rem;">Válasszon a fenti menüpontok közül:</p>
+                <h2 style="color: #ff8c00; margin-bottom: 1rem;">Üdvözöljük az Admin Panelben!</h2>
+                <p style="color: #fff; margin-bottom: 2rem;">Válasszon a fenti menüpontok közül:</p>
                 <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
                     <div style="text-align: center;">
                         <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
-                        <h3>Reportok</h3>
-                        <p style="color: var(--text-muted);">Bejelentett hirdetések kezelése</p>
+                        <h3 style="color: #ff8c00;">Reportok</h3>
+                        <p style="color: rgba(255,255,255,0.6);">Bejelentett hirdetések kezelése</p>
                     </div>
                     <div style="text-align: center;">
                         <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
-                        <h3>Felhasználók</h3>
-                        <p style="color: var(--text-muted);">Felhasználók listázása és szerkesztése</p>
+                        <h3 style="color: #ff8c00;">Felhasználók</h3>
+                        <p style="color: rgba(255,255,255,0.6);">Felhasználók listázása és szerkesztése</p>
                     </div>
                     <div style="text-align: center;">
                         <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
-                        <h3>Termékek</h3>
-                        <p style="color: var(--text-muted);">Hirdetések listázása és szerkesztése</p>
+                        <h3 style="color: #ff8c00;">Termékek</h3>
+                        <p style="color: rgba(255,255,255,0.6);">Hirdetések listázása és szerkesztése</p>
                     </div>
                 </div>
             </div>
 
         <!-- REPORT NÉZET -->
         <?php elseif ($view == 'reports'): ?>
-            <h2 style="color: var(--orange-bright); margin-bottom: 1.5rem;">Reportok</h2>
+            <h2 style="color: #ff8c00; margin-bottom: 1.5rem;">Reportok</h2>
             
             <?php if (empty($reports)): ?>
-                <p style="text-align: center; padding: 2rem; color: var(--text-muted);">Nincsenek megjeleníthető reportok.</p>
+                <p style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">Nincsenek megjeleníthető reportok.</p>
             <?php else: ?>
                 <div class="admin-table">
                     <table>
@@ -768,7 +1032,7 @@ try {
                                 <tr>
                                     <td><?php echo $report['id']; ?></td>
                                     <td>
-                                        <a href="item.php?id=<?php echo $report['item_id']; ?>" target="_blank" style="color: var(--orange-bright);">
+                                        <a href="item.php?id=<?php echo $report['item_id']; ?>" target="_blank" style="color: #ff8c00;">
                                             <?php echo htmlspecialchars($report['item_title']); ?>
                                         </a>
                                     </td>
@@ -794,10 +1058,10 @@ try {
 
         <!-- FELHASZNÁLÓ NÉZET -->
         <?php elseif ($view == 'users'): ?>
-            <h2 style="color: var(--orange-bright); margin-bottom: 1.5rem;">Felhasználók</h2>
+            <h2 style="color: #ff8c00; margin-bottom: 1.5rem;">Felhasználók</h2>
             
             <?php if (empty($users)): ?>
-                <p style="text-align: center; padding: 2rem; color: var(--text-muted);">Nincsenek megjeleníthető felhasználók.</p>
+                <p style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">Nincsenek megjeleníthető felhasználók.</p>
             <?php else: ?>
                 <div class="admin-table">
                     <table>
@@ -836,10 +1100,10 @@ try {
 
         <!-- TERMÉK NÉZET -->
         <?php elseif ($view == 'items'): ?>
-            <h2 style="color: var(--orange-bright); margin-bottom: 1.5rem;">Termékek</h2>
+            <h2 style="color: #ff8c00; margin-bottom: 1.5rem;">Termékek</h2>
             
             <?php if (empty($items)): ?>
-                <p style="text-align: center; padding: 2rem; color: var(--text-muted);">Nincsenek megjeleníthető termékek.</p>
+                <p style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">Nincsenek megjeleníthető termékek.</p>
             <?php else: ?>
                 <div class="admin-table">
                     <table>
@@ -897,6 +1161,37 @@ try {
     </div>
 
     <script>
+        // Téma kezelés (admin.php saját, független a többi fájltól)
+        (function() {
+            const ADMIN_THEME_KEY = 'admin_theme';
+            const themeBtn = document.getElementById('themeToggleBtn');
+            const body = document.body;
+            
+            const ICON_LIGHT = '☀️';
+            const ICON_DARK = '🌙';
+            
+            function applyTheme(theme) {
+                if (theme === 'light') {
+                    body.classList.add('light-theme');
+                    if (themeBtn) themeBtn.textContent = ICON_DARK;
+                } else {
+                    body.classList.remove('light-theme');
+                    if (themeBtn) themeBtn.textContent = ICON_LIGHT;
+                }
+                localStorage.setItem(ADMIN_THEME_KEY, theme);
+            }
+            
+            const savedTheme = localStorage.getItem(ADMIN_THEME_KEY) || 'dark';
+            applyTheme(savedTheme);
+            
+            if (themeBtn) {
+                themeBtn.addEventListener('click', function() {
+                    const isLight = body.classList.contains('light-theme');
+                    applyTheme(isLight ? 'dark' : 'light');
+                });
+            }
+        })();
+
         // Törlési függvények
         function deleteUser(userId) {
             if (confirm('Biztosan törlöd ezt a felhasználót? Minden hirdetése és képe véglegesen törlődik!')) {
