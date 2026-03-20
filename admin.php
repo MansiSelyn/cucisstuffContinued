@@ -1268,6 +1268,69 @@ try {
             border-color: #7a9200;
             box-shadow: 0 0 20px rgba(176, 203, 31, 0.3);
         }
+        body.light-theme .product-menu-content {
+            background: rgba(240, 248, 210, 0.95);
+            border-color: #B0CB1F;
+        }
+        body.light-theme .product-menu-item {
+            color: #1a1f00;
+        }
+        body.light-theme .product-menu-item:hover {
+            background: rgba(176, 203, 31, 0.2);
+            color: #7a9200;
+        }
+        body.light-theme .product-menu-item.delete:hover {
+            background: rgba(255, 0, 0, 0.2);
+            color: #c62828;
+        }
+
+        /* ============================================
+           LIGHT MÓD - TERMÉKMODÁL KÜLÖNLEGES ÁTALAKÍTÁSA
+        ============================================ */
+        body.light-theme .product-modal-overlay {
+            background: rgba(216, 224, 176, 0.98);
+        }
+        body.light-theme .product-modal-card {
+            background: #f5f7e8;
+        }
+        body.light-theme .product-gallery {
+            background: #eef2da;
+            border: 1px solid #B0CB1F;
+        }
+        body.light-theme .product-main-image-container {
+            background: #ffffff;
+            border-color: #B0CB1F;
+        }
+        body.light-theme .product-details {
+            background: #ffffff;
+            border-color: #B0CB1F;
+        }
+        body.light-theme .product-description {
+            background: #f9fbe7;
+            border-color: #B0CB1F;
+            color: #1a1f00;
+        }
+        body.light-theme .product-seller {
+            color: #4a5a00;
+        }
+        body.light-theme .product-date {
+            color: #7a8a2a;
+        }
+        body.light-theme .product-buy-btn {
+            background: linear-gradient(135deg, #B0CB1F, #8aA000);
+            color: #1a1f00;
+        }
+        body.light-theme .product-buy-btn:hover {
+            box-shadow: 0 10px 30px rgba(176, 203, 31, 0.5);
+        }
+        body.light-theme .product-thumbnail {
+            background: #f0f4e0;
+            border-color: #d0dc90;
+        }
+        body.light-theme .product-thumbnail:hover,
+        body.light-theme .product-thumbnail.active {
+            border-color: #B0CB1F;
+        }
 
         @media (max-width: 1200px) {
             .product-modal-card {
@@ -1594,6 +1657,7 @@ try {
                     <div class="product-menu-button" onclick="toggleProductMenu(this)">⋮</div>
                     <div class="product-menu-content" id="productMenuContent">
                         <button class="product-menu-item" id="productReportBtn">⚠️ Bejelentés</button>
+                        <button class="product-menu-item" id="productEditBtn" style="display: none;">✏️ Módosítás</button>
                         <button class="product-menu-item delete" id="productDeleteBtn" style="display: none;">🗑️ Törlés</button>
                     </div>
                 </div>
@@ -1818,37 +1882,49 @@ try {
                         galleryPrev.classList.toggle('hidden', !hasMultiple);
                         galleryNext.classList.toggle('hidden', !hasMultiple);
 
-                        // Menü beállítása
+                        // Menü beállítása - Módosított logika a szerkesztés gombhoz
                         <?php if (isset($_SESSION['user_id'])): ?>
                             const isOwner = (parseInt(data.user_id) === <?php echo $_SESSION['user_id']; ?>);
                             const isAdmin = <?php echo $isAdmin ? 'true' : 'false'; ?>;
                             const menuContainer = document.getElementById('productMenuContainer');
                             const reportBtn = document.getElementById('productReportBtn');
+                            const editBtn = document.getElementById('productEditBtn');
                             const deleteBtn = document.getElementById('productDeleteBtn');
-                            if (!isOwner || isAdmin) {
+                            
+                            if (isAdmin) {
+                                // Admin: mutasd a menüt, csak szerkesztés és törlés
                                 menuContainer.style.display = 'block';
+                                reportBtn.style.display = 'none';
+                                editBtn.style.display = 'block';
+                                deleteBtn.style.display = 'block';
+                                
+                                editBtn.onclick = () => {
+                                    window.location.href = `admin.php?view=items&id=${currentProductId}`;
+                                };
+                                deleteBtn.onclick = () => {
+                                    if (confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) {
+                                        const form = document.createElement('form');
+                                        form.method = 'POST';
+                                        form.innerHTML = `
+                                            <input type="hidden" name="item_id" value="${data.id}">
+                                            <input type="hidden" name="delete_item" value="1">
+                                        `;
+                                        document.body.appendChild(form);
+                                        form.submit();
+                                    }
+                                };
+                            } else if (!isOwner) {
+                                // Nem admin, nem tulajdonos: csak bejelentés
+                                menuContainer.style.display = 'block';
+                                reportBtn.style.display = 'block';
+                                editBtn.style.display = 'none';
+                                deleteBtn.style.display = 'none';
                                 reportBtn.onclick = () => {
                                     closeProductModal();
                                     alert('Bejelentés funkció – itt a report modal-t kellene megnyitni.');
                                 };
-                                if (isAdmin) {
-                                    deleteBtn.style.display = 'block';
-                                    deleteBtn.onclick = () => {
-                                        if (confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) {
-                                            const form = document.createElement('form');
-                                            form.method = 'POST';
-                                            form.innerHTML = `
-                                                <input type="hidden" name="item_id" value="${data.id}">
-                                                <input type="hidden" name="delete_item" value="1">
-                                            `;
-                                            document.body.appendChild(form);
-                                            form.submit();
-                                        }
-                                    };
-                                } else {
-                                    deleteBtn.style.display = 'none';
-                                }
                             } else {
+                                // Tulajdonos (nem admin): nincs menü
                                 menuContainer.style.display = 'none';
                             }
                         <?php endif; ?>

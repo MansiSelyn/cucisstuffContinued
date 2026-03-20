@@ -537,167 +537,204 @@ try {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        /* Main content */
+        /* =====================
+   MAIN CONTENT & GRID  ← MÓDOSÍTOTT RÉSZ
+===================== */
         .main-content {
             width: 100%;
-            max-width: 2000px;
-            margin: 0 auto;
-            padding: 4.5rem 1rem 5rem 1rem;
+            max-width: 100%;
+            margin: 0;
+            padding: 3rem 0 4rem 0;
             position: relative;
             z-index: 1;
         }
 
-        /* Items grid - reszponzív rács tájolás alapján */
+        /* Items grid — gap-pel, rendezett kártyák */
         .items-grid {
             display: grid;
-            gap: 1.5rem;
+            gap: 1.2rem;
             width: 100%;
+            padding: 1rem;
         }
 
-        /* Landscape mód (szélesebb, mint magas) - 8 oszlop */
+        /* Landscape: 6 oszlop */
         @media (orientation: landscape) {
             .items-grid {
-                grid-template-columns: repeat(8, 1fr);
+                grid-template-columns: repeat(6, 1fr);
+                grid-auto-rows: auto;
             }
         }
 
-        /* Portrait mód (magasabb, mint széles) - 4 oszlop */
+        /* Portrait: 3 oszlop */
         @media (orientation: portrait) {
             .items-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-
-        /* Extra nagy landscape képernyőkre további oszlopok */
-        @media (orientation: landscape) and (min-width: 2000px) {
-            .items-grid {
-                grid-template-columns: repeat(10, 1fr);
-            }
-        }
-
-        @media (orientation: landscape) and (min-width: 2500px) {
-            .items-grid {
-                grid-template-columns: repeat(12, 1fr);
-            }
-        }
-
-        /* Extra kis portrait képernyőkre kevesebb oszlop */
-        @media (orientation: portrait) and (max-width: 800px) {
-            .items-grid {
                 grid-template-columns: repeat(3, 1fr);
+                grid-auto-rows: auto;
             }
         }
 
-        @media (orientation: portrait) and (max-width: 600px) {
+        /* Extra nagy képernyőn több oszlop */
+        @media (min-width: 1600px) and (orientation: landscape) {
+            .items-grid {
+                grid-template-columns: repeat(8, 1fr);
+                gap: 1.3rem;
+            }
+        }
+
+        /* Kisebb mobil eszközök */
+        @media (max-width: 480px) and (orientation: portrait) {
             .items-grid {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 0.8rem;
+                padding: 0.8rem;
             }
         }
 
-        @media (orientation: portrait) and (max-width: 400px) {
+        /* Extra kicsi mobil */
+        @media (max-width: 360px) and (orientation: portrait) {
             .items-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.7rem;
+                padding: 0.7rem;
             }
         }
 
+        /* Tablet nézet */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+            .items-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1rem;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1280px) and (orientation: landscape) {
+            .items-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 1rem;
+            }
+        }
+
+        /* Kártyák — nagyobb, kényelmesebb méret */
         .item-card {
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow-deep), 0 0 30px rgba(255, 140, 0, 0.1);
+            padding: clamp(0.8rem, 1.5vw, 1.2rem);
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             display: flex;
             flex-direction: column;
+            width: 100%;
             height: 100%;
             user-select: none;
             position: relative;
             overflow: hidden;
             cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
 
         .item-card:hover {
-            transform: translateY(-5px);
             border-color: var(--orange-bright);
-            box-shadow: var(--shadow-deep), 0 0 40px rgba(255, 140, 0, 0.2);
+            box-shadow: 0 8px 25px rgba(255, 140, 0, 0.25);
+            transform: translateY(-4px);
+            background: rgba(0, 0, 0, 0.75);
         }
 
         .item-card * {
             user-select: none;
         }
 
+        /* Kép — nagyobb, jobban látható */
         .item-image {
             width: 100%;
-            height: 200px;
+            aspect-ratio: 1 / 1;
             object-fit: cover;
             border-radius: 12px;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
             border: 1px solid var(--glass-border);
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .item-card:hover .item-image {
+            transform: scale(1.02);
         }
 
         .item-image-placeholder {
             width: 100%;
-            height: 200px;
+            aspect-ratio: 1 / 1;
             border-radius: 12px;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
             border: 1px solid var(--glass-border);
             display: flex;
             align-items: center;
             justify-content: center;
             background: var(--placeholder-bg);
+            flex-shrink: 0;
         }
 
         .item-image-placeholder .placeholder-text {
             color: var(--placeholder-text);
+            font-size: clamp(0.8rem, 1.5vw, 1.2rem);
         }
 
         .image-count-badge {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
+            top: 12px;
+            left: 12px;
+            background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(5px);
-            padding: 0.3rem 0.6rem;
+            padding: 0.3rem 0.7rem;
             border-radius: 20px;
-            font-size: 0.7rem;
+            font-size: clamp(0.6rem, 0.9vw, 0.75rem);
             border: 1px solid var(--orange-glow);
             color: var(--orange-bright);
+            font-weight: bold;
+            z-index: 2;
         }
 
         .item-title {
-            font-size: 1.2rem;
+            font-size: clamp(0.75rem, 1.1vw, 1.1rem);
             font-weight: bold;
             color: var(--orange-bright);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
             word-wrap: break-word;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-height: 1.3;
         }
 
         .item-price {
-            font-size: 1.5rem;
+            font-size: clamp(0.9rem, 1.3vw, 1.4rem);
             font-weight: bold;
             color: var(--orange-bright);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.35rem;
             text-shadow: 0 0 10px var(--orange-glow);
         }
 
         .item-seller {
-            font-size: 0.8rem;
+            font-size: clamp(0.65rem, 0.85vw, 0.85rem);
             color: var(--text-primary);
-            opacity: 0.6;
-            margin-bottom: 0.5rem;
+            opacity: 0.7;
+            margin-bottom: 0.3rem;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
         }
 
         .item-date {
-            font-size: 0.7rem;
+            font-size: clamp(0.55rem, 0.7vw, 0.7rem);
             color: var(--text-primary);
-            opacity: 0.4;
+            opacity: 0.5;
         }
 
         /* Card Menu Styles */
@@ -1041,8 +1078,8 @@ try {
         }
 
         /* =====================
-           UPLOAD MODAL
-        ===================== */
+   UPLOAD MODAL
+===================== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -1357,8 +1394,8 @@ try {
         }
 
         /* =====================
-           PRODUCT MODAL - TELJES KÉPERNYŐS VÁLTOZAT
-        ===================== */
+   PRODUCT MODAL - TELJES KÉPERNYŐS VÁLTOZAT
+===================== */
         .product-modal-overlay {
             position: fixed;
             inset: 0;
@@ -1499,7 +1536,7 @@ try {
             color: #ff0000;
         }
 
-        /* Galéria stílusok - nagyobb, teljes képernyőhöz igazítva */
+        /* Galéria stílusok */
         .product-gallery {
             position: relative;
             height: 100%;
@@ -1710,8 +1747,8 @@ try {
         }
 
         /* =====================
-           LIGHTBOX A KÉPEKHEZ - X a KÉP MELLETT
-        ===================== */
+   LIGHTBOX
+===================== */
         .lightbox-overlay {
             position: fixed;
             inset: 0;
@@ -1771,8 +1808,8 @@ try {
         }
 
         /* =====================
-           RESPONSIVE
-        ===================== */
+   RESPONSIVE
+===================== */
         @media (max-width: 1200px) {
             .product-modal-card {
                 grid-template-columns: 1fr;
@@ -2082,7 +2119,7 @@ try {
         </div>
     </div>
 
-    <!-- Lightbox a képek nagyításához - X a KÉP MELLETT -->
+    <!-- Lightbox a képek nagyításához -->
     <div class="lightbox-overlay" id="lightboxOverlay">
         <div class="lightbox-content">
             <img src="" alt="Nagyított kép" class="lightbox-image" id="lightboxImage">
@@ -2121,7 +2158,6 @@ try {
 
                         <!-- Hárompontos menü -->
                         <?php
-                        // Csak akkor jelenítjük meg a menüt, ha nem a saját termékünk, vagy ha admin vagyunk
                         $showMenu = ($item['user_id'] != $_SESSION['user_id'] || $isAdmin);
                         if ($showMenu):
                         ?>
@@ -2129,14 +2165,12 @@ try {
                                 <div class="card-menu-button" onclick="toggleMenu(this); event.stopPropagation();">⋮</div>
                                 <div class="card-menu-content">
                                     <?php if ($item['user_id'] != $_SESSION['user_id'] || $isAdmin): ?>
-                                        <!-- Bejelentés opció mindenkinek, aki nem a tulajdonos, vagy admin -->
                                         <button class="card-menu-item" onclick="openReportModal('<?php echo $item['id']; ?>'); event.stopPropagation();">
                                             ⚠️ Bejelentés
                                         </button>
                                     <?php endif; ?>
 
                                     <?php if ($isAdmin): ?>
-                                        <!-- Törlés opció csak adminoknak -->
                                         <form method="post" style="margin:0; padding:0;" onsubmit="return confirm('Biztosan törölni szeretnéd ezt a hirdetést?');" onclick="event.stopPropagation();">
                                             <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
                                             <input type="hidden" name="delete_item" value="1">
@@ -2212,12 +2246,10 @@ try {
         openBtn.addEventListener('click', openModal);
         closeBtn.addEventListener('click', closeModal);
 
-        // Close on backdrop click
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeModal();
         });
 
-        // Close on Escape
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
         });
@@ -2231,10 +2263,9 @@ try {
         imageInput.addEventListener('change', function(e) {
             const files = Array.from(e.target.files);
 
-            // Validate file types and sizes
             const validFiles = files.filter(file => {
                 const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                const maxSize = 5 * 1024 * 1024; // 5MB
+                const maxSize = 5 * 1024 * 1024;
 
                 if (!validTypes.includes(file.type)) {
                     alert(`A ${file.name} fájl formátuma nem támogatott!`);
@@ -2273,13 +2304,11 @@ try {
                 previewContainer.appendChild(previewItem);
             });
 
-            // Add remove functionality
             document.querySelectorAll('.image-preview-remove').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const index = parseInt(this.dataset.index);
                     selectedFiles.splice(index, 1);
 
-                    // Update file input
                     const dt = new DataTransfer();
                     selectedFiles.forEach(file => dt.items.add(file));
                     imageInput.files = dt.files;
@@ -2288,11 +2317,9 @@ try {
                 });
             });
 
-            // Validate images count
             validateImages();
         }
 
-        // Client-side validation
         const form = document.getElementById('uploadForm');
         const titleInput = document.getElementById('item_title');
         const descInput = document.getElementById('item_description');
@@ -2332,12 +2359,10 @@ try {
             if (!valid) e.preventDefault();
         });
 
-        // Live clear on input
         [titleInput, descInput, priceInput].forEach(el => {
             el.addEventListener('input', () => el.classList.remove('invalid'));
         });
 
-        // Auto-open modal on server error or success (so user sees feedback)
         <?php if ($uploadError || $uploadSuccess): ?>
             openModal();
         <?php endif; ?>
@@ -2347,13 +2372,11 @@ try {
             const menu = button.nextElementSibling;
             menu.classList.toggle('show');
 
-            // Close other menus
             document.querySelectorAll('.card-menu-content').forEach(m => {
                 if (m !== menu) m.classList.remove('show');
             });
         }
 
-        // Close menus when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.card-menu')) {
                 document.querySelectorAll('.card-menu-content').forEach(menu => {
@@ -2377,18 +2400,12 @@ try {
             document.body.style.overflow = '';
         }
 
-        // Close report modal on backdrop click
         reportModal.addEventListener('click', function(e) {
-            if (e.target === reportModal) {
-                closeReportModal();
-            }
+            if (e.target === reportModal) closeReportModal();
         });
 
-        // Close report modal on Escape
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && reportModal.classList.contains('show')) {
-                closeReportModal();
-            }
+            if (e.key === 'Escape' && reportModal.classList.contains('show')) closeReportModal();
         });
 
         // Product modal functionality
@@ -2397,36 +2414,28 @@ try {
         const productMainImage = document.getElementById('productMainImage');
         const productNoImagePlaceholder = document.getElementById('productNoImagePlaceholder');
 
-        // Lightbox elements
         const lightboxOverlay = document.getElementById('lightboxOverlay');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
 
-        // Set main image function
         function setMainImage(index) {
             if (index >= 0 && index < currentProductImages.length && currentProductImages[index]) {
                 productMainImage.style.display = 'block';
                 productNoImagePlaceholder.style.display = 'none';
                 productMainImage.src = currentProductImages[index];
                 currentImageIndex = index;
-                
+
                 productMainImage.onload = function() {
                     adjustImageContainerHeight();
                 };
-                
                 productMainImage.onerror = function() {
                     productMainImage.style.display = 'none';
                     productNoImagePlaceholder.style.display = 'block';
                     adjustImageContainerHeight();
                 };
-                
-                // Update active thumbnail
+
                 document.querySelectorAll('.product-thumbnail').forEach((thumb, i) => {
-                    if (i === index) {
-                        thumb.classList.add('active');
-                    } else {
-                        thumb.classList.remove('active');
-                    }
+                    thumb.classList.toggle('active', i === index);
                 });
             } else {
                 productMainImage.style.display = 'none';
@@ -2444,7 +2453,7 @@ try {
                 const galleryPadding = 32;
                 const thumbnailsHeight = thumbnails ? thumbnails.offsetHeight : 100;
                 const availableHeight = gallery.clientHeight - galleryPadding - thumbnailsHeight - 20;
-                
+
                 if (productMainImage.style.display !== 'none' && productMainImage.complete && productMainImage.naturalHeight > 0) {
                     const imageHeight = Math.min(productMainImage.naturalHeight, availableHeight);
                     imageContainer.style.height = imageHeight + 'px';
@@ -2454,15 +2463,10 @@ try {
             }
         }
 
-        // Add click event to all item cards
         document.querySelectorAll('.item-card').forEach(card => {
             card.addEventListener('click', function(e) {
-                // Don't open modal if clicking on menu or report modal
-                if (e.target.closest('.card-menu') || e.target.closest('.report-modal')) {
-                    return;
-                }
+                if (e.target.closest('.card-menu') || e.target.closest('.report-modal')) return;
 
-                // Get product data from data attributes
                 const productId = this.dataset.itemId;
                 const title = this.dataset.itemTitle;
                 const price = this.dataset.itemPrice;
@@ -2472,20 +2476,17 @@ try {
                 const images = JSON.parse(this.dataset.itemImages || '[]');
                 const userId = this.dataset.itemUserId;
 
-                // Store current product data
                 currentProductId = productId;
                 currentProductUserId = userId;
                 currentProductImages = images;
                 currentImageIndex = 0;
 
-                // Set product details in modal
                 document.getElementById('productTitle').textContent = title;
                 document.getElementById('productPrice').textContent = price;
                 document.getElementById('productSeller').innerHTML = `Eladó: <strong>${seller}</strong>`;
                 document.getElementById('productDate').textContent = date;
                 document.getElementById('productDescription').textContent = description;
 
-                // Setup thumbnails
                 const thumbnailsContainer = document.getElementById('productThumbnails');
                 thumbnailsContainer.innerHTML = '';
 
@@ -2500,26 +2501,16 @@ try {
                         });
                         thumbnailsContainer.appendChild(thumbnail);
                     });
-                    
-                    // Set main image
                     setMainImage(0);
                 } else {
                     setMainImage(-1);
                 }
 
-                // Show/hide navigation based on number of images
                 const prevBtn = document.getElementById('galleryPrev');
                 const nextBtn = document.getElementById('galleryNext');
+                prevBtn.classList.toggle('hidden', images.length <= 1);
+                nextBtn.classList.toggle('hidden', images.length <= 1);
 
-                if (images.length <= 1) {
-                    prevBtn.classList.add('hidden');
-                    nextBtn.classList.add('hidden');
-                } else {
-                    prevBtn.classList.remove('hidden');
-                    nextBtn.classList.remove('hidden');
-                }
-
-                // Setup menu based on user permissions
                 <?php if (isset($_SESSION['user_id'])): ?>
                     const isOwner = (parseInt(userId) === <?php echo $_SESSION['user_id']; ?>);
                     const isAdmin = <?php echo $isAdmin ? 'true' : 'false'; ?>;
@@ -2528,17 +2519,14 @@ try {
                     const reportBtn = document.getElementById('productReportBtn');
                     const deleteBtn = document.getElementById('productDeleteBtn');
 
-                    // Show menu if not owner or is admin
                     if (!isOwner || isAdmin) {
                         menuContainer.style.display = 'block';
 
-                        // Configure report button
                         reportBtn.onclick = () => {
                             closeProductModal();
                             openReportModal(productId);
                         };
 
-                        // Configure delete button (admin only)
                         if (isAdmin) {
                             deleteBtn.style.display = 'block';
                             deleteBtn.onclick = () => {
@@ -2561,7 +2549,6 @@ try {
                     }
                 <?php endif; ?>
 
-                // Open modal
                 openProductModal();
             });
         });
@@ -2569,72 +2556,51 @@ try {
         function openProductModal() {
             productModal.classList.add('active');
             document.body.style.overflow = 'hidden';
-
             setTimeout(() => {
                 adjustImageContainerHeight();
             }, 100);
         }
 
         function closeProductModal() {
-            if (lightboxOverlay.classList.contains('active')) {
-                closeLightbox();
-            }
+            if (lightboxOverlay.classList.contains('active')) closeLightbox();
             productModal.classList.remove('active');
             document.body.style.overflow = '';
         }
 
-        // Gallery navigation
         document.getElementById('galleryPrev').addEventListener('click', (e) => {
             e.stopPropagation();
             const newIndex = currentImageIndex - 1;
-            if (newIndex >= 0) {
-                setMainImage(newIndex);
-            } else {
-                setMainImage(currentProductImages.length - 1);
-            }
+            setMainImage(newIndex >= 0 ? newIndex : currentProductImages.length - 1);
         });
 
         document.getElementById('galleryNext').addEventListener('click', (e) => {
             e.stopPropagation();
             const newIndex = currentImageIndex + 1;
-            if (newIndex < currentProductImages.length) {
-                setMainImage(newIndex);
-            } else {
-                setMainImage(0);
-            }
+            setMainImage(newIndex < currentProductImages.length ? newIndex : 0);
         });
 
-        // Close modal events
         closeProductModalBtn.addEventListener('click', closeProductModal);
 
         productModal.addEventListener('click', (e) => {
-            if (e.target === productModal) {
-                closeProductModal();
-            }
+            if (e.target === productModal) closeProductModal();
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && productModal.classList.contains('active')) {
-                closeProductModal();
-            }
+            if (e.key === 'Escape' && productModal.classList.contains('active')) closeProductModal();
         });
 
-        // Vásárlás gomb
         document.getElementById('productBuyBtn').addEventListener('click', () => {
             alert('Vásárlás funkció még nem elérhető!');
         });
 
-        // Toggle menu in product modal
         function toggleProductMenu(button) {
             const menu = button.nextElementSibling;
             menu.classList.toggle('show');
-
             document.querySelectorAll('.product-menu-content').forEach(m => {
                 if (m !== menu) m.classList.remove('show');
             });
         }
 
-        // Lightbox functionality
         productMainImage.addEventListener('click', (e) => {
             e.stopPropagation();
             if (productMainImage.src && productMainImage.style.display !== 'none' && !productMainImage.src.includes('svg')) {
@@ -2650,22 +2616,15 @@ try {
         lightboxClose.addEventListener('click', closeLightbox);
 
         lightboxOverlay.addEventListener('click', (e) => {
-            if (e.target === lightboxOverlay) {
-                closeLightbox();
-            }
+            if (e.target === lightboxOverlay) closeLightbox();
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lightboxOverlay.classList.contains('active')) {
-                closeLightbox();
-            }
+            if (e.key === 'Escape' && lightboxOverlay.classList.contains('active')) closeLightbox();
         });
 
-        // Ablak átméretezéskor is igazítsuk
         window.addEventListener('resize', () => {
-            if (productModal.classList.contains('active')) {
-                adjustImageContainerHeight();
-            }
+            if (productModal.classList.contains('active')) adjustImageContainerHeight();
         });
 
         // ── TÉMAVÁLTÓ ──
@@ -2677,43 +2636,31 @@ try {
                 themeLink.href = theme === 'light' ? 'theme-light.css' : 'theme-dark.css';
                 localStorage.setItem('theme', theme);
                 checkbox.checked = (theme === 'light');
-
                 document.body.dataset.theme = theme;
 
-                // Placeholder színének dinamikus állítása
                 const placeholder = document.getElementById('productNoImagePlaceholder');
                 if (placeholder) {
-                    if (theme === 'light') {
-                        placeholder.style.color = '#2e7d32'; // zöld szín világos módban
-                    } else {
-                        placeholder.style.color = '#ff8c00'; // narancs szín sötét módban
-                    }
+                    placeholder.style.color = theme === 'light' ? '#2e7d32' : '#ff8c00';
                 }
 
-                // Ha a termék modal nyitva van, frissítsük a képeket
                 if (productModal && productModal.classList.contains('active') && currentProductImages && currentProductImages.length > 0) {
-                    // Frissítsük a fő képet
                     if (productMainImage && currentProductImages[currentImageIndex]) {
                         productMainImage.src = currentProductImages[currentImageIndex];
                     }
-                    
-                    // Frissítsük a thumbnailöket
+
                     const thumbnailsContainer = document.getElementById('productThumbnails');
                     if (thumbnailsContainer) {
                         const thumbnails = thumbnailsContainer.querySelectorAll('.product-thumbnail');
                         currentProductImages.forEach((img, index) => {
                             if (thumbnails[index]) {
                                 const thumbnailImg = thumbnails[index].querySelector('img');
-                                if (thumbnailImg) {
-                                    thumbnailImg.src = img;
-                                }
+                                if (thumbnailImg) thumbnailImg.src = img;
                             }
                         });
                     }
                 }
             }
 
-            // Kezdeti állapot
             const saved = localStorage.getItem('theme') || 'dark';
             applyTheme(saved);
 
@@ -2724,4 +2671,5 @@ try {
     </script>
 
 </body>
+
 </html>
