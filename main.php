@@ -116,7 +116,7 @@ try {
 
                         // Move uploaded file
                         if (move_uploaded_file($files['tmp_name'][$i], $filepath)) {
-                            // Save to database using the table structure you provided
+                            // Save to database
                             $imageInsert = $conn->prepare("
                                 INSERT INTO item_images (item_id, image_path, image_filename, is_primary, sort_order)
                                 VALUES (:item_id, :image_path, :image_filename, :is_primary, :sort_order)
@@ -126,7 +126,7 @@ try {
                                 ':item_id' => $newId,
                                 ':image_path' => $filepath,
                                 ':image_filename' => $filename,
-                                ':is_primary' => ($i === 0) ? 1 : 0, // First image is primary
+                                ':is_primary' => ($i === 0) ? 1 : 0,
                                 ':sort_order' => $sortOrder
                             ]);
 
@@ -173,12 +173,12 @@ try {
                     rmdir($itemDir);
                 }
 
-                // Delete from database (item_images will be deleted automatically by foreign key constraint)
+                // Delete from database
                 $deleteStmt = $conn->prepare("DELETE FROM items WHERE id = ?");
                 $deleteStmt->execute([$itemId]);
 
                 // Redirect to refresh the page
-                header("Location: index.php?page=" . $page);
+                header("Location: main.php?page=" . $page);
                 exit();
             } catch (Exception $e) {
                 $uploadError = 'Hiba történt a törlés során: ' . $e->getMessage();
@@ -247,12 +247,15 @@ try {
     <script>
         (function() {
             var saved = localStorage.getItem('theme') || 'dark';
-            document.getElementById('themeStylesheet').href =
-                saved === 'light' ? 'theme-light.css' : 'theme-dark.css';
+            document.getElementById('themeStylesheet').href = saved === 'light' ? 'theme-light.css' : 'theme-dark.css';
             document.documentElement.setAttribute('data-theme', saved);
+            document.body.setAttribute('data-theme', saved);
         })();
     </script>
     <style>
+        /* ═══════════════════════════════════════════════════════════════════
+           MAIN STYLES (dark mode default)
+           ═══════════════════════════════════════════════════════════════════ */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -546,7 +549,7 @@ try {
         }
 
         /* =====================
-   MAIN CONTENT & GRID  ← MÓDOSÍTOTT RÉSZ
+   MAIN CONTENT & GRID
 ===================== */
         .main-content {
             width: 100%;
@@ -557,7 +560,7 @@ try {
             z-index: 1;
         }
 
-        /* Items grid — gap-pel, rendezett kártyák */
+        /* Items grid */
         .items-grid {
             display: grid;
             gap: 1.2rem;
@@ -622,7 +625,7 @@ try {
             }
         }
 
-        /* Kártyák — nagyobb, kényelmesebb méret */
+        /* Kártyák */
         .item-card {
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(20px);
@@ -652,7 +655,7 @@ try {
             user-select: none;
         }
 
-        /* Kép — nagyobb, jobban látható */
+        /* Kép */
         .item-image {
             width: 100%;
             aspect-ratio: 1 / 1;
@@ -1914,6 +1917,301 @@ try {
                 transition: none;
             }
         }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           LIGHT MODE OVERRIDES - ezek biztosítják a helyes megjelenést
+           ═══════════════════════════════════════════════════════════════════ */
+        body[data-theme="light"] {
+            background: #d8e0b0 !important;
+            color: #1a1f00 !important;
+        }
+
+        /* Upload modal light mode */
+        body[data-theme="light"] .modal-card {
+            background: #f8fce6 !important;
+            border: 1px solid #B0CB1F !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 40px rgba(176, 203, 31, 0.2) !important;
+        }
+
+        body[data-theme="light"] .modal-title,
+        body[data-theme="light"] .modal-subtitle {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .modal-close {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .modal-close:hover {
+            color: #1a1f00 !important;
+            background: rgba(176, 203, 31, 0.1) !important;
+        }
+
+        body[data-theme="light"] .form-label {
+            color: #6a7a20 !important;
+        }
+
+        body[data-theme="light"] .form-input,
+        body[data-theme="light"] .form-textarea {
+            background: rgba(245, 252, 215, 0.95) !important;
+            border: 1px solid rgba(140, 170, 10, 0.3) !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .form-input::placeholder,
+        body[data-theme="light"] .form-textarea::placeholder {
+            color: #9aaa50 !important;
+        }
+
+        body[data-theme="light"] .form-input:focus,
+        body[data-theme="light"] .form-textarea:focus {
+            border-color: #B0CB1F !important;
+            background: #fff !important;
+            box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.2) !important;
+        }
+
+        body[data-theme="light"] .price-suffix {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .submit-btn {
+            background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
+            color: #1a1f00 !important;
+            box-shadow: 0 4px 20px rgba(176, 203, 31, 0.3) !important;
+        }
+
+        body[data-theme="light"] .submit-btn:hover {
+            background: linear-gradient(135deg, #c4df25, #9ab800) !important;
+            box-shadow: 0 6px 28px rgba(176, 203, 31, 0.5) !important;
+        }
+
+        body[data-theme="light"] .image-upload-container {
+            background: rgba(240, 252, 200, 0.5) !important;
+            border-color: rgba(140, 170, 10, 0.3) !important;
+        }
+
+        body[data-theme="light"] .image-upload-container:hover {
+            border-color: #B0CB1F !important;
+            background: rgba(176, 203, 31, 0.08) !important;
+        }
+
+        body[data-theme="light"] .image-upload-icon {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .image-upload-label {
+            color: #6a7a20 !important;
+        }
+
+        body[data-theme="light"] .image-preview-item {
+            border-color: rgba(140, 170, 10, 0.3) !important;
+        }
+
+        body[data-theme="light"] .error-banner {
+            background: rgba(255, 77, 77, 0.1) !important;
+            border-color: rgba(255, 77, 77, 0.3) !important;
+            color: #ff6666 !important;
+        }
+
+        body[data-theme="light"] .success-banner {
+            background: rgba(176, 203, 31, 0.1) !important;
+            border-color: rgba(176, 203, 31, 0.3) !important;
+            color: #7a9200 !important;
+        }
+
+        /* Report modal light mode */
+        body[data-theme="light"] .report-modal-content {
+            background: #f8fce6 !important;
+            border-color: #B0CB1F !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .report-modal-title {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .report-form-textarea {
+            background: rgba(245, 252, 215, 0.95) !important;
+            border-color: rgba(140, 170, 10, 0.3) !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .report-submit-btn {
+            background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
+            color: #1a1f00 !important;
+        }
+
+        /* Product modal light mode */
+        body[data-theme="light"] .product-modal-overlay {
+            background: rgba(220, 230, 180, 0.98) !important;
+        }
+
+        body[data-theme="light"] .product-modal-card {
+            background: rgba(240, 248, 210, 0.98) !important;
+            border-color: rgba(140, 170, 10, 0.3) !important;
+        }
+
+        body[data-theme="light"] .product-modal-close {
+            background: rgba(176, 203, 31, 0.2) !important;
+            border-color: #B0CB1F !important;
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .product-modal-close:hover {
+            background: #B0CB1F !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .product-gallery {
+            background: rgba(240, 248, 210, 0.8) !important;
+        }
+
+        body[data-theme="light"] .product-details {
+            background: rgba(240, 248, 210, 0.95) !important;
+            border-color: rgba(140, 170, 10, 0.2) !important;
+        }
+
+        body[data-theme="light"] .product-title,
+        body[data-theme="light"] .product-price {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .product-seller {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .product-seller strong {
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .product-date {
+            color: #6a7a20 !important;
+        }
+
+        body[data-theme="light"] .product-description {
+            background: rgba(255, 255, 255, 0.8) !important;
+            color: #1a1f00 !important;
+            border-color: rgba(140, 170, 10, 0.2) !important;
+        }
+
+        body[data-theme="light"] .product-buy-btn {
+            background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .product-thumbnail.active {
+            border-color: #B0CB1F !important;
+            box-shadow: 0 0 20px rgba(176, 203, 31, 0.3) !important;
+        }
+
+        body[data-theme="light"] .gallery-nav {
+            background: rgba(240, 248, 210, 0.9) !important;
+            border-color: #B0CB1F !important;
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .gallery-nav:hover {
+            background: #B0CB1F !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .product-menu-button {
+            background: rgba(240, 248, 210, 0.9) !important;
+            border-color: #B0CB1F !important;
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .product-menu-button:hover {
+            background: #B0CB1F !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .product-menu-content {
+            background: rgba(244, 252, 220, 0.98) !important;
+            border-color: rgba(140, 170, 10, 0.3) !important;
+        }
+
+        body[data-theme="light"] .product-menu-item {
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .product-menu-item:hover {
+            background: rgba(176, 203, 31, 0.2) !important;
+            color: #7a9200 !important;
+        }
+
+        /* Account dropdown light mode */
+        body[data-theme="light"] .account-summary {
+            background: rgba(240, 252, 200, 0.8) !important;
+            border-color: rgba(140, 170, 10, 0.38) !important;
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .account-dropdown {
+            background: rgba(244, 252, 220, 0.97) !important;
+            border-color: rgba(140, 170, 10, 0.28) !important;
+        }
+
+        body[data-theme="light"] .user-info {
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .user-info strong {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .logout-button span:hover {
+            background: rgba(176, 203, 31, 0.2) !important;
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .theme-toggle-row {
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .upload-btn {
+            background: rgba(176, 203, 31, 0.18) !important;
+            border-color: rgba(140, 170, 10, 0.38) !important;
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .admin-btn {
+            background: rgba(255, 215, 0, 0.16) !important;
+            border-color: rgba(200, 170, 0, 0.32) !important;
+            color: #9a7a00 !important;
+        }
+
+        body[data-theme="light"] .item-card {
+            background: rgba(240, 252, 200, 0.7) !important;
+            border-color: rgba(140, 170, 10, 0.22) !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .item-title,
+        body[data-theme="light"] .item-price {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .item-seller,
+        body[data-theme="light"] .item-date {
+            color: #3a4a00 !important;
+        }
+
+        body[data-theme="light"] .pagination-container {
+            background: rgba(240, 252, 200, 0.88) !important;
+            border-color: rgba(140, 170, 10, 0.25) !important;
+        }
+
+        body[data-theme="light"] .pagination-btn {
+            background: rgba(176, 203, 31, 0.13) !important;
+            border-color: rgba(140, 170, 10, 0.25) !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] h1 {
+            color: #7a9200 !important;
+            text-shadow: 0 0 10px rgba(176, 203, 31, 0.6), 0 0 30px rgba(140, 180, 10, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        }
     </style>
 </head>
 
@@ -1999,15 +2297,7 @@ try {
                     <label class="form-label" for="item_title">
                         Cím <span class="required-star">*</span>
                     </label>
-                    <input
-                        class="form-input"
-                        type="text"
-                        id="item_title"
-                        name="item_title"
-                        placeholder="pl. iPhone 14 Pro 256GB"
-                        maxlength="255"
-                        value="<?php echo isset($_POST['item_title']) && $uploadError ? htmlspecialchars($_POST['item_title']) : ''; ?>"
-                        autocomplete="off">
+                    <input class="form-input" type="text" id="item_title" name="item_title" placeholder="pl. iPhone 14 Pro 256GB" maxlength="255" value="<?php echo isset($_POST['item_title']) && $uploadError ? htmlspecialchars($_POST['item_title']) : ''; ?>" autocomplete="off">
                     <div class="field-error" id="title-error">Kérjük, add meg a hirdetés címét!</div>
                 </div>
 
@@ -2015,11 +2305,7 @@ try {
                     <label class="form-label" for="item_description">
                         Leírás <span class="required-star">*</span>
                     </label>
-                    <textarea
-                        class="form-textarea"
-                        id="item_description"
-                        name="item_description"
-                        placeholder="Írd le a termék állapotát, jellemzőit..."><?php echo isset($_POST['item_description']) && $uploadError ? htmlspecialchars($_POST['item_description']) : ''; ?></textarea>
+                    <textarea class="form-textarea" id="item_description" name="item_description" placeholder="Írd le a termék állapotát, jellemzőit..."><?php echo isset($_POST['item_description']) && $uploadError ? htmlspecialchars($_POST['item_description']) : ''; ?></textarea>
                     <div class="field-error" id="desc-error">Kérjük, adj meg egy leírást!</div>
                 </div>
 
@@ -2028,15 +2314,7 @@ try {
                         Ár <span class="required-star">*</span>
                     </label>
                     <div class="price-wrapper">
-                        <input
-                            class="form-input"
-                            type="number"
-                            id="item_price"
-                            name="item_price"
-                            placeholder="0"
-                            min="0"
-                            step="1"
-                            value="<?php echo isset($_POST['item_price']) && $uploadError ? htmlspecialchars($_POST['item_price']) : ''; ?>">
+                        <input class="form-input" type="number" id="item_price" name="item_price" placeholder="0" min="0" step="1" value="<?php echo isset($_POST['item_price']) && $uploadError ? htmlspecialchars($_POST['item_price']) : ''; ?>">
                         <span class="price-suffix">Ft</span>
                     </div>
                     <div class="field-error" id="price-error">Kérjük, adj meg egy érvényes árat!</div>
@@ -2061,11 +2339,7 @@ try {
                 <input type="hidden" name="report_item" value="1">
                 <div class="report-form-group">
                     <label class="report-form-label">Bejelentés oka:</label>
-                    <textarea
-                        name="report_reason"
-                        class="report-form-textarea"
-                        required
-                        placeholder="Kérjük, részletezd a problémát..."></textarea>
+                    <textarea name="report_reason" class="report-form-textarea" required placeholder="Kérjük, részletezd a problémát..."></textarea>
                 </div>
                 <button type="submit" class="report-submit-btn">Bejelentés küldése</button>
             </form>
@@ -2628,7 +2902,7 @@ try {
             if (productModal.classList.contains('active')) adjustImageContainerHeight();
         });
 
-        // ── TÉMAVÁLTÓ ──
+        // ── TÉMAVÁLTÓ (JAVÍTVA: body attribútum is frissül) ──
         (function() {
             const checkbox = document.getElementById('themeSwitchMain');
             const themeLink = document.getElementById('themeStylesheet');
@@ -2638,11 +2912,11 @@ try {
                 localStorage.setItem('theme', theme);
                 checkbox.checked = (theme === 'light');
                 document.documentElement.setAttribute('data-theme', theme);
-                document.body.dataset.theme = theme;
+                document.body.setAttribute('data-theme', theme);
 
                 const placeholder = document.getElementById('productNoImagePlaceholder');
                 if (placeholder) {
-                    placeholder.style.color = theme === 'light' ? '#2e7d32' : '#ff8c00';
+                    placeholder.style.color = theme === 'light' ? '#7a9200' : '#ff8c00';
                 }
 
                 if (productModal && productModal.classList.contains('active') && currentProductImages && currentProductImages.length > 0) {
