@@ -1,15 +1,12 @@
 <?php
 session_start();
-
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: index.php");
     exit();
 }
-
 try {
     $conn = new PDO("mysql:host=localhost;dbname=cucidb", "root", "");
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
     $adminCheck = $conn->prepare("SELECT COUNT(*) FROM admins WHERE user_id = ?");
     $adminCheck->execute([$_SESSION['user_id']]);
     if (!$adminCheck->fetchColumn()) {
@@ -17,7 +14,6 @@ try {
         exit();
     }
     $isAdmin = true;
-
     // AJAX: termékadatok
     if (!empty($_GET['get_item_data'])) {
         header('Content-Type: application/json');
@@ -42,14 +38,12 @@ try {
         ]);
         exit;
     }
-
     $view   = $_GET['view']   ?? 'main';
     $editId = $_GET['id']     ?? null;
     $page   = max(1, intval($_GET['page'] ?? 1));
     $perPage = 25;
     $offset = ($page - 1) * $perPage;
     $message = $error = '';
-
     // POST műveletek
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['delete_user'], $_POST['user_id'])) {
@@ -109,7 +103,6 @@ try {
             }
         }
     }
-
     // Adatok lekérése
     $counts = ['users' => 0, 'items' => 0, 'reports' => 0];
     foreach (array_keys($counts) as $tbl) {
@@ -119,10 +112,8 @@ try {
             if ($tbl === 'reports') $conn->exec("CREATE TABLE IF NOT EXISTS reports (id INT AUTO_INCREMENT PRIMARY KEY, item_id CHAR(12) NOT NULL, user_id INT NOT NULL, reason TEXT NOT NULL, status ENUM('pending','resolved','dismissed') DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB");
         }
     }
-
     $totalItems = $counts[$view] ?? 0;
     $totalPages = $perPage ? (int)ceil($totalItems / $perPage) : 0;
-
     $items = $users = $reports = [];
     if ($view === 'items' && !$editId) {
         $s = $conn->prepare("SELECT i.*,u.username AS seller_name FROM items i JOIN users u ON i.user_id=u.id ORDER BY i.created_at DESC LIMIT :o,:l");
@@ -143,7 +134,6 @@ try {
         $s->execute();
         $reports = $s->fetchAll(PDO::FETCH_ASSOC);
     }
-
     $editItem = $editUser = null;
     if ($editId) {
         if ($view === 'items') {
@@ -164,7 +154,6 @@ try {
     $editItem = $editUser = null;
     $counts = ['users' => 0, 'items' => 0, 'reports' => 0];
 }
-
 // Segédfüggvény: lapozó link
 function pgLink($v, $p)
 {
@@ -180,10 +169,9 @@ function pgLink($v, $p)
     <title>ADMIN TERMINAL // CUCI-SYS</title>
     <style>
         /* ═══════════════════════════════════════════════
-   MILITARY COMPUTER TERMINAL — ADMIN INTERFACE
-   SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
-   ═══════════════════════════════════════════════ */
-
+MILITARY COMPUTER TERMINAL — ADMIN INTERFACE
+SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
+═══════════════════════════════════════════════ */
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
 
         *,
@@ -213,22 +201,22 @@ function pgLink($v, $p)
             --font-vt: 'VT323', 'Courier New', monospace;
         }
 
-        /* LIGHT MODE — Amber CRT */
+        /* LIGHT MODE — Amber CRT (VILÁGOSABB SZÍNEK) */
         body.light-mode {
-            --c-bg: #1a1000;
-            --c-panel: #1f1400;
-            --c-border: #4a3000;
-            --c-border2: #7a5000;
-            --c-green: #ffb300;
-            --c-green-dim: #7a5500;
-            --c-green-mid: #cc8800;
-            --c-amber: #ff6600;
-            --c-red: #ff2200;
-            --c-text: #d8a060;
-            --c-muted: #7a5030;
-            --c-scan: rgba(255, 179, 0, 0.03);
-            --c-glow: 0 0 8px rgba(255, 179, 0, 0.4);
-            --c-glow-strong: 0 0 20px rgba(255, 179, 0, 0.6);
+            --c-bg: #2a1a00;
+            --c-panel: #3a2400;
+            --c-border: #6a4500;
+            --c-border2: #9a6500;
+            --c-green: #ffcc00;
+            --c-green-dim: #9a7000;
+            --c-green-mid: #e69900;
+            --c-amber: #ff8533;
+            --c-red: #ff4433;
+            --c-text: #f0c080;
+            --c-muted: #9a6a45;
+            --c-scan: rgba(255, 204, 0, 0.05);
+            --c-glow: 0 0 10px rgba(255, 204, 0, 0.5);
+            --c-glow-strong: 0 0 25px rgba(255, 204, 0, 0.7);
         }
 
         html {
@@ -1321,9 +1309,7 @@ function pgLink($v, $p)
 
 <body>
     <div class="crt-wrap">
-
         <button class="theme-btn" id="themeToggleBtn">MODE</button>
-
         <!-- CHROME -->
         <div class="terminal-chrome">
             <div class="chrome-top">
@@ -1352,17 +1338,14 @@ function pgLink($v, $p)
                 <a href="main.php" class="nav-btn nav-back">← KILÉPÉS</a>
             </nav>
         </div>
-
         <!-- BODY -->
         <div class="terminal-body">
-
             <?php if ($message): ?>
                 <div class="banner banner-ok"><?= htmlspecialchars($message) ?></div>
             <?php endif; ?>
             <?php if ($error): ?>
                 <div class="banner banner-err"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
-
             <!-- ════════════ EDIT ITEM ════════════ -->
             <?php if ($editItem && $view === 'items'): ?>
                 <div class="edit-terminal">
@@ -1389,11 +1372,10 @@ function pgLink($v, $p)
                         </form>
                     </div>
                 </div>
-
                 <!-- ════════════ EDIT USER ════════════ -->
             <?php elseif ($editUser && $view === 'users'): ?>
                 <div class="edit-terminal">
-                    <div class="edit-terminal-header">FELHASZNÁLÓ SZERKESZTÉSE // ID: <?= $editUser['id'] ?></div>
+                    <div class="edit-terminal-header">FELHASZNÁLÓ SZERKESZTÉSE // ID: <?= htmlspecialchars($editUser['id']) ?></div>
                     <div class="edit-terminal-body">
                         <form method="post">
                             <input type="hidden" name="user_id" value="<?= $editUser['id'] ?>">
@@ -1412,7 +1394,6 @@ function pgLink($v, $p)
                         </form>
                     </div>
                 </div>
-
                 <!-- ════════════ DASHBOARD ════════════ -->
             <?php elseif ($view === 'main'): ?>
                 <div class="dash-grid">
@@ -1438,7 +1419,6 @@ function pgLink($v, $p)
                     <p>SESSION: <strong><?= htmlspecialchars($_SESSION['username'] ?? '') ?></strong> // ADMIN ACCESS: <strong>GRANTED</strong></p>
                     <p>TIMESTAMP: <strong><?= date('Y-m-d H:i:s') ?></strong></p>
                 </div>
-
                 <!-- ════════════ REPORTS ════════════ -->
             <?php elseif ($view === 'reports'): ?>
                 <div class="section-header">
@@ -1480,7 +1460,6 @@ function pgLink($v, $p)
                         </table>
                     </div>
                 <?php endif; ?>
-
                 <!-- ════════════ USERS ════════════ -->
             <?php elseif ($view === 'users'): ?>
                 <div class="section-header">
@@ -1524,7 +1503,6 @@ function pgLink($v, $p)
                         </table>
                     </div>
                 <?php endif; ?>
-
                 <!-- ════════════ ITEMS ════════════ -->
             <?php elseif ($view === 'items'): ?>
                 <div class="section-header">
@@ -1567,7 +1545,6 @@ function pgLink($v, $p)
                     </div>
                 <?php endif; ?>
             <?php endif; ?>
-
             <!-- LAPOZÁS -->
             <?php if ($totalPages > 1 && !in_array($view, ['main']) && !$editId): ?>
                 <div class="pagination">
@@ -1584,10 +1561,8 @@ function pgLink($v, $p)
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
-
         </div><!-- /terminal-body -->
     </div><!-- /crt-wrap -->
-
     <!-- TERMÉKMODÁL -->
     <div class="product-modal-overlay" id="productModal">
         <div class="product-modal-card">
@@ -1621,14 +1596,12 @@ function pgLink($v, $p)
             </div>
         </div>
     </div>
-
     <div class="lightbox-overlay" id="lightboxOverlay">
         <div class="lightbox-content">
             <img src="" alt="" class="lightbox-image" id="lightboxImage">
             <button class="lightbox-close" id="lightboxClose">✕</button>
         </div>
     </div>
-
     <script>
         // ── TÉMA ──
         (function() {
@@ -1644,7 +1617,6 @@ function pgLink($v, $p)
             apply(localStorage.getItem(KEY) || 'dark');
             btn.addEventListener('click', () => apply(body.classList.contains('light-mode') ? 'dark' : 'light'));
         })();
-
         // ── ÓRA ──
         (function clock() {
             const el = document.getElementById('liveClock');
@@ -1654,14 +1626,12 @@ function pgLink($v, $p)
             }
             setTimeout(clock, 1000);
         })();
-
         // ── BANNEREK ELTÜNTETÉSE ──
         setTimeout(() => document.querySelectorAll('.banner').forEach(el => {
             el.style.opacity = '0';
             el.style.transition = 'opacity .5s';
             setTimeout(() => el.remove(), 500);
         }), 5000);
-
         // ── TÖRLÉSEK ──
         const CONFIRM_MSG = {
             user: 'Biztosan törlöd a felhasználót? Minden adata elvész!',
@@ -1684,7 +1654,6 @@ function pgLink($v, $p)
                 body: POST_KEY[type] + id
             }).then(() => location.reload());
         }
-
         // ── TERMÉKMODÁL ──
         const pm = {
             modal: document.getElementById('productModal'),
@@ -1751,7 +1720,6 @@ function pgLink($v, $p)
             pm.modal.classList.remove('active');
             document.body.style.overflow = '';
         }
-
         document.querySelectorAll('.view-item-btn').forEach(btn => btn.addEventListener('click', function(e) {
             e.preventDefault();
             fetch('admin.php?get_item_data=' + this.dataset.itemId).then(r => r.json()).then(d => {

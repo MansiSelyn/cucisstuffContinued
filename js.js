@@ -8,6 +8,7 @@ function applyTheme(theme) {
     const link = document.getElementById('themeStylesheet');
     link.href = theme === 'light' ? 'theme-light.css' : 'theme-dark.css';
     localStorage.setItem('theme', theme);
+    document.body.setAttribute('data-theme', theme);  // EZ A SOR A LÉNYEG
 }
 
 /**

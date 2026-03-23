@@ -120,13 +120,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // FOUC (villanás) megelőzése: téma alkalmazása a DOM renderelés előtt
         (function() {
             const saved = localStorage.getItem('theme') || 'dark';
-            document.getElementById('themeStylesheet').href =
-                saved === 'light' ? 'theme-light.css' : 'theme-dark.css';
+            document.getElementById('themeStylesheet').href = saved === 'light' ? 'theme-light.css' : 'theme-dark.css';
+            // MÓDOSÍTÁS: beállítjuk a data-theme attribútumot is a body-n
+            document.documentElement.setAttribute('data-theme', saved);
+            // Mivel a body még nincs betöltve ekkor, a documentElement-en állítjuk be,
+            // később a js.js is átmásolja majd body-ra
         })();
     </script>
 </head>
 
-<body>
+<body data-theme="dark">
 
     <!-- Háttér elemek -->
     <div class="noise"></div>

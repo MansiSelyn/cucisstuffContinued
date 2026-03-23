@@ -552,8 +552,10 @@ body[data-theme="light"] .lightbox-close:hover {
 
 /* ============================================
    H1 TEXT-SHADOW OVERRIDE - LIGHT THEME (zöld glow)
+   + SZÍN JAVÍTÁS
    ============================================ */
 body[data-theme="light"] h1 {
+    color: #7a9200 !important;  /* Zöld szín a light módban */
     text-shadow:
         0 0 10px rgba(176, 203, 31, 0.6),
         0 0 30px rgba(140, 180, 10, 0.3),
