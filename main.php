@@ -244,14 +244,6 @@ try {
     <title>Főoldal - Termékek</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css">
-    <script>
-        (function() {
-            var saved = localStorage.getItem('theme') || 'dark';
-            document.getElementById('themeStylesheet').href = saved === 'light' ? 'theme-light.css' : 'theme-dark.css';
-            document.documentElement.setAttribute('data-theme', saved);
-            document.body.setAttribute('data-theme', saved);
-        })();
-    </script>
     <style>
         /* ═══════════════════════════════════════════════════════════════════
            MAIN STYLES (dark mode default)
