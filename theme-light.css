@@ -584,3 +584,87 @@ body[data-theme="light"] ::selection {
     background: rgba(176, 203, 31, 0.35);
     color: #fff;
 }
+/* ============================================
+   UPLOAD MODAL FORM - LIGHT THEME
+   ============================================ */
+
+/* Required csillag */
+body[data-theme="light"] .form-label .required-star {
+    color: #7a9200;
+}
+
+/* Form input / textarea alapállapot */
+body[data-theme="light"] .form-input,
+body[data-theme="light"] .form-textarea {
+    background: rgba(245, 252, 215, 0.95);
+    border-color: rgba(140, 170, 10, 0.22);
+    color: #1a1f00;
+}
+
+body[data-theme="light"] .form-input::placeholder,
+body[data-theme="light"] .form-textarea::placeholder {
+    color: #9aaa50;
+}
+
+/* Fókusz: zöld border + glow */
+body[data-theme="light"] .form-input:focus,
+body[data-theme="light"] .form-textarea:focus {
+    border-color: #B0CB1F;
+    background: rgba(242, 252, 200, 1);
+    box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.18);
+}
+
+/* "Ft" suffix */
+body[data-theme="light"] .price-suffix {
+    color: #7a9200;
+    opacity: 0.85;
+}
+
+/* Hirdetés feladása gomb */
+body[data-theme="light"] .submit-btn {
+    background: linear-gradient(135deg, #B0CB1F, #8aA000);
+    color: #1a1f00;
+    box-shadow: 0 4px 20px rgba(176, 203, 31, 0.25);
+}
+
+body[data-theme="light"] .submit-btn:hover {
+    background: linear-gradient(135deg, #c4df25, #9ab800);
+    box-shadow: 0 6px 28px rgba(176, 203, 31, 0.45);
+}
+
+/* Képfeltöltő konténer */
+body[data-theme="light"] .image-upload-container {
+    background: rgba(240, 252, 200, 0.5);
+    border-color: rgba(140, 170, 10, 0.3);
+}
+
+body[data-theme="light"] .image-upload-container:hover {
+    border-color: #B0CB1F;
+    background: rgba(176, 203, 31, 0.08);
+}
+
+body[data-theme="light"] .image-upload-label {
+    color: rgba(26, 31, 0, 0.6);
+}
+
+body[data-theme="light"] .image-upload-icon {
+    color: #7a9200;
+}
+
+/* Kép preview border */
+body[data-theme="light"] .image-preview-item {
+    border-color: rgba(140, 170, 10, 0.3);
+}
+
+/* Upload modal kártya */
+body[data-theme="light"] .modal-card {
+    background: rgba(244, 252, 220, 0.97);
+    border-color: rgba(140, 170, 10, 0.40);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.10), 0 0 40px rgba(176, 203, 31, 0.15);
+}
+
+/* Logout hover zöld shadow */
+body[data-theme="light"] .logout-button span:hover {
+    background: rgba(176, 203, 31, 0.20);
+    color: #7a9200;
+}

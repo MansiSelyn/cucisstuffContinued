@@ -578,7 +578,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             content: '';
             flex: 1;
             height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255, 120, 0, 0.3), rgba(255, 120, 0, 0.3), transparent);
+            background: linear-gradient(90deg, transparent, var(--orange-mid), var(--orange-mid), transparent);
+            opacity: 0.3;
         }
 
         .or-separator span {
@@ -586,7 +587,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 0.68rem;
             letter-spacing: 2px;
             text-transform: uppercase;
-            color: rgba(255, 140, 0, 0.4);
+            color: var(--orange-bright);
+            opacity: 0.5;
             position: relative;
             z-index: 1;
         }
@@ -598,7 +600,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
         /* ── SELECTION ── */
-        ::selection { background: rgba(255, 120, 0, 0.35); color: #fff; }
+        ::selection { background: var(--orange-glow); color: #fff; }
 
         /* ── UNSELECTABLE ── */
         .unselectable { user-select: none; -webkit-user-select: none; }
