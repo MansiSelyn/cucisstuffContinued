@@ -249,6 +249,7 @@ try {
             var saved = localStorage.getItem('theme') || 'dark';
             document.getElementById('themeStylesheet').href =
                 saved === 'light' ? 'theme-light.css' : 'theme-dark.css';
+            document.documentElement.setAttribute('data-theme', saved);
         })();
     </script>
     <style>
@@ -2636,6 +2637,7 @@ try {
                 themeLink.href = theme === 'light' ? 'theme-light.css' : 'theme-dark.css';
                 localStorage.setItem('theme', theme);
                 checkbox.checked = (theme === 'light');
+                document.documentElement.setAttribute('data-theme', theme);
                 document.body.dataset.theme = theme;
 
                 const placeholder = document.getElementById('productNoImagePlaceholder');
