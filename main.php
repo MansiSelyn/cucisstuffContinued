@@ -34,6 +34,60 @@ try {
         $isAdmin = $adminCheck->fetchColumn() > 0;
     }
 
+    // =============================================
+    // SEARCH HANDLER (JSON output)
+    // =============================================
+    if (isset($_GET['search_query']) && strlen($_GET['search_query']) >= 2) {
+        header('Content-Type: application/json');
+        $query = '%' . $_GET['search_query'] . '%';
+        $stmt = $conn->prepare("
+            SELECT 
+                i.id, i.title, i.price, u.username as seller_name,
+                (SELECT image_path FROM item_images WHERE item_id = i.id AND is_primary = 1 LIMIT 1) as primary_image
+            FROM items i
+            JOIN users u ON i.user_id = u.id
+            WHERE i.title LIKE :q OR i.description LIKE :q
+            ORDER BY i.created_at DESC
+            LIMIT 10
+        ");
+        $stmt->execute([':q' => $query]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($results);
+        exit;
+    }
+
+    // =============================================
+    // GET ITEM DETAILS (JSON output)
+    // =============================================
+    if (isset($_GET['get_item']) && !empty($_GET['get_item'])) {
+        header('Content-Type: application/json');
+        $itemId = $_GET['get_item'];
+
+        // Fetch item details
+        $stmt = $conn->prepare("
+            SELECT i.id, i.title, i.description, i.price, i.created_at, u.username as seller_name, i.user_id
+            FROM items i
+            JOIN users u ON i.user_id = u.id
+            WHERE i.id = ?
+        ");
+        $stmt->execute([$itemId]);
+        $item = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$item) {
+            echo json_encode(['error' => 'Termék nem található']);
+            exit;
+        }
+
+        // Fetch all images for the item
+        $imgStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? ORDER BY sort_order");
+        $imgStmt->execute([$itemId]);
+        $images = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $item['images'] = $images;
+        echo json_encode($item);
+        exit;
+    }
+
     // Handle new item upload
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_item'])) {
         $title       = trim($_POST['item_title'] ?? '');
@@ -396,7 +450,7 @@ try {
             }
         }
 
-        /* Top bar */
+        /* Top bar - KÖZÉPRE IGAZÍTOTT VERZIÓ */
         .top-bar {
             position: fixed;
             top: 0;
@@ -404,11 +458,29 @@ try {
             right: 0;
             z-index: 1000;
             display: flex;
-            justify-content: flex-end;
+            justify-content: center;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.5rem 0.5rem 0 0;
+            padding: 0.5rem 1rem;
             pointer-events: none;
+        }
+
+        /* Bal oldali elemek csoportja (admin gomb) */
+        .top-bar-left {
+            display: flex;
+            gap: 0.5rem;
+            position: absolute;
+            left: 1rem;
+            pointer-events: auto;
+        }
+
+        /* Jobb oldali elemek csoportja (feltöltés gomb + fiók menü) */
+        .top-bar-right {
+            display: flex;
+            gap: 0.5rem;
+            position: absolute;
+            right: 1rem;
+            pointer-events: auto;
         }
 
         /* Admin button */
@@ -478,6 +550,139 @@ try {
             line-height: 1;
         }
 
+        /* Search bar - KÖZÉPEN */
+        .search-container {
+            position: relative;
+            flex: 0 1 400px;
+            max-width: 400px;
+            margin: 0 auto;
+            pointer-events: auto;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--orange-glow);
+            border-radius: 50px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-deep);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--orange-bright);
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.3);
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            z-index: 2000;
+            box-shadow: var(--shadow-deep), var(--shadow-orange);
+        }
+
+        .search-dropdown.show {
+            display: block;
+        }
+
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            user-select: none; /* Kijelölés tiltása */
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background: rgba(255, 140, 0, 0.15);
+        }
+
+        .search-result-image {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: rgba(255, 140, 0, 0.1);
+            border: 1px solid var(--glass-border);
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .search-result-info {
+            flex: 1;
+            user-select: none;
+        }
+
+        .search-result-title {
+            font-weight: bold;
+            color: var(--orange-bright);
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .search-result-price {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            opacity: 0.8;
+        }
+
+        .search-result-seller {
+            font-size: 0.7rem;
+            color: var(--text-primary);
+            opacity: 0.6;
+        }
+
+        /* Light theme override for search */
+        body[data-theme="light"] .search-input {
+            background: rgba(245, 252, 215, 0.9);
+            border-color: rgba(140, 170, 10, 0.4);
+            color: #1a1f00;
+        }
+
+        body[data-theme="light"] .search-input:focus {
+            background: #ffffff;
+            border-color: #B0CB1F;
+        }
+
+        body[data-theme="light"] .search-dropdown {
+            background: rgba(248, 252, 230, 0.98);
+            border-color: rgba(140, 170, 10, 0.3);
+        }
+
+        body[data-theme="light"] .search-result-item:hover {
+            background: rgba(176, 203, 31, 0.15);
+        }
+
+        body[data-theme="light"] .search-result-title {
+            color: #7a9200;
+        }
+
+        body[data-theme="light"] .search-result-price,
+        body[data-theme="light"] .search-result-seller {
+            color: #1a1f00;
+        }
+
         /* Account menu */
         .account-menu {
             position: relative;
@@ -533,7 +738,6 @@ try {
                 opacity: 0;
                 transform: translateY(-10px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -2231,45 +2435,55 @@ try {
     <div class="orb-1"></div>
     <div class="orb-2"></div>
 
-    <!-- Top bar: admin button (if admin) + upload button + account menu -->
+    <!-- Top bar: admin button (if admin) + keresősáv + feltöltés gomb + fiók menü -->
     <div class="top-bar">
-        <?php if ($isAdmin): ?>
-            <a href="admin.php" class="admin-btn unselectable" id="adminBtn">
-                <span class="shield-icon">🛡️</span>
-                <span class="button-text">Admin</span>
-            </a>
-        <?php endif; ?>
+        <div class="top-bar-left">
+            <?php if ($isAdmin): ?>
+                <a href="admin.php" class="admin-btn unselectable" id="adminBtn">
+                    <span class="shield-icon">🛡️</span>
+                    <span class="button-text">Admin</span>
+                </a>
+            <?php endif; ?>
+        </div>
 
-        <button class="upload-btn unselectable" id="openModalBtn" type="button">
-            <span class="plus-icon">＋</span>
-            <span class="button-text">Hirdetés feladása</span>
-        </button>
+        <!-- KERESŐSÁV KÖZÉPEN -->
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Keresés termékek között..." autocomplete="off">
+            <div id="searchResults" class="search-dropdown"></div>
+        </div>
 
-        <details class="account-menu">
-            <summary class="account-summary unselectable">
-                <span>⚙️</span> FIÓK
-            </summary>
-            <div class="account-dropdown">
-                <div class="user-info unselectable">
-                    <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>
+        <div class="top-bar-right">
+            <button class="upload-btn unselectable" id="openModalBtn" type="button">
+                <span class="plus-icon">＋</span>
+                <span class="button-text">Hirdetés feladása</span>
+            </button>
+
+            <details class="account-menu">
+                <summary class="account-summary unselectable">
+                    <span>⚙️</span> FIÓK
+                </summary>
+                <div class="account-dropdown">
+                    <div class="user-info unselectable">
+                        <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="theme-toggle-row">
+                        <span class="theme-toggle-label">☀️ Világos mód</span>
+                        <label class="theme-switch">
+                            <input type="checkbox" id="themeSwitchMain">
+                            <span class="theme-switch-track"></span>
+                            <span class="theme-switch-thumb"></span>
+                        </label>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <form method="post" style="width:100%;margin:0;padding:0;">
+                        <button type="submit" name="logout" class="logout-button">
+                            <span class="unselectable">Kijelentkezés</span>
+                        </button>
+                    </form>
                 </div>
-                <div class="dropdown-divider"></div>
-                <div class="theme-toggle-row">
-                    <span class="theme-toggle-label">☀️ Világos mód</span>
-                    <label class="theme-switch">
-                        <input type="checkbox" id="themeSwitchMain">
-                        <span class="theme-switch-track"></span>
-                        <span class="theme-switch-thumb"></span>
-                    </label>
-                </div>
-                <div class="dropdown-divider"></div>
-                <form method="post" style="width:100%;margin:0;padding:0;">
-                    <button type="submit" name="logout" class="logout-button">
-                        <span class="unselectable">Kijelentkezés</span>
-                    </button>
-                </form>
-            </div>
-        </details>
+            </details>
+        </div>
     </div>
 
     <!-- Upload Modal -->
@@ -2955,8 +3169,157 @@ try {
                 applyTheme(this.checked ? 'light' : 'dark');
             });
         })();
-    </script>
 
+        // =====================
+        // KERESÉS FUNKCIÓ (AJAX)
+        // =====================
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        let searchTimeout;
+
+        function performSearch() {
+            const query = searchInput.value.trim();
+            if (query.length < 2) {
+                searchResults.classList.remove('show');
+                return;
+            }
+
+            fetch(`?search_query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        searchResults.classList.remove('show');
+                        return;
+                    }
+
+                    searchResults.innerHTML = data.map(item => `
+                        <div class="search-result-item" data-item-id="${item.id}">
+                            <img src="${item.primary_image || ''}" class="search-result-image" onerror="this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23ff8c00%22%3E%3Cpath%20d%3D%22M4%204h16v2H4V4zm2%204h12v2H6V8zm14-4v16H4V4h16z%22%2F%3E%3C%2Fsvg%3E'">
+                            <div class="search-result-info">
+                                <div class="search-result-title">${escapeHtml(item.title)}</div>
+                                <div class="search-result-price">${Number(item.price).toLocaleString('hu-HU')} Ft</div>
+                                <div class="search-result-seller">${escapeHtml(item.seller_name)}</div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    searchResults.classList.add('show');
+
+                    // Kattintás a találatra
+                    document.querySelectorAll('.search-result-item').forEach(el => {
+                        el.addEventListener('click', () => {
+                            const itemId = el.dataset.itemId;
+                            fetchItemDetails(itemId);
+                        });
+                    });
+                })
+                .catch(err => console.error('Search error:', err));
+        }
+
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(performSearch, 300);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.classList.remove('show');
+            }
+        });
+
+        // Termék részletek lekérése a beépített JSON API-ról
+        function fetchItemDetails(itemId) {
+            fetch(`?get_item=${itemId}`)
+                .then(response => response.json())
+                .then(item => {
+                    if (item.error) {
+                        console.error(item.error);
+                        return;
+                    }
+
+                    currentProductId = item.id;
+                    currentProductUserId = item.user_id;
+                    currentProductImages = item.images;
+                    currentImageIndex = 0;
+
+                    document.getElementById('productTitle').textContent = item.title;
+                    document.getElementById('productPrice').textContent = `${Number(item.price).toLocaleString('hu-HU')} Ft`;
+                    document.getElementById('productSeller').innerHTML = `Eladó: <strong>${escapeHtml(item.seller_name)}</strong>`;
+                    document.getElementById('productDate').textContent = item.created_at.substring(0,10);
+                    document.getElementById('productDescription').textContent = item.description;
+
+                    const thumbnailsContainer = document.getElementById('productThumbnails');
+                    thumbnailsContainer.innerHTML = '';
+
+                    if (item.images && item.images.length > 0) {
+                        item.images.forEach((img, index) => {
+                            const thumbnail = document.createElement('div');
+                            thumbnail.className = `product-thumbnail ${index === 0 ? 'active' : ''}`;
+                            thumbnail.innerHTML = `<img src="${img}" alt="Thumbnail ${index+1}">`;
+                            thumbnail.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                setMainImage(index);
+                            });
+                            thumbnailsContainer.appendChild(thumbnail);
+                        });
+                        setMainImage(0);
+                    } else {
+                        setMainImage(-1);
+                    }
+
+                    const prevBtn = document.getElementById('galleryPrev');
+                    const nextBtn = document.getElementById('galleryNext');
+                    prevBtn.classList.toggle('hidden', !item.images || item.images.length <= 1);
+                    nextBtn.classList.toggle('hidden', !item.images || item.images.length <= 1);
+
+                    const menuContainer = document.getElementById('productMenuContainer');
+                    const reportBtn = document.getElementById('productReportBtn');
+                    const deleteBtn = document.getElementById('productDeleteBtn');
+                    const isOwner = (parseInt(item.user_id) === <?php echo $_SESSION['user_id']; ?>);
+                    const isAdmin = <?php echo $isAdmin ? 'true' : 'false'; ?>;
+
+                    if (!isOwner || isAdmin) {
+                        menuContainer.style.display = 'block';
+                        reportBtn.onclick = () => {
+                            closeProductModal();
+                            openReportModal(item.id);
+                        };
+                        if (isAdmin) {
+                            deleteBtn.style.display = 'block';
+                            deleteBtn.onclick = () => {
+                                if (confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) {
+                                    const form = document.createElement('form');
+                                    form.method = 'POST';
+                                    form.innerHTML = `
+                                        <input type="hidden" name="item_id" value="${item.id}">
+                                        <input type="hidden" name="delete_item" value="1">
+                                    `;
+                                    document.body.appendChild(form);
+                                    form.submit();
+                                }
+                            };
+                        } else {
+                            deleteBtn.style.display = 'none';
+                        }
+                    } else {
+                        menuContainer.style.display = 'none';
+                    }
+
+                    openProductModal();
+                })
+                .catch(err => console.error('Error fetching item details:', err));
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+    </script>
 </body>
 
 </html>
