@@ -1999,6 +1999,25 @@ try {
             border-color: rgba(140, 170, 10, 0.3) !important;
         }
 
+        /* Light mode: kép előnézet törlés gomb */
+        body[data-theme="light"] .image-preview-remove {
+            background: rgba(240, 252, 200, 0.9) !important;
+            border-color: #B0CB1F !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .image-preview-remove:hover {
+            background: rgba(255, 80, 80, 0.9) !important;
+            border-color: #ff4d4d !important;
+            color: white !important;
+        }
+
+        /* Light mode: főkép jelvény */
+        body[data-theme="light"] .primary-badge {
+            background: #B0CB1F !important;
+            color: #1a1f00 !important;
+        }
+
         body[data-theme="light"] .error-banner {
             background: rgba(255, 77, 77, 0.1) !important;
             border-color: rgba(255, 77, 77, 0.3) !important;
