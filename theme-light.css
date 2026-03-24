@@ -63,8 +63,9 @@ body::after {
     text-shadow: none !important;
 }
 
-/* Form (index.php) */
-form {
+/* Form (csak index.php login/register form) */
+#loginForm,
+#registerForm {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     box-shadow:
@@ -74,16 +75,19 @@ form {
         0 1px 0 rgba(255, 255, 255, 0.9) inset;
 }
 
-form::before {
+#loginForm::before,
+#registerForm::before {
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), rgba(210, 240, 100, 0.4), transparent);
 }
 
-form::after {
+#loginForm::after,
+#registerForm::after {
     background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(176, 203, 31, 0.07) 0%, transparent 60%);
 }
 
-/* Input (index.php) */
-input {
+/* Input (csak index.php login/register form) */
+#loginForm input,
+#registerForm input {
     background: var(--input-bg);
     color: var(--text-primary);
     border: 1px solid rgba(140, 170, 10, 0.22);
@@ -93,7 +97,8 @@ input {
         0 -1px 0 rgba(0, 0, 0, 0.03) inset;
 }
 
-input:focus {
+#loginForm input:focus,
+#registerForm input:focus {
     border-color: rgba(140, 170, 10, 0.55);
     background: var(--input-focus-bg);
     box-shadow:
@@ -104,12 +109,14 @@ input:focus {
     color: #1a1f00;
 }
 
-input::placeholder {
+#loginForm input::placeholder,
+#registerForm input::placeholder {
     color: var(--placeholder-color);
 }
 
-/* Submit button (index.php) */
-button[type="submit"] {
+/* Submit button (csak index.php login/register form) */
+#loginForm button[type="submit"],
+#registerForm button[type="submit"] {
     background: linear-gradient(180deg, #d4e840 0%, #B0CB1F 50%, #8aA000 100%);
     color: #1a1f00;
     box-shadow:
@@ -120,7 +127,8 @@ button[type="submit"] {
     text-shadow: 0 1px 0 rgba(200, 230, 60, 0.3);
 }
 
-button[type="submit"]:hover {
+#loginForm button[type="submit"]:hover,
+#registerForm button[type="submit"]:hover {
     background: linear-gradient(180deg, #e0f050 0%, #c4df25 50%, #9ab800 100%);
     box-shadow:
         0 10px 0 #607000,
@@ -129,14 +137,16 @@ button[type="submit"]:hover {
         0 0 0 1px rgba(220, 255, 80, 0.4) inset;
 }
 
-button[type="submit"]:active {
+#loginForm button[type="submit"]:active,
+#registerForm button[type="submit"]:active {
     box-shadow:
         0 2px 0 #607000,
         0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
-/* Ghost button (index.php) */
-button[type="button"] {
+/* Ghost button (csak index.php login/register form) */
+#loginForm button[type="button"],
+#registerForm button[type="button"] {
     background: rgba(240, 252, 200, 0.55);
     color: var(--orange-bright);
     border: 1px solid rgba(140, 170, 10, 0.32);
@@ -144,7 +154,8 @@ button[type="button"] {
     text-shadow: none;
 }
 
-button[type="button"]:hover {
+#loginForm button[type="button"]:hover,
+#registerForm button[type="button"]:hover {
     background: rgba(210, 240, 100, 0.35);
     border-color: rgba(140, 170, 10, 0.55);
     color: #507000;
@@ -584,6 +595,7 @@ body[data-theme="light"] ::selection {
     background: rgba(176, 203, 31, 0.35);
     color: #fff;
 }
+
 /* ============================================
    UPLOAD MODAL FORM - LIGHT THEME
    ============================================ */
@@ -667,4 +679,32 @@ body[data-theme="light"] .modal-card {
 body[data-theme="light"] .logout-button span:hover {
     background: rgba(176, 203, 31, 0.20);
     color: #7a9200;
+}
+
+/* ============================================
+   UPLOAD MODAL LIGHT MODE - OVERLAY & CARD FIX
+   ============================================ */
+body[data-theme="light"] .modal-overlay {
+    background: rgba(220, 230, 180, 0.85) !important;
+    backdrop-filter: blur(6px);
+}
+
+body[data-theme="light"] .modal-card {
+    background: #f8fce6 !important;
+    border: 1px solid #B0CB1F !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 40px rgba(176, 203, 31, 0.2) !important;
+    color: #1a1f00 !important;
+}
+
+/* Biztosítsd, hogy a form elemek is világosak legyenek a modal cardban */
+body[data-theme="light"] .modal-card .form-input,
+body[data-theme="light"] .modal-card .form-textarea {
+    background: rgba(245, 252, 215, 0.95) !important;
+    border-color: rgba(140, 170, 10, 0.3) !important;
+    color: #1a1f00 !important;
+}
+
+body[data-theme="light"] .modal-card .form-input::placeholder,
+body[data-theme="light"] .modal-card .form-textarea::placeholder {
+    color: #9aaa50 !important;
 }
