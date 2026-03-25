@@ -607,7 +607,7 @@ try {
             cursor: pointer;
             transition: background 0.2s ease;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            user-select: none; /* Kijelölés tiltása */
+            user-select: none;
         }
 
         .search-result-item:last-child {
@@ -663,6 +663,8 @@ try {
         body[data-theme="light"] .search-input:focus {
             background: #ffffff;
             border-color: #B0CB1F;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.3);
         }
 
         body[data-theme="light"] .search-dropdown {
@@ -681,6 +683,11 @@ try {
         body[data-theme="light"] .search-result-price,
         body[data-theme="light"] .search-result-seller {
             color: #1a1f00;
+        }
+
+        body[data-theme="light"] .search-result-image {
+            background: rgba(176, 203, 31, 0.1);
+            border-color: rgba(140, 170, 10, 0.3);
         }
 
         /* Account menu */
@@ -2266,19 +2273,26 @@ try {
             border-color: rgba(140, 170, 10, 0.3) !important;
         }
 
+        /* Product modal bezáró gomb */
         body[data-theme="light"] .product-modal-close {
-            background: rgba(176, 203, 31, 0.2) !important;
-            border-color: #B0CB1F !important;
-            color: #7a9200 !important;
+            background: rgba(176, 203, 31, 0.2);
+            border-color: #B0CB1F;
+            color: #7a9200;
         }
 
         body[data-theme="light"] .product-modal-close:hover {
-            background: #B0CB1F !important;
-            color: #1a1f00 !important;
+            background: #B0CB1F;
+            color: #1a1f00;
         }
 
+        /* Product galéria */
         body[data-theme="light"] .product-gallery {
             background: rgba(240, 248, 210, 0.8) !important;
+        }
+
+        body[data-theme="light"] .product-main-image-container {
+            background: #f0f5d8 !important;
+            border-color: rgba(140, 170, 10, 0.3) !important;
         }
 
         body[data-theme="light"] .product-details {
@@ -2286,11 +2300,16 @@ try {
             border-color: rgba(140, 170, 10, 0.2) !important;
         }
 
-        body[data-theme="light"] .product-title,
-        body[data-theme="light"] .product-price {
+        body[data-theme="light"] .product-title {
             color: #7a9200 !important;
         }
 
+        body[data-theme="light"] .product-price {
+            color: #7a9200 !important;
+            text-shadow: 0 0 30px rgba(176, 203, 31, 0.45) !important;
+        }
+
+        /* Eladó szövegének színezése */
         body[data-theme="light"] .product-seller {
             color: #7a9200 !important;
         }
@@ -2314,9 +2333,21 @@ try {
             color: #1a1f00 !important;
         }
 
+        body[data-theme="light"] .product-buy-btn:hover {
+            box-shadow: 0 10px 30px rgba(176, 203, 31, 0.4) !important;
+        }
+
+        body[data-theme="light"] .product-thumbnail {
+            border-color: transparent;
+        }
+
         body[data-theme="light"] .product-thumbnail.active {
             border-color: #B0CB1F !important;
             box-shadow: 0 0 20px rgba(176, 203, 31, 0.3) !important;
+        }
+
+        body[data-theme="light"] .product-thumbnail img {
+            border: 1px solid rgba(140, 170, 10, 0.2);
         }
 
         body[data-theme="light"] .gallery-nav {
@@ -2328,6 +2359,7 @@ try {
         body[data-theme="light"] .gallery-nav:hover {
             background: #B0CB1F !important;
             color: #1a1f00 !important;
+            transform: translateY(-50%) scale(1.1);
         }
 
         body[data-theme="light"] .product-menu-button {
@@ -2344,6 +2376,7 @@ try {
         body[data-theme="light"] .product-menu-content {
             background: rgba(244, 252, 220, 0.98) !important;
             border-color: rgba(140, 170, 10, 0.3) !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 30px rgba(176, 203, 31, 0.15) !important;
         }
 
         body[data-theme="light"] .product-menu-item {
@@ -2355,77 +2388,173 @@ try {
             color: #7a9200 !important;
         }
 
-        /* Account dropdown light mode */
-        body[data-theme="light"] .account-summary {
-            background: rgba(240, 252, 200, 0.8) !important;
-            border-color: rgba(140, 170, 10, 0.38) !important;
+        body[data-theme="light"] .product-menu-item.delete:hover {
+            background: rgba(255, 80, 80, 0.15) !important;
+            color: #d32f2f !important;
+        }
+
+        /* ============================================
+        LIGHTBOX - LIGHT THEME
+        ============================================ */
+        body[data-theme="light"] .lightbox-overlay {
+            background: rgba(220, 230, 180, 0.98) !important;
+        }
+
+        body[data-theme="light"] .lightbox-image {
+            border-color: #B0CB1F !important;
+        }
+
+        body[data-theme="light"] .lightbox-close {
+            background: rgba(240, 248, 210, 0.9) !important;
+            border-color: #B0CB1F !important;
             color: #7a9200 !important;
         }
 
-        body[data-theme="light"] .account-dropdown {
-            background: rgba(244, 252, 220, 0.97) !important;
-            border-color: rgba(140, 170, 10, 0.28) !important;
-        }
-
-        body[data-theme="light"] .user-info {
+        body[data-theme="light"] .lightbox-close:hover {
+            background: #B0CB1F !important;
             color: #1a1f00 !important;
+            transform: scale(1.1);
         }
 
-        body[data-theme="light"] .user-info strong {
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .logout-button span:hover {
-            background: rgba(176, 203, 31, 0.2) !important;
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .theme-toggle-row {
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .upload-btn {
-            background: rgba(176, 203, 31, 0.18) !important;
-            border-color: rgba(140, 170, 10, 0.38) !important;
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .admin-btn {
-            background: rgba(255, 215, 0, 0.16) !important;
-            border-color: rgba(200, 170, 0, 0.32) !important;
-            color: #9a7a00 !important;
-        }
-
-        body[data-theme="light"] .item-card {
-            background: rgba(240, 252, 200, 0.7) !important;
-            border-color: rgba(140, 170, 10, 0.22) !important;
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .item-title,
-        body[data-theme="light"] .item-price {
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .item-seller,
-        body[data-theme="light"] .item-date {
-            color: #3a4a00 !important;
-        }
-
-        body[data-theme="light"] .pagination-container {
-            background: rgba(240, 252, 200, 0.88) !important;
-            border-color: rgba(140, 170, 10, 0.25) !important;
-        }
-
-        body[data-theme="light"] .pagination-btn {
-            background: rgba(176, 203, 31, 0.13) !important;
-            border-color: rgba(140, 170, 10, 0.25) !important;
-            color: #1a1f00 !important;
-        }
-
+        /* ============================================
+        H1 TEXT-SHADOW OVERRIDE - LIGHT THEME (zöld glow)
+        SZÍN JAVÍTÁS
+        ============================================ */
         body[data-theme="light"] h1 {
             color: #7a9200 !important;
-            text-shadow: 0 0 10px rgba(176, 203, 31, 0.6), 0 0 30px rgba(140, 180, 10, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+            text-shadow:
+                0 0 10px rgba(176, 203, 31, 0.6),
+                0 0 30px rgba(140, 180, 10, 0.3),
+                0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        /* ============================================
+        SCROLLBAR - LIGHT THEME (EGYSZERŰSÍTVE)
+        ============================================ */
+        body[data-theme="light"] ::-webkit-scrollbar-track {
+            background: #e8f0c0;
+        }
+
+        body[data-theme="light"] ::-webkit-scrollbar-thumb {
+            background: rgba(140, 170, 10, 0.35);
+        }
+
+        body[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+            background: rgba(140, 170, 10, 0.6);
+        }
+
+        /* ============================================
+        SELECTION OVERRIDE - LIGHT THEME (zöld kijelölés)
+        ============================================ */
+        body[data-theme="light"] ::selection {
+            background: rgba(176, 203, 31, 0.35);
+            color: #fff;
+        }
+
+        /* ============================================
+        UPLOAD MODAL FORM - LIGHT THEME
+        ============================================ */
+        /* Required csillag */
+        body[data-theme="light"] .form-label .required-star {
+            color: #7a9200;
+        }
+
+        /* Form input / textarea alapállapot */
+        body[data-theme="light"] .form-input,
+        body[data-theme="light"] .form-textarea {
+            background: rgba(245, 252, 215, 0.95);
+            border-color: rgba(140, 170, 10, 0.22);
+            color: #1a1f00;
+        }
+
+        body[data-theme="light"] .form-input::placeholder,
+        body[data-theme="light"] .form-textarea::placeholder {
+            color: #9aaa50;
+        }
+
+        /* Fókusz: zöld border + glow */
+        body[data-theme="light"] .form-input:focus,
+        body[data-theme="light"] .form-textarea:focus {
+            border-color: #B0CB1F;
+            background: rgba(242, 252, 200, 1);
+            box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.18);
+        }
+
+        /* "Ft" suffix */
+        body[data-theme="light"] .price-suffix {
+            color: #7a9200;
+            opacity: 0.85;
+        }
+
+        /* Hirdetés feladása gomb */
+        body[data-theme="light"] .submit-btn {
+            background: linear-gradient(135deg, #B0CB1F, #8aA000);
+            color: #1a1f00;
+            box-shadow: 0 4px 20px rgba(176, 203, 31, 0.25);
+        }
+
+        body[data-theme="light"] .submit-btn:hover {
+            background: linear-gradient(135deg, #c4df25, #9ab800);
+            box-shadow: 0 6px 28px rgba(176, 203, 31, 0.45);
+        }
+
+        /* Képfeltöltő konténer */
+        body[data-theme="light"] .image-upload-container {
+            background: rgba(240, 252, 200, 0.5);
+            border-color: rgba(140, 170, 10, 0.3);
+        }
+
+        body[data-theme="light"] .image-upload-container:hover {
+            border-color: #B0CB1F;
+            background: rgba(176, 203, 31, 0.08);
+        }
+
+        body[data-theme="light"] .image-upload-label {
+            color: rgba(26, 31, 0, 0.6);
+        }
+
+        body[data-theme="light"] .image-upload-icon {
+            color: #7a9200;
+        }
+
+        /* Kép preview border */
+        body[data-theme="light"] .image-preview-item {
+            border-color: rgba(140, 170, 10, 0.3);
+        }
+
+        /* Upload modal kártya */
+        body[data-theme="light"] .modal-card {
+            background: rgba(244, 252, 220, 0.97);
+            border-color: rgba(140, 170, 10, 0.40);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.10), 0 0 40px rgba(176, 203, 31, 0.15);
+        }
+
+        /* ============================================
+        UPLOAD MODAL LIGHT MODE - OVERLAY & CARD FIX
+        ============================================ */
+        body[data-theme="light"] .modal-overlay {
+            background: rgba(220, 230, 180, 0.85) !important;
+            backdrop-filter: blur(6px);
+        }
+
+        body[data-theme="light"] .modal-card {
+            background: #f8fce6 !important;
+            border: 1px solid #B0CB1F !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 40px rgba(176, 203, 31, 0.2) !important;
+            color: #1a1f00 !important;
+        }
+
+        /* Biztosítsd, hogy a form elemek is világosak legyenek a modal cardban */
+        body[data-theme="light"] .modal-card .form-input,
+        body[data-theme="light"] .modal-card .form-textarea {
+            background: rgba(245, 252, 215, 0.95) !important;
+            border-color: rgba(140, 170, 10, 0.3) !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .modal-card .form-input::placeholder,
+        body[data-theme="light"] .modal-card .form-textarea::placeholder {
+            color: #9aaa50 !important;
         }
     </style>
 </head>
@@ -3192,9 +3321,14 @@ try {
                         return;
                     }
 
+                    // Aktuális téma lekérése a placeholder SVG színéhez
+                    const isLightMode = document.body.getAttribute('data-theme') === 'light';
+                    const placeholderColor = isLightMode ? '#7a9200' : '#ff8c00';
+                    const placeholderSvg = `data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22${encodeURIComponent(placeholderColor)}%22%3E%3Cpath%20d%3D%22M4%204h16v2H4V4zm2%204h12v2H6V8zm14-4v16H4V4h16z%22%2F%3E%3C%2Fsvg%3E`;
+
                     searchResults.innerHTML = data.map(item => `
                         <div class="search-result-item" data-item-id="${item.id}">
-                            <img src="${item.primary_image || ''}" class="search-result-image" onerror="this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23ff8c00%22%3E%3Cpath%20d%3D%22M4%204h16v2H4V4zm2%204h12v2H6V8zm14-4v16H4V4h16z%22%2F%3E%3C%2Fsvg%3E'">
+                            <img src="${item.primary_image || ''}" class="search-result-image" onerror="this.src='${placeholderSvg}'">
                             <div class="search-result-info">
                                 <div class="search-result-title">${escapeHtml(item.title)}</div>
                                 <div class="search-result-price">${Number(item.price).toLocaleString('hu-HU')} Ft</div>
