@@ -559,6 +559,7 @@ try {
             pointer-events: auto;
         }
 
+        /* SEARCH INPUT - DARK MODE DEFAULT */
         .search-input {
             width: 100%;
             padding: 0.5rem 1rem;
@@ -653,23 +654,28 @@ try {
             opacity: 0.6;
         }
 
-        /* Light theme override for search */
+        /* LIGHT MODE OVERRIDES FOR SEARCH */
         body[data-theme="light"] .search-input {
             background: rgba(245, 252, 215, 0.9);
             border-color: rgba(140, 170, 10, 0.4);
             color: #1a1f00;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
 
         body[data-theme="light"] .search-input:focus {
             background: #ffffff;
             border-color: #B0CB1F;
-            outline: none;
             box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.3);
         }
 
         body[data-theme="light"] .search-dropdown {
             background: rgba(248, 252, 230, 0.98);
             border-color: rgba(140, 170, 10, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 20px rgba(176, 203, 31, 0.1);
+        }
+
+        body[data-theme="light"] .search-result-item {
+            border-bottom-color: rgba(140, 170, 10, 0.15);
         }
 
         body[data-theme="light"] .search-result-item:hover {
@@ -683,6 +689,7 @@ try {
         body[data-theme="light"] .search-result-price,
         body[data-theme="light"] .search-result-seller {
             color: #1a1f00;
+            opacity: 0.8;
         }
 
         body[data-theme="light"] .search-result-image {
@@ -745,6 +752,7 @@ try {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -2121,441 +2129,6 @@ try {
             }
         }
 
-        /* ═══════════════════════════════════════════════════════════════════
-           LIGHT MODE OVERRIDES - ezek biztosítják a helyes megjelenést
-           ═══════════════════════════════════════════════════════════════════ */
-        body[data-theme="light"] {
-            background: #d8e0b0 !important;
-            color: #1a1f00 !important;
-        }
-
-        /* Upload modal light mode */
-        body[data-theme="light"] .modal-card {
-            background: #f8fce6 !important;
-            border: 1px solid #B0CB1F !important;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 40px rgba(176, 203, 31, 0.2) !important;
-        }
-
-        body[data-theme="light"] .modal-title,
-        body[data-theme="light"] .modal-subtitle {
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .modal-close {
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .modal-close:hover {
-            color: #1a1f00 !important;
-            background: rgba(176, 203, 31, 0.1) !important;
-        }
-
-        body[data-theme="light"] .form-label {
-            color: #6a7a20 !important;
-        }
-
-        body[data-theme="light"] .form-input,
-        body[data-theme="light"] .form-textarea {
-            background: rgba(245, 252, 215, 0.95) !important;
-            border: 1px solid rgba(140, 170, 10, 0.3) !important;
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .form-input::placeholder,
-        body[data-theme="light"] .form-textarea::placeholder {
-            color: #9aaa50 !important;
-        }
-
-        body[data-theme="light"] .form-input:focus,
-        body[data-theme="light"] .form-textarea:focus {
-            border-color: #B0CB1F !important;
-            background: #fff !important;
-            box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.2) !important;
-        }
-
-        body[data-theme="light"] .price-suffix {
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .submit-btn {
-            background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
-            color: #1a1f00 !important;
-            box-shadow: 0 4px 20px rgba(176, 203, 31, 0.3) !important;
-        }
-
-        body[data-theme="light"] .submit-btn:hover {
-            background: linear-gradient(135deg, #c4df25, #9ab800) !important;
-            box-shadow: 0 6px 28px rgba(176, 203, 31, 0.5) !important;
-        }
-
-        body[data-theme="light"] .image-upload-container {
-            background: rgba(240, 252, 200, 0.5) !important;
-            border-color: rgba(140, 170, 10, 0.3) !important;
-        }
-
-        body[data-theme="light"] .image-upload-container:hover {
-            border-color: #B0CB1F !important;
-            background: rgba(176, 203, 31, 0.08) !important;
-        }
-
-        body[data-theme="light"] .image-upload-icon {
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .image-upload-label {
-            color: #6a7a20 !important;
-        }
-
-        body[data-theme="light"] .image-preview-item {
-            border-color: rgba(140, 170, 10, 0.3) !important;
-        }
-
-        /* Light mode: kép előnézet törlés gomb */
-        body[data-theme="light"] .image-preview-remove {
-            background: rgba(240, 252, 200, 0.9) !important;
-            border-color: #B0CB1F !important;
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .image-preview-remove:hover {
-            background: rgba(255, 80, 80, 0.9) !important;
-            border-color: #ff4d4d !important;
-            color: white !important;
-        }
-
-        /* Light mode: főkép jelvény */
-        body[data-theme="light"] .primary-badge {
-            background: #B0CB1F !important;
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .error-banner {
-            background: rgba(255, 77, 77, 0.1) !important;
-            border-color: rgba(255, 77, 77, 0.3) !important;
-            color: #ff6666 !important;
-        }
-
-        body[data-theme="light"] .success-banner {
-            background: rgba(176, 203, 31, 0.1) !important;
-            border-color: rgba(176, 203, 31, 0.3) !important;
-            color: #7a9200 !important;
-        }
-
-        /* Report modal light mode */
-        body[data-theme="light"] .report-modal-content {
-            background: #f8fce6 !important;
-            border-color: #B0CB1F !important;
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .report-modal-title {
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .report-form-textarea {
-            background: rgba(245, 252, 215, 0.95) !important;
-            border-color: rgba(140, 170, 10, 0.3) !important;
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .report-submit-btn {
-            background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
-            color: #1a1f00 !important;
-        }
-
-        /* Product modal light mode */
-        body[data-theme="light"] .product-modal-overlay {
-            background: rgba(220, 230, 180, 0.98) !important;
-        }
-
-        body[data-theme="light"] .product-modal-card {
-            background: rgba(240, 248, 210, 0.98) !important;
-            border-color: rgba(140, 170, 10, 0.3) !important;
-        }
-
-        /* Product modal bezáró gomb */
-        body[data-theme="light"] .product-modal-close {
-            background: rgba(176, 203, 31, 0.2);
-            border-color: #B0CB1F;
-            color: #7a9200;
-        }
-
-        body[data-theme="light"] .product-modal-close:hover {
-            background: #B0CB1F;
-            color: #1a1f00;
-        }
-
-        /* Product galéria */
-        body[data-theme="light"] .product-gallery {
-            background: rgba(240, 248, 210, 0.8) !important;
-        }
-
-        body[data-theme="light"] .product-main-image-container {
-            background: #f0f5d8 !important;
-            border-color: rgba(140, 170, 10, 0.3) !important;
-        }
-
-        body[data-theme="light"] .product-details {
-            background: rgba(240, 248, 210, 0.95) !important;
-            border-color: rgba(140, 170, 10, 0.2) !important;
-        }
-
-        body[data-theme="light"] .product-title {
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .product-price {
-            color: #7a9200 !important;
-            text-shadow: 0 0 30px rgba(176, 203, 31, 0.45) !important;
-        }
-
-        /* Eladó szövegének színezése */
-        body[data-theme="light"] .product-seller {
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .product-seller strong {
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .product-date {
-            color: #6a7a20 !important;
-        }
-
-        body[data-theme="light"] .product-description {
-            background: rgba(255, 255, 255, 0.8) !important;
-            color: #1a1f00 !important;
-            border-color: rgba(140, 170, 10, 0.2) !important;
-        }
-
-        body[data-theme="light"] .product-buy-btn {
-            background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .product-buy-btn:hover {
-            box-shadow: 0 10px 30px rgba(176, 203, 31, 0.4) !important;
-        }
-
-        body[data-theme="light"] .product-thumbnail {
-            border-color: transparent;
-        }
-
-        body[data-theme="light"] .product-thumbnail.active {
-            border-color: #B0CB1F !important;
-            box-shadow: 0 0 20px rgba(176, 203, 31, 0.3) !important;
-        }
-
-        body[data-theme="light"] .product-thumbnail img {
-            border: 1px solid rgba(140, 170, 10, 0.2);
-        }
-
-        body[data-theme="light"] .gallery-nav {
-            background: rgba(240, 248, 210, 0.9) !important;
-            border-color: #B0CB1F !important;
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .gallery-nav:hover {
-            background: #B0CB1F !important;
-            color: #1a1f00 !important;
-            transform: translateY(-50%) scale(1.1);
-        }
-
-        body[data-theme="light"] .product-menu-button {
-            background: rgba(240, 248, 210, 0.9) !important;
-            border-color: #B0CB1F !important;
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .product-menu-button:hover {
-            background: #B0CB1F !important;
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .product-menu-content {
-            background: rgba(244, 252, 220, 0.98) !important;
-            border-color: rgba(140, 170, 10, 0.3) !important;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 30px rgba(176, 203, 31, 0.15) !important;
-        }
-
-        body[data-theme="light"] .product-menu-item {
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .product-menu-item:hover {
-            background: rgba(176, 203, 31, 0.2) !important;
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .product-menu-item.delete:hover {
-            background: rgba(255, 80, 80, 0.15) !important;
-            color: #d32f2f !important;
-        }
-
-        /* ============================================
-        LIGHTBOX - LIGHT THEME
-        ============================================ */
-        body[data-theme="light"] .lightbox-overlay {
-            background: rgba(220, 230, 180, 0.98) !important;
-        }
-
-        body[data-theme="light"] .lightbox-image {
-            border-color: #B0CB1F !important;
-        }
-
-        body[data-theme="light"] .lightbox-close {
-            background: rgba(240, 248, 210, 0.9) !important;
-            border-color: #B0CB1F !important;
-            color: #7a9200 !important;
-        }
-
-        body[data-theme="light"] .lightbox-close:hover {
-            background: #B0CB1F !important;
-            color: #1a1f00 !important;
-            transform: scale(1.1);
-        }
-
-        /* ============================================
-        H1 TEXT-SHADOW OVERRIDE - LIGHT THEME (zöld glow)
-        SZÍN JAVÍTÁS
-        ============================================ */
-        body[data-theme="light"] h1 {
-            color: #7a9200 !important;
-            text-shadow:
-                0 0 10px rgba(176, 203, 31, 0.6),
-                0 0 30px rgba(140, 180, 10, 0.3),
-                0 2px 4px rgba(0, 0, 0, 0.2) !important;
-        }
-
-        /* ============================================
-        SCROLLBAR - LIGHT THEME (EGYSZERŰSÍTVE)
-        ============================================ */
-        body[data-theme="light"] ::-webkit-scrollbar-track {
-            background: #e8f0c0;
-        }
-
-        body[data-theme="light"] ::-webkit-scrollbar-thumb {
-            background: rgba(140, 170, 10, 0.35);
-        }
-
-        body[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-            background: rgba(140, 170, 10, 0.6);
-        }
-
-        /* ============================================
-        SELECTION OVERRIDE - LIGHT THEME (zöld kijelölés)
-        ============================================ */
-        body[data-theme="light"] ::selection {
-            background: rgba(176, 203, 31, 0.35);
-            color: #fff;
-        }
-
-        /* ============================================
-        UPLOAD MODAL FORM - LIGHT THEME
-        ============================================ */
-        /* Required csillag */
-        body[data-theme="light"] .form-label .required-star {
-            color: #7a9200;
-        }
-
-        /* Form input / textarea alapállapot */
-        body[data-theme="light"] .form-input,
-        body[data-theme="light"] .form-textarea {
-            background: rgba(245, 252, 215, 0.95);
-            border-color: rgba(140, 170, 10, 0.22);
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .form-input::placeholder,
-        body[data-theme="light"] .form-textarea::placeholder {
-            color: #9aaa50;
-        }
-
-        /* Fókusz: zöld border + glow */
-        body[data-theme="light"] .form-input:focus,
-        body[data-theme="light"] .form-textarea:focus {
-            border-color: #B0CB1F;
-            background: rgba(242, 252, 200, 1);
-            box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.18);
-        }
-
-        /* "Ft" suffix */
-        body[data-theme="light"] .price-suffix {
-            color: #7a9200;
-            opacity: 0.85;
-        }
-
-        /* Hirdetés feladása gomb */
-        body[data-theme="light"] .submit-btn {
-            background: linear-gradient(135deg, #B0CB1F, #8aA000);
-            color: #1a1f00;
-            box-shadow: 0 4px 20px rgba(176, 203, 31, 0.25);
-        }
-
-        body[data-theme="light"] .submit-btn:hover {
-            background: linear-gradient(135deg, #c4df25, #9ab800);
-            box-shadow: 0 6px 28px rgba(176, 203, 31, 0.45);
-        }
-
-        /* Képfeltöltő konténer */
-        body[data-theme="light"] .image-upload-container {
-            background: rgba(240, 252, 200, 0.5);
-            border-color: rgba(140, 170, 10, 0.3);
-        }
-
-        body[data-theme="light"] .image-upload-container:hover {
-            border-color: #B0CB1F;
-            background: rgba(176, 203, 31, 0.08);
-        }
-
-        body[data-theme="light"] .image-upload-label {
-            color: rgba(26, 31, 0, 0.6);
-        }
-
-        body[data-theme="light"] .image-upload-icon {
-            color: #7a9200;
-        }
-
-        /* Kép preview border */
-        body[data-theme="light"] .image-preview-item {
-            border-color: rgba(140, 170, 10, 0.3);
-        }
-
-        /* Upload modal kártya */
-        body[data-theme="light"] .modal-card {
-            background: rgba(244, 252, 220, 0.97);
-            border-color: rgba(140, 170, 10, 0.40);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.10), 0 0 40px rgba(176, 203, 31, 0.15);
-        }
-
-        /* ============================================
-        UPLOAD MODAL LIGHT MODE - OVERLAY & CARD FIX
-        ============================================ */
-        body[data-theme="light"] .modal-overlay {
-            background: rgba(220, 230, 180, 0.85) !important;
-            backdrop-filter: blur(6px);
-        }
-
-        body[data-theme="light"] .modal-card {
-            background: #f8fce6 !important;
-            border: 1px solid #B0CB1F !important;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 40px rgba(176, 203, 31, 0.2) !important;
-            color: #1a1f00 !important;
-        }
-
-        /* Biztosítsd, hogy a form elemek is világosak legyenek a modal cardban */
-        body[data-theme="light"] .modal-card .form-input,
-        body[data-theme="light"] .modal-card .form-textarea {
-            background: rgba(245, 252, 215, 0.95) !important;
-            border-color: rgba(140, 170, 10, 0.3) !important;
-            color: #1a1f00 !important;
-        }
-
-        body[data-theme="light"] .modal-card .form-input::placeholder,
-        body[data-theme="light"] .modal-card .form-textarea::placeholder {
-            color: #9aaa50 !important;
-        }
     </style>
 </head>
 

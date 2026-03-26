@@ -627,3 +627,41 @@ body[data-theme="light"] .modal-card .form-input::placeholder,
 body[data-theme="light"] .modal-card .form-textarea::placeholder {
 color: #9aaa50 !important;
 }
+/* ============================================
+   SEARCH BAR - LIGHT THEME
+   ============================================ */
+body[data-theme="light"] .search-input {
+    background: rgba(245, 252, 215, 0.9);
+    border-color: rgba(140, 170, 10, 0.4);
+    color: #1a1f00;
+}
+
+body[data-theme="light"] .search-input:focus {
+    background: #ffffff;
+    border-color: #B0CB1F;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.3);
+}
+
+body[data-theme="light"] .search-dropdown {
+    background: rgba(248, 252, 230, 0.98);
+    border-color: rgba(140, 170, 10, 0.3);
+}
+
+body[data-theme="light"] .search-result-item:hover {
+    background: rgba(176, 203, 31, 0.15);
+}
+
+body[data-theme="light"] .search-result-title {
+    color: #7a9200;
+}
+
+body[data-theme="light"] .search-result-price,
+body[data-theme="light"] .search-result-seller {
+    color: #1a1f00;
+}
+
+body[data-theme="light"] .search-result-image {
+    background: rgba(176, 203, 31, 0.1);
+    border-color: rgba(140, 170, 10, 0.3);
+}
