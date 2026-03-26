@@ -606,10 +606,10 @@ box-shadow: 0 6px 28px rgba(176, 203, 31, 0.45);
 /* Képfeltöltő konténer */
 body[data-theme="light"] .image-upload-container {
 background: rgba(240, 252, 200, 0.5);
-border-color: rgba(140, 170, 10, 0.3);
+border: 2px dashed rgba(140, 170, 10, 0.5) !important;
 }
 body[data-theme="light"] .image-upload-container:hover {
-border-color: #B0CB1F;
+border-color: #B0CB1F !important;
 background: rgba(176, 203, 31, 0.08);
 }
 body[data-theme="light"] .image-upload-label {
@@ -621,6 +621,22 @@ color: #7a9200;
 /* Kép preview border */
 body[data-theme="light"] .image-preview-item {
 border-color: rgba(140, 170, 10, 0.3);
+}
+/* Kép előnézet törlőgomb (×) - LIGHT MODE ZÖLD */
+body[data-theme="light"] .image-preview-remove {
+    background: rgba(176, 203, 31, 0.2);
+    border: 1px solid #B0CB1F;
+    color: #1a1f00;
+}
+body[data-theme="light"] .image-preview-remove:hover {
+    background: #B0CB1F;
+    color: #1a1f00;
+    box-shadow: 0 0 8px rgba(176, 203, 31, 0.5);
+}
+/* "Főkép" jelvény (primary-badge) - LIGHT MODE ZÖLD */
+body[data-theme="light"] .primary-badge {
+    background: #7a9200 !important;
+    color: #1a1f00 !important;
 }
 /* Upload modal kártya */
 body[data-theme="light"] .modal-card {
