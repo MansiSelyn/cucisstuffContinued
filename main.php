@@ -1,13 +1,11 @@
 <?php
 session_start();
-
 if (isset($_POST['logout'])) {
     $_SESSION = array();
     session_destroy();
     header("Location: index.php");
     exit();
 }
-
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: index.php");
     exit();
@@ -19,13 +17,16 @@ $username = "root";
 $password = "";
 $dbname = "cucidb";
 
-$uploadSuccess = false;
-$uploadError = '';
+// Sessionből hibaüzenet és form adatok betöltése (ha van)
+$uploadError = $_SESSION['upload_error'] ?? '';
+$formData = $_SESSION['form_data'] ?? [];
+// Session adatok törlése olvasás után
+unset($_SESSION['upload_error'], $_SESSION['form_data']);
 
 try {
     $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
+    
     // Check if current user is admin
     $isAdmin = false;
     if (isset($_SESSION['user_id'])) {
@@ -33,7 +34,7 @@ try {
         $adminCheck->execute([$_SESSION['user_id']]);
         $isAdmin = $adminCheck->fetchColumn() > 0;
     }
-
+    
     // =============================================
     // SEARCH HANDLER (JSON output)
     // =============================================
@@ -55,14 +56,14 @@ try {
         echo json_encode($results);
         exit;
     }
-
+    
     // =============================================
     // GET ITEM DETAILS (JSON output)
     // =============================================
     if (isset($_GET['get_item']) && !empty($_GET['get_item'])) {
         header('Content-Type: application/json');
         $itemId = $_GET['get_item'];
-
+        
         // Fetch item details
         $stmt = $conn->prepare("
             SELECT i.id, i.title, i.description, i.price, i.created_at, u.username as seller_name, i.user_id
@@ -72,63 +73,97 @@ try {
         ");
         $stmt->execute([$itemId]);
         $item = $stmt->fetch(PDO::FETCH_ASSOC);
-
+        
         if (!$item) {
             echo json_encode(['error' => 'Termék nem található']);
             exit;
         }
-
+        
         // Fetch all images for the item
         $imgStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? ORDER BY sort_order");
         $imgStmt->execute([$itemId]);
         $images = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
-
         $item['images'] = $images;
+        
         echo json_encode($item);
         exit;
     }
-
+    
     // Handle new item upload
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_item'])) {
         $title       = trim($_POST['item_title'] ?? '');
         $description = trim($_POST['item_description'] ?? '');
         $price       = trim($_POST['item_price'] ?? '');
-
+        
         // Check for uploaded files
         if (!isset($_FILES['item_images']) || empty($_FILES['item_images']['name'][0])) {
-            $uploadError = 'Legalább egy képet fel kell tölteni!';
+            $_SESSION['upload_error'] = 'Legalább egy képet fel kell tölteni!';
+            $_SESSION['form_data'] = [
+                'item_title' => $title,
+                'item_description' => $description,
+                'item_price' => $price
+            ];
+            header("Location: main.php");
+            exit();
         } elseif ($title === '' || $description === '' || $price === '') {
-            $uploadError = 'Minden mező kitöltése kötelező!';
+            $_SESSION['upload_error'] = 'Minden mező kitöltése kötelező!';
+            $_SESSION['form_data'] = [
+                'item_title' => $title,
+                'item_description' => $description,
+                'item_price' => $price
+            ];
+            header("Location: main.php");
+            exit();
         } elseif (!is_numeric($price) || floatval($price) < 0) {
-            $uploadError = 'Az ár csak pozitív szám lehet!';
+            $_SESSION['upload_error'] = 'Az ár csak pozitív szám lehet!';
+            $_SESSION['form_data'] = [
+                'item_title' => $title,
+                'item_description' => $description,
+                'item_price' => $price
+            ];
+            header("Location: main.php");
+            exit();
         } else {
             // Validate images
             $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
             $maxFileSize = 5 * 1024 * 1024; // 5MB
             $files = $_FILES['item_images'];
             $uploadValid = true;
-
+            
             // Check each file
             for ($i = 0; $i < count($files['name']); $i++) {
                 if ($files['error'][$i] !== UPLOAD_ERR_OK) {
-                    $uploadError = 'Hiba történt a képfeltöltés során!';
-                    $uploadValid = false;
-                    break;
+                    $_SESSION['upload_error'] = 'Hiba történt a képfeltöltés során!';
+                    $_SESSION['form_data'] = [
+                        'item_title' => $title,
+                        'item_description' => $description,
+                        'item_price' => $price
+                    ];
+                    header("Location: main.php");
+                    exit();
                 }
-
                 if (!in_array($files['type'][$i], $allowedTypes)) {
-                    $uploadError = 'Csak JPEG, PNG, GIF és WebP formátumú képek tölthetők fel!';
-                    $uploadValid = false;
-                    break;
+                    $_SESSION['upload_error'] = 'Csak JPEG, PNG, GIF és WebP formátumú képek tölthetők fel!';
+                    $_SESSION['form_data'] = [
+                        'item_title' => $title,
+                        'item_description' => $description,
+                        'item_price' => $price
+                    ];
+                    header("Location: main.php");
+                    exit();
                 }
-
                 if ($files['size'][$i] > $maxFileSize) {
-                    $uploadError = 'Egy kép maximális mérete 5MB lehet!';
-                    $uploadValid = false;
-                    break;
+                    $_SESSION['upload_error'] = 'Egy kép maximális mérete 5MB lehet!';
+                    $_SESSION['form_data'] = [
+                        'item_title' => $title,
+                        'item_description' => $description,
+                        'item_price' => $price
+                    ];
+                    header("Location: main.php");
+                    exit();
                 }
             }
-
+            
             if ($uploadValid) {
                 // Generate unique 12-char ID for the item
                 do {
@@ -136,10 +171,9 @@ try {
                     $check = $conn->prepare("SELECT COUNT(*) FROM items WHERE id = ?");
                     $check->execute([$newId]);
                 } while ($check->fetchColumn() > 0);
-
+                
                 // Start transaction
                 $conn->beginTransaction();
-
                 try {
                     // Insert item
                     $insert = $conn->prepare("
@@ -153,13 +187,13 @@ try {
                         ':description' => $description,
                         ':price'       => floatval($price),
                     ]);
-
+                    
                     // Create directory for images if it doesn't exist
                     $uploadDir = 'uploads/' . $newId . '/';
                     if (!file_exists($uploadDir)) {
                         mkdir($uploadDir, 0777, true);
                     }
-
+                    
                     // Upload each image
                     $sortOrder = 0;
                     for ($i = 0; $i < count($files['name']); $i++) {
@@ -167,7 +201,7 @@ try {
                         $extension = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
                         $filename = uniqid() . '_' . $i . '.' . $extension;
                         $filepath = $uploadDir . $filename;
-
+                        
                         // Move uploaded file
                         if (move_uploaded_file($files['tmp_name'][$i], $filepath)) {
                             // Save to database
@@ -175,7 +209,6 @@ try {
                                 INSERT INTO item_images (item_id, image_path, image_filename, is_primary, sort_order)
                                 VALUES (:item_id, :image_path, :image_filename, :is_primary, :sort_order)
                             ");
-
                             $imageInsert->execute([
                                 ':item_id' => $newId,
                                 ':image_path' => $filepath,
@@ -183,68 +216,73 @@ try {
                                 ':is_primary' => ($i === 0) ? 1 : 0,
                                 ':sort_order' => $sortOrder
                             ]);
-
                             $sortOrder++;
                         } else {
                             throw new Exception('Hiba történt a kép mentése során: ' . $files['name'][$i]);
                         }
                     }
-
+                    
                     $conn->commit();
-                    $uploadSuccess = true;
-
-                    // Clear POST data to prevent re-submission
-                    $_POST = array();
+                    
+                    // ✅ ÁTIRÁNYÍTÁS SIKERES FELTÖLTÉS UTÁN (PRG Pattern)
+                    header("Location: main.php?upload=success");
+                    exit();
+                    
                 } catch (Exception $e) {
                     $conn->rollBack();
-                    $uploadError = 'Hiba történt a hirdetés mentése során: ' . $e->getMessage();
+                    $_SESSION['upload_error'] = 'Hiba történt a hirdetés mentése során: ' . $e->getMessage();
+                    $_SESSION['form_data'] = [
+                        'item_title' => $title,
+                        'item_description' => $description,
+                        'item_price' => $price
+                    ];
+                    header("Location: main.php");
+                    exit();
                 }
             }
         }
     }
-
+    
     // Handle item deletion
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_item'])) {
         $itemId = $_POST['item_id'] ?? '';
-
         if ($itemId && $isAdmin) {
             try {
                 // Get all images for this item to delete files
                 $imageStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ?");
                 $imageStmt->execute([$itemId]);
                 $images = $imageStmt->fetchAll(PDO::FETCH_ASSOC);
-
+                
                 // Delete image files
                 foreach ($images as $image) {
                     if (file_exists($image['image_path'])) {
                         unlink($image['image_path']);
                     }
                 }
-
+                
                 // Delete the item's directory
                 $itemDir = 'uploads/' . $itemId . '/';
                 if (is_dir($itemDir)) {
                     rmdir($itemDir);
                 }
-
+                
                 // Delete from database
                 $deleteStmt = $conn->prepare("DELETE FROM items WHERE id = ?");
                 $deleteStmt->execute([$itemId]);
-
+                
                 // Redirect to refresh the page
-                header("Location: main.php?page=" . $page);
+                header("Location: admin.php?page=" . $page);
                 exit();
             } catch (Exception $e) {
                 $uploadError = 'Hiba történt a törlés során: ' . $e->getMessage();
             }
         }
     }
-
+    
     // Handle item report
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['report_item'])) {
         $itemId = $_POST['item_id'] ?? '';
         $reason = trim($_POST['report_reason'] ?? '');
-
         if ($itemId && $reason) {
             try {
                 $reportStmt = $conn->prepare("
@@ -252,36 +290,36 @@ try {
                     VALUES (?, ?, ?, NOW())
                 ");
                 $reportStmt->execute([$itemId, $_SESSION['user_id'], $reason]);
-
                 $reportSuccess = true;
             } catch (Exception $e) {
                 $reportError = 'Hiba történt a bejelentés során: ' . $e->getMessage();
             }
         }
     }
-
+    
     // Pagination settings
     $itemsPerPage = 24;
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $offset = ($page - 1) * $itemsPerPage;
-
+    
     // Get total items count
     $totalStmt = $conn->query("SELECT COUNT(*) FROM items");
     $totalItems = $totalStmt->fetchColumn();
     $totalPages = ceil($totalItems / $itemsPerPage);
-
+    
     // Fetch items for current page with RANDOM ordering
     $stmt = $conn->prepare("
-        SELECT i.*, u.username as seller_name 
-        FROM items i 
-        JOIN users u ON i.user_id = u.id 
-        ORDER BY RAND() 
+        SELECT i.*, u.username as seller_name
+        FROM items i
+        JOIN users u ON i.user_id = u.id
+        ORDER BY RAND()
         LIMIT :offset, :itemsPerPage
     ");
     $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
     $stmt->bindParam(':itemsPerPage', $itemsPerPage, PDO::PARAM_INT);
     $stmt->execute();
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
 } catch (PDOException $e) {
     echo "Connection failed: " . $e->getMessage();
     $items = [];
@@ -291,7 +329,6 @@ try {
 ?>
 <!DOCTYPE html>
 <html lang="hu">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
@@ -300,14 +337,14 @@ try {
     <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css">
     <style>
         /* ═══════════════════════════════════════════════════════════════════
-           MAIN STYLES (dark mode default)
-           ═══════════════════════════════════════════════════════════════════ */
+        MAIN STYLES (dark mode default)
+        ═══════════════════════════════════════════════════════════════════ */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-
+        
         :root {
             --orange-bright: #ff8c00;
             --orange-glow: rgba(255, 140, 0, 0.3);
@@ -319,7 +356,7 @@ try {
             --placeholder-bg: rgba(255, 140, 0, 0.1);
             --placeholder-text: rgba(255, 140, 0, 0.7);
         }
-
+        
         body {
             min-height: 100vh;
             width: 100%;
@@ -332,7 +369,7 @@ try {
             overflow-x: hidden;
             display: block;
         }
-
+        
         .noise {
             position: fixed;
             top: -50%;
@@ -347,53 +384,21 @@ try {
             animation: noise 0.2s infinite;
             opacity: 0.4;
         }
-
+        
         @keyframes noise {
-
-            0%,
-            100% {
-                transform: translate(0, 0);
-            }
-
-            10% {
-                transform: translate(-5%, -5%);
-            }
-
-            20% {
-                transform: translate(-10%, 5%);
-            }
-
-            30% {
-                transform: translate(5%, -10%);
-            }
-
-            40% {
-                transform: translate(-5%, 15%);
-            }
-
-            50% {
-                transform: translate(-10%, 5%);
-            }
-
-            60% {
-                transform: translate(15%, 0);
-            }
-
-            70% {
-                transform: translate(0, 10%);
-            }
-
-            80% {
-                transform: translate(-15%, 0);
-            }
-
-            90% {
-                transform: translate(10%, 5%);
-            }
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-5%, -5%); }
+            20% { transform: translate(-10%, 5%); }
+            30% { transform: translate(5%, -10%); }
+            40% { transform: translate(-5%, 15%); }
+            50% { transform: translate(-10%, 5%); }
+            60% { transform: translate(15%, 0); }
+            70% { transform: translate(0, 10%); }
+            80% { transform: translate(-15%, 0); }
+            90% { transform: translate(10%, 5%); }
         }
-
-        .orb-1,
-        .orb-2 {
+        
+        .orb-1, .orb-2 {
             position: fixed;
             width: min(60vw, 600px);
             height: min(60vw, 600px);
@@ -403,53 +408,33 @@ try {
             z-index: -1;
             opacity: 0.3;
         }
-
+        
         .orb-1 {
             top: -20vh;
             left: -20vw;
             background: radial-gradient(circle at 30% 30%, var(--orange-bright), transparent 70%);
             animation: float1 20s infinite ease-in-out;
         }
-
+        
         .orb-2 {
             bottom: -20vh;
             right: -20vw;
             background: radial-gradient(circle at 70% 70%, #ff5500, transparent 70%);
             animation: float2 25s infinite ease-in-out;
         }
-
+        
         @keyframes float1 {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(10vw, 10vh) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-5vw, 15vh) scale(0.9);
-            }
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(10vw, 10vh) scale(1.1); }
+            66% { transform: translate(-5vw, 15vh) scale(0.9); }
         }
-
+        
         @keyframes float2 {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(-10vw, -10vh) scale(1.2);
-            }
-
-            66% {
-                transform: translate(5vw, -15vh) scale(0.8);
-            }
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-10vw, -10vh) scale(1.2); }
+            66% { transform: translate(5vw, -15vh) scale(0.8); }
         }
-
+        
         /* Top bar - KÖZÉPRE IGAZÍTOTT VERZIÓ */
         .top-bar {
             position: fixed;
@@ -464,8 +449,7 @@ try {
             padding: 0.5rem 1rem;
             pointer-events: none;
         }
-
-        /* Bal oldali elemek csoportja (admin gomb) */
+        
         .top-bar-left {
             display: flex;
             gap: 0.5rem;
@@ -473,8 +457,7 @@ try {
             left: 1rem;
             pointer-events: auto;
         }
-
-        /* Jobb oldali elemek csoportja (feltöltés gomb + fiók menü) */
+        
         .top-bar-right {
             display: flex;
             gap: 0.5rem;
@@ -482,8 +465,7 @@ try {
             right: 1rem;
             pointer-events: auto;
         }
-
-        /* Admin button */
+        
         .admin-btn {
             pointer-events: auto;
             padding: 0.5rem 1.1rem;
@@ -503,7 +485,7 @@ try {
             white-space: nowrap;
             text-decoration: none;
         }
-
+        
         .admin-btn:hover {
             background: rgba(255, 215, 0, 0.25);
             border-color: #ffd700;
@@ -511,13 +493,12 @@ try {
             transform: translateY(-1px);
             color: #ffd700;
         }
-
+        
         .admin-btn .shield-icon {
             font-size: 1.1rem;
             line-height: 1;
         }
-
-        /* Upload button */
+        
         .upload-btn {
             pointer-events: auto;
             padding: 0.5rem 1.1rem;
@@ -536,21 +517,20 @@ try {
             box-shadow: var(--shadow-deep);
             white-space: nowrap;
         }
-
+        
         .upload-btn:hover {
             background: rgba(255, 140, 0, 0.25);
             border-color: var(--orange-bright);
             box-shadow: var(--shadow-deep), 0 0 16px rgba(255, 140, 0, 0.35);
             transform: translateY(-1px);
         }
-
+        
         .upload-btn .plus-icon {
             font-size: 1.1rem;
             font-weight: 700;
             line-height: 1;
         }
-
-        /* Search bar - KÖZÉPEN */
+        
         .search-container {
             position: relative;
             flex: 0 1 400px;
@@ -558,8 +538,7 @@ try {
             margin: 0 auto;
             pointer-events: auto;
         }
-
-        /* SEARCH INPUT - DARK MODE DEFAULT */
+        
         .search-input {
             width: 100%;
             padding: 0.5rem 1rem;
@@ -572,14 +551,14 @@ try {
             transition: all 0.3s ease;
             box-shadow: var(--shadow-deep);
         }
-
+        
         .search-input:focus {
             outline: none;
             border-color: var(--orange-bright);
             background: rgba(0, 0, 0, 0.8);
             box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.3);
         }
-
+        
         .search-dropdown {
             position: absolute;
             top: calc(100% + 8px);
@@ -595,11 +574,11 @@ try {
             z-index: 2000;
             box-shadow: var(--shadow-deep), var(--shadow-orange);
         }
-
+        
         .search-dropdown.show {
             display: block;
         }
-
+        
         .search-result-item {
             display: flex;
             align-items: center;
@@ -610,15 +589,15 @@ try {
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             user-select: none;
         }
-
+        
         .search-result-item:last-child {
             border-bottom: none;
         }
-
+        
         .search-result-item:hover {
             background: rgba(255, 140, 0, 0.15);
         }
-
+        
         .search-result-image {
             width: 48px;
             height: 48px;
@@ -629,31 +608,31 @@ try {
             user-select: none;
             pointer-events: none;
         }
-
+        
         .search-result-info {
             flex: 1;
             user-select: none;
         }
-
+        
         .search-result-title {
             font-weight: bold;
             color: var(--orange-bright);
             font-size: 0.9rem;
             margin-bottom: 0.2rem;
         }
-
+        
         .search-result-price {
             font-size: 0.8rem;
             color: var(--text-primary);
             opacity: 0.8;
         }
-
+        
         .search-result-seller {
             font-size: 0.7rem;
             color: var(--text-primary);
             opacity: 0.6;
         }
-
+        
         /* LIGHT MODE OVERRIDES FOR SEARCH */
         body[data-theme="light"] .search-input {
             background: rgba(245, 252, 215, 0.9);
@@ -661,49 +640,49 @@ try {
             color: #1a1f00;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
-
+        
         body[data-theme="light"] .search-input:focus {
             background: #ffffff;
             border-color: #B0CB1F;
             box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.3);
         }
-
+        
         body[data-theme="light"] .search-dropdown {
             background: rgba(248, 252, 230, 0.98);
             border-color: rgba(140, 170, 10, 0.3);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 20px rgba(176, 203, 31, 0.1);
         }
-
+        
         body[data-theme="light"] .search-result-item {
             border-bottom-color: rgba(140, 170, 10, 0.15);
         }
-
+        
         body[data-theme="light"] .search-result-item:hover {
             background: rgba(176, 203, 31, 0.15);
         }
-
+        
         body[data-theme="light"] .search-result-title {
             color: #7a9200;
         }
-
+        
         body[data-theme="light"] .search-result-price,
         body[data-theme="light"] .search-result-seller {
             color: #1a1f00;
             opacity: 0.8;
         }
-
+        
         body[data-theme="light"] .search-result-image {
             background: rgba(176, 203, 31, 0.1);
             border-color: rgba(140, 170, 10, 0.3);
         }
-
+        
         /* Account menu */
         .account-menu {
             position: relative;
             display: inline-block;
             pointer-events: auto;
         }
-
+        
         .account-summary {
             list-style: none;
             cursor: pointer;
@@ -722,16 +701,16 @@ try {
             user-select: none;
             box-shadow: var(--shadow-deep);
         }
-
+        
         .account-summary:hover {
             background: rgba(255, 140, 0, 0.1);
             border-color: var(--orange-bright);
         }
-
+        
         .account-summary::-webkit-details-marker {
             display: none;
         }
-
+        
         .account-dropdown {
             position: absolute;
             right: 0;
@@ -746,22 +725,15 @@ try {
             z-index: 1001;
             animation: dropdownFade 0.2s ease;
         }
-
+        
         @keyframes dropdownFade {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
+        
         /* =====================
-   MAIN CONTENT & GRID
-===================== */
+        MAIN CONTENT & GRID
+        ===================== */
         .main-content {
             width: 100%;
             max-width: 100%;
@@ -770,40 +742,35 @@ try {
             position: relative;
             z-index: 1;
         }
-
-        /* Items grid */
+        
         .items-grid {
             display: grid;
             gap: 1.2rem;
             width: 100%;
             padding: 1rem;
         }
-
-        /* Landscape: 6 oszlop */
+        
         @media (orientation: landscape) {
             .items-grid {
                 grid-template-columns: repeat(6, 1fr);
                 grid-auto-rows: auto;
             }
         }
-
-        /* Portrait: 3 oszlop */
+        
         @media (orientation: portrait) {
             .items-grid {
                 grid-template-columns: repeat(3, 1fr);
                 grid-auto-rows: auto;
             }
         }
-
-        /* Extra nagy képernyőn több oszlop */
+        
         @media (min-width: 1600px) and (orientation: landscape) {
             .items-grid {
                 grid-template-columns: repeat(8, 1fr);
                 gap: 1.3rem;
             }
         }
-
-        /* Kisebb mobil eszközök */
+        
         @media (max-width: 480px) and (orientation: portrait) {
             .items-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -811,8 +778,7 @@ try {
                 padding: 0.8rem;
             }
         }
-
-        /* Extra kicsi mobil */
+        
         @media (max-width: 360px) and (orientation: portrait) {
             .items-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -820,23 +786,21 @@ try {
                 padding: 0.7rem;
             }
         }
-
-        /* Tablet nézet */
+        
         @media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
             .items-grid {
                 grid-template-columns: repeat(3, 1fr);
                 gap: 1rem;
             }
         }
-
+        
         @media (min-width: 768px) and (max-width: 1280px) and (orientation: landscape) {
             .items-grid {
                 grid-template-columns: repeat(5, 1fr);
                 gap: 1rem;
             }
         }
-
-        /* Kártyák */
+        
         .item-card {
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(20px);
@@ -854,19 +818,18 @@ try {
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
-
+        
         .item-card:hover {
             border-color: var(--orange-bright);
             box-shadow: 0 8px 25px rgba(255, 140, 0, 0.25);
             transform: translateY(-4px);
             background: rgba(0, 0, 0, 0.75);
         }
-
+        
         .item-card * {
             user-select: none;
         }
-
-        /* Kép */
+        
         .item-image {
             width: 100%;
             aspect-ratio: 1 / 1;
@@ -877,11 +840,11 @@ try {
             flex-shrink: 0;
             transition: transform 0.3s ease;
         }
-
+        
         .item-card:hover .item-image {
             transform: scale(1.02);
         }
-
+        
         .item-image-placeholder {
             width: 100%;
             aspect-ratio: 1 / 1;
@@ -894,12 +857,12 @@ try {
             background: var(--placeholder-bg);
             flex-shrink: 0;
         }
-
+        
         .item-image-placeholder .placeholder-text {
             color: var(--placeholder-text);
             font-size: clamp(0.8rem, 1.5vw, 1.2rem);
         }
-
+        
         .image-count-badge {
             position: absolute;
             top: 12px;
@@ -914,7 +877,7 @@ try {
             font-weight: bold;
             z-index: 2;
         }
-
+        
         .item-title {
             font-size: clamp(0.75rem, 1.1vw, 1.1rem);
             font-weight: bold;
@@ -927,7 +890,7 @@ try {
             -webkit-box-orient: vertical;
             line-height: 1.3;
         }
-
+        
         .item-price {
             font-size: clamp(0.9rem, 1.3vw, 1.4rem);
             font-weight: bold;
@@ -935,7 +898,7 @@ try {
             margin-bottom: 0.35rem;
             text-shadow: 0 0 10px var(--orange-glow);
         }
-
+        
         .item-seller {
             font-size: clamp(0.65rem, 0.85vw, 0.85rem);
             color: var(--text-primary);
@@ -945,13 +908,13 @@ try {
             white-space: nowrap;
             text-overflow: ellipsis;
         }
-
+        
         .item-date {
             font-size: clamp(0.55rem, 0.7vw, 0.7rem);
             color: var(--text-primary);
             opacity: 0.5;
         }
-
+        
         /* Card Menu Styles */
         .card-menu {
             position: absolute;
@@ -959,7 +922,7 @@ try {
             right: 10px;
             z-index: 10;
         }
-
+        
         .card-menu-button {
             color: var(--orange-bright);
             display: flex;
@@ -977,12 +940,12 @@ try {
             padding: 0;
             line-height: 1;
         }
-
+        
         .card-menu-button:hover {
             color: #ffaa33;
             transform: scale(1.1);
         }
-
+        
         .card-menu-content {
             position: absolute;
             top: 40px;
@@ -997,11 +960,11 @@ try {
             display: none;
             z-index: 20;
         }
-
+        
         .card-menu-content.show {
             display: block;
         }
-
+        
         .card-menu-item {
             width: 100%;
             padding: 0.5rem 1rem;
@@ -1014,21 +977,21 @@ try {
             border-radius: 4px;
             transition: all 0.2s ease;
         }
-
+        
         .card-menu-item:hover {
             background: rgba(255, 140, 0, 0.2);
             color: var(--orange-bright);
         }
-
+        
         .card-menu-item.delete {
             color: #ff6b6b;
         }
-
+        
         .card-menu-item.delete:hover {
             background: rgba(255, 0, 0, 0.2);
             color: #ff0000;
         }
-
+        
         /* Report Modal Styles */
         .report-modal {
             position: fixed;
@@ -1043,11 +1006,11 @@ try {
             justify-content: center;
             z-index: 3000;
         }
-
+        
         .report-modal.show {
             display: flex;
         }
-
+        
         .report-modal-content {
             background: rgba(10, 10, 10, 0.95);
             border: 1px solid var(--orange-bright);
@@ -1058,19 +1021,19 @@ try {
             max-height: 90vh;
             overflow-y: auto;
         }
-
+        
         .report-modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1.5rem;
         }
-
+        
         .report-modal-title {
             font-size: 1.3rem;
             color: var(--orange-bright);
         }
-
+        
         .report-modal-close {
             background: transparent;
             border: none;
@@ -1078,22 +1041,22 @@ try {
             font-size: 1.5rem;
             cursor: pointer;
         }
-
+        
         .report-modal-close:hover {
             color: var(--orange-bright);
         }
-
+        
         .report-form-group {
             margin-bottom: 1.5rem;
         }
-
+        
         .report-form-label {
             display: block;
             margin-bottom: 0.5rem;
             color: var(--text-primary);
             font-size: 0.9rem;
         }
-
+        
         .report-form-textarea {
             width: 100%;
             padding: 0.75rem;
@@ -1105,12 +1068,12 @@ try {
             resize: vertical;
             min-height: 100px;
         }
-
+        
         .report-form-textarea:focus {
             outline: none;
             border-color: var(--orange-bright);
         }
-
+        
         .report-submit-btn {
             width: 100%;
             padding: 0.75rem;
@@ -1122,12 +1085,12 @@ try {
             cursor: pointer;
             transition: all 0.3s ease;
         }
-
+        
         .report-submit-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(255, 140, 0, 0.4);
         }
-
+        
         /* Floating Pagination */
         .floating-pagination {
             position: fixed;
@@ -1139,7 +1102,7 @@ try {
             z-index: 1000;
             pointer-events: none;
         }
-
+        
         .pagination-container {
             display: flex;
             gap: 1rem;
@@ -1151,7 +1114,7 @@ try {
             box-shadow: var(--shadow-deep), var(--shadow-orange);
             pointer-events: auto;
         }
-
+        
         .pagination-btn {
             padding: 0.5rem 1.5rem;
             background: rgba(255, 140, 0, 0.1);
@@ -1163,13 +1126,13 @@ try {
             transition: all 0.3s ease;
             cursor: pointer;
         }
-
+        
         .pagination-btn:hover {
             background: rgba(255, 140, 0, 0.2);
             color: var(--orange-bright);
             transform: translateY(-2px);
         }
-
+        
         .pagination-btn.disabled {
             background: rgba(255, 255, 255, 0.05);
             border-color: var(--glass-border);
@@ -1177,8 +1140,7 @@ try {
             cursor: not-allowed;
             pointer-events: none;
         }
-
-        /* Logout / account styles */
+        
         .logout-button {
             width: 100%;
             background: transparent;
@@ -1187,7 +1149,7 @@ try {
             color: var(--text-primary);
             cursor: pointer;
         }
-
+        
         .logout-button span {
             display: block;
             width: 100%;
@@ -1197,44 +1159,42 @@ try {
             transition: all 0.2s ease;
             user-select: none;
         }
-
+        
         .logout-button span:hover {
             background: rgba(255, 140, 0, 0.15);
             color: var(--orange-bright);
             transform: translateX(5px);
         }
-
+        
         .user-info {
             color: var(--text-primary);
             font-size: 0.9rem;
             padding: 0.75rem 1rem;
             user-select: none;
         }
-
+        
         .user-info strong {
             display: block;
             word-wrap: break-word;
             color: var(--orange-bright);
         }
-
+        
         .dropdown-divider {
             height: 1px;
             background: linear-gradient(90deg, transparent, var(--orange-bright), transparent);
             margin: 0.5rem 0;
         }
-
+        
         .unselectable {
             user-select: none;
             -webkit-user-select: none;
         }
         
-        /* Ensure input fields remain selectable */
         input, textarea {
             user-select: text;
             -webkit-user-select: text;
         }
-
-        /* Theme toggle inside dropdown */
+        
         .theme-toggle-row {
             display: flex;
             align-items: center;
@@ -1244,28 +1204,28 @@ try {
             color: var(--text-primary);
             user-select: none;
         }
-
+        
         .theme-toggle-label {
             display: flex;
             align-items: center;
             gap: 0.45rem;
             opacity: 0.8;
         }
-
+        
         .theme-switch {
             position: relative;
             width: 42px;
             height: 24px;
             flex-shrink: 0;
         }
-
+        
         .theme-switch input {
             opacity: 0;
             width: 0;
             height: 0;
             position: absolute;
         }
-
+        
         .theme-switch-track {
             position: absolute;
             inset: 0;
@@ -1275,12 +1235,12 @@ try {
             transition: background 0.3s, border-color 0.3s;
             cursor: pointer;
         }
-
-        .theme-switch input:checked+.theme-switch-track {
+        
+        .theme-switch input:checked + .theme-switch-track {
             background: rgba(176, 203, 31, 0.25);
             border-color: #B0CB1F;
         }
-
+        
         .theme-switch-thumb {
             position: absolute;
             top: 3px;
@@ -1292,15 +1252,15 @@ try {
             transition: transform 0.3s, background 0.3s;
             pointer-events: none;
         }
-
-        .theme-switch input:checked~.theme-switch-thumb {
+        
+        .theme-switch input:checked ~ .theme-switch-thumb {
             transform: translateX(18px);
             background: #B0CB1F;
         }
-
+        
         /* =====================
-   UPLOAD MODAL
-===================== */
+        UPLOAD MODAL
+        ===================== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -1315,12 +1275,12 @@ try {
             pointer-events: none;
             transition: opacity 0.3s ease;
         }
-
+        
         .modal-overlay.active {
             opacity: 1;
             pointer-events: auto;
         }
-
+        
         .modal-card {
             width: 100%;
             max-width: 620px;
@@ -1336,12 +1296,12 @@ try {
             transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
             opacity: 0;
         }
-
+        
         .modal-overlay.active .modal-card {
             transform: translateY(0) scale(1);
             opacity: 1;
         }
-
+        
         .modal-close {
             position: absolute;
             top: 1.1rem;
@@ -1357,11 +1317,11 @@ try {
             padding: 0.2rem 0.4rem;
             border-radius: 6px;
         }
-
+        
         .modal-close:hover {
             color: var(--orange-bright);
         }
-
+        
         .modal-title {
             font-size: 1.5rem;
             font-weight: 700;
@@ -1369,17 +1329,17 @@ try {
             margin-bottom: 0.3rem;
             letter-spacing: -0.02em;
         }
-
+        
         .modal-subtitle {
             font-size: 0.82rem;
             color: rgba(255, 255, 255, 0.4);
             margin-bottom: 1.8rem;
         }
-
+        
         .form-group {
             margin-bottom: 1.3rem;
         }
-
+        
         .form-label {
             display: block;
             font-size: 0.8rem;
@@ -1389,14 +1349,13 @@ try {
             letter-spacing: 0.08em;
             margin-bottom: 0.45rem;
         }
-
+        
         .form-label .required-star {
             color: var(--orange-bright);
             margin-left: 0.2rem;
         }
-
-        .form-input,
-        .form-textarea {
+        
+        .form-input, .form-textarea {
             width: 100%;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 140, 0, 0.2);
@@ -1409,25 +1368,22 @@ try {
             outline: none;
             -webkit-appearance: none;
         }
-
-        .form-input:focus,
-        .form-textarea:focus {
+        
+        .form-input:focus, .form-textarea:focus {
             border-color: var(--orange-bright);
             background: rgba(255, 140, 0, 0.06);
             box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.12);
         }
-
-        .form-input::placeholder,
-        .form-textarea::placeholder {
+        
+        .form-input::placeholder, .form-textarea::placeholder {
             color: rgba(255, 255, 255, 0.2);
         }
-
+        
         .form-textarea {
             resize: vertical;
             min-height: 110px;
         }
-
-        /* Image upload styles */
+        
         .image-upload-container {
             background: rgba(0, 0, 0, 0.3);
             border: 2px dashed rgba(255, 140, 0, 0.3);
@@ -1436,12 +1392,12 @@ try {
             margin-bottom: 1.5rem;
             transition: all 0.3s ease;
         }
-
+        
         .image-upload-container:hover {
             border-color: var(--orange-bright);
             background: rgba(255, 140, 0, 0.05);
         }
-
+        
         .image-upload-label {
             display: flex;
             flex-direction: column;
@@ -1450,34 +1406,34 @@ try {
             cursor: pointer;
             color: rgba(255, 255, 255, 0.6);
         }
-
+        
         .image-upload-icon {
             font-size: 2rem;
             color: var(--orange-bright);
         }
-
+        
         .image-upload-hint {
             font-size: 0.8rem;
             text-align: center;
         }
-
+        
         .image-upload-hint small {
             display: block;
             margin-top: 0.3rem;
             opacity: 0.5;
         }
-
+        
         #item_images {
             display: none;
         }
-
+        
         .image-preview-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             gap: 1rem;
             margin-top: 1rem;
         }
-
+        
         .image-preview-item {
             position: relative;
             aspect-ratio: 1;
@@ -1485,13 +1441,13 @@ try {
             overflow: hidden;
             border: 2px solid rgba(255, 140, 0, 0.3);
         }
-
+        
         .image-preview-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-
+        
         .image-preview-remove {
             position: absolute;
             top: 5px;
@@ -1509,12 +1465,12 @@ try {
             font-size: 16px;
             transition: all 0.2s ease;
         }
-
+        
         .image-preview-remove:hover {
             background: rgba(255, 0, 0, 0.7);
             border-color: red;
         }
-
+        
         .primary-badge {
             position: absolute;
             bottom: 5px;
@@ -1526,18 +1482,17 @@ try {
             font-size: 0.6rem;
             font-weight: bold;
         }
-
-        /* Price input with Ft suffix */
+        
         .price-wrapper {
             position: relative;
             display: flex;
             align-items: center;
         }
-
+        
         .price-wrapper .form-input {
             padding-right: 3rem;
         }
-
+        
         .price-suffix {
             position: absolute;
             right: 1rem;
@@ -1547,8 +1502,7 @@ try {
             pointer-events: none;
             user-select: none;
         }
-
-        /* Validation error inline */
+        
         .field-error {
             display: none;
             font-size: 0.76rem;
@@ -1556,14 +1510,12 @@ try {
             margin-top: 0.35rem;
             padding-left: 0.2rem;
         }
-
-        .form-input.invalid,
-        .form-textarea.invalid {
+        
+        .form-input.invalid, .form-textarea.invalid {
             border-color: #ff4d4d;
             box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.12);
         }
-
-        /* Server-side error banner */
+        
         .error-banner {
             background: rgba(255, 60, 60, 0.1);
             border: 1px solid rgba(255, 60, 60, 0.3);
@@ -1573,8 +1525,7 @@ try {
             font-size: 0.87rem;
             margin-bottom: 1.3rem;
         }
-
-        /* Success banner */
+        
         .success-banner {
             background: rgba(0, 200, 100, 0.1);
             border: 1px solid rgba(0, 200, 100, 0.3);
@@ -1587,7 +1538,7 @@ try {
             align-items: center;
             gap: 0.5rem;
         }
-
+        
         .submit-btn {
             width: 100%;
             padding: 0.85rem;
@@ -1603,20 +1554,20 @@ try {
             margin-top: 0.5rem;
             box-shadow: 0 4px 20px rgba(255, 140, 0, 0.3);
         }
-
+        
         .submit-btn:hover {
             background: linear-gradient(135deg, #ff8c00, #ff4400);
             box-shadow: 0 6px 28px rgba(255, 140, 0, 0.5);
             transform: translateY(-2px);
         }
-
+        
         .submit-btn:active {
             transform: translateY(0);
         }
-
+        
         /* =====================
-   PRODUCT MODAL - TELJES KÉPERNYŐS VÁLTOZAT
-===================== */
+        PRODUCT MODAL
+        ===================== */
         .product-modal-overlay {
             position: fixed;
             inset: 0;
@@ -1630,12 +1581,12 @@ try {
             transition: opacity 0.3s ease;
             padding: 0;
         }
-
+        
         .product-modal-overlay.active {
             display: flex;
             opacity: 1;
         }
-
+        
         .product-modal-card {
             width: 100vw;
             height: 100vh;
@@ -1650,12 +1601,11 @@ try {
             box-shadow: none;
             overflow: hidden;
         }
-
+        
         .product-modal-overlay.active .product-modal-card {
             transform: scale(1);
         }
-
-        /* Fejléc konténer a jobb felső gombokhoz */
+        
         .product-modal-header {
             position: absolute;
             top: 1.5rem;
@@ -1664,7 +1614,7 @@ try {
             gap: 1rem;
             z-index: 100;
         }
-
+        
         .product-modal-close {
             background: rgba(20, 20, 20, 0.8);
             border: 1px solid var(--orange-bright);
@@ -1680,18 +1630,17 @@ try {
             transition: all 0.2s ease;
             backdrop-filter: blur(5px);
         }
-
+        
         .product-modal-close:hover {
             background: var(--orange-bright);
             color: black;
             transform: scale(1.1);
         }
-
-        /* Product menu */
+        
         .product-menu {
             position: relative;
         }
-
+        
         .product-menu-button {
             width: 48px;
             height: 48px;
@@ -1708,13 +1657,13 @@ try {
             transition: all 0.2s ease;
             backdrop-filter: blur(5px);
         }
-
+        
         .product-menu-button:hover {
             background: var(--orange-bright);
             color: black;
             transform: scale(1.1);
         }
-
+        
         .product-menu-content {
             position: absolute;
             top: 55px;
@@ -1729,11 +1678,11 @@ try {
             display: none;
             z-index: 101;
         }
-
+        
         .product-menu-content.show {
             display: block;
         }
-
+        
         .product-menu-item {
             width: 100%;
             padding: 0.75rem 1rem;
@@ -1746,18 +1695,17 @@ try {
             border-radius: 6px;
             transition: all 0.2s ease;
         }
-
+        
         .product-menu-item:hover {
             background: rgba(255, 140, 0, 0.2);
             color: var(--orange-bright);
         }
-
+        
         .product-menu-item.delete:hover {
             background: rgba(255, 0, 0, 0.2);
             color: #ff0000;
         }
-
-        /* Galéria stílusok */
+        
         .product-gallery {
             position: relative;
             height: 100%;
@@ -1768,7 +1716,7 @@ try {
             padding: 1rem;
             min-height: 0;
         }
-
+        
         .product-main-image-container {
             position: relative;
             width: 100%;
@@ -1782,7 +1730,7 @@ try {
             justify-content: center;
             min-height: 300px;
         }
-
+        
         .product-main-image {
             max-width: 100%;
             max-height: 100%;
@@ -1792,11 +1740,11 @@ try {
             cursor: pointer;
             transition: opacity 0.2s ease;
         }
-
+        
         .product-main-image:hover {
             opacity: 0.9;
         }
-
+        
         .product-no-image-placeholder {
             text-align: center;
             font-size: 1.2rem;
@@ -1804,7 +1752,7 @@ try {
             user-select: none;
             -webkit-user-select: none;
         }
-
+        
         .gallery-nav {
             position: absolute;
             top: 50%;
@@ -1824,25 +1772,25 @@ try {
             z-index: 10;
             backdrop-filter: blur(5px);
         }
-
+        
         .gallery-nav:hover {
             background: var(--orange-bright);
             color: black;
             transform: translateY(-50%) scale(1.1);
         }
-
+        
         .gallery-nav.prev {
             left: 20px;
         }
-
+        
         .gallery-nav.next {
             right: 20px;
         }
-
+        
         .gallery-nav.hidden {
             display: none;
         }
-
+        
         .product-thumbnails {
             display: flex;
             gap: 1rem;
@@ -1850,7 +1798,7 @@ try {
             padding: 0.5rem 0;
             min-height: 100px;
         }
-
+        
         .product-thumbnail {
             width: 100px;
             height: 100px;
@@ -1861,24 +1809,23 @@ try {
             transition: all 0.2s ease;
             flex-shrink: 0;
         }
-
+        
         .product-thumbnail:hover {
             border-color: var(--orange-bright);
             transform: translateY(-2px);
         }
-
+        
         .product-thumbnail.active {
             border-color: var(--orange-bright);
             box-shadow: 0 0 20px var(--orange-glow);
         }
-
+        
         .product-thumbnail img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-
-        /* Termék adatok - jobb oldali panel */
+        
         .product-details {
             display: flex;
             flex-direction: column;
@@ -1891,14 +1838,14 @@ try {
             overflow-y: auto;
             user-select: none;
         }
-
+        
         .product-details-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             gap: 1rem;
         }
-
+        
         .product-title {
             font-size: 2.5rem;
             color: var(--orange-bright);
@@ -1907,29 +1854,29 @@ try {
             line-height: 1.2;
             font-weight: bold;
         }
-
+        
         .product-price {
             font-size: 3rem;
             font-weight: bold;
             color: var(--orange-bright);
             text-shadow: 0 0 30px var(--orange-glow);
         }
-
+        
         .product-seller {
             font-size: 1.2rem;
             color: rgba(255, 255, 255, 0.7);
         }
-
+        
         .product-seller strong {
             color: var(--orange-bright);
             font-size: 1.4rem;
         }
-
+        
         .product-date {
             font-size: 1rem;
             color: rgba(255, 255, 255, 0.4);
         }
-
+        
         .product-description {
             font-size: 1.1rem;
             line-height: 1.8;
@@ -1943,7 +1890,7 @@ try {
             white-space: pre-wrap;
             user-select: none;
         }
-
+        
         .product-buy-btn {
             background: linear-gradient(135deg, #00c851, #007e33);
             border: none;
@@ -1961,15 +1908,15 @@ try {
             gap: 1rem;
             user-select: none;
         }
-
+        
         .product-buy-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(0, 200, 0, 0.4);
         }
-
+        
         /* =====================
-   LIGHTBOX
-===================== */
+        LIGHTBOX
+        ===================== */
         .lightbox-overlay {
             position: fixed;
             inset: 0;
@@ -1982,12 +1929,12 @@ try {
             opacity: 0;
             transition: opacity 0.3s ease;
         }
-
+        
         .lightbox-overlay.active {
             display: flex;
             opacity: 1;
         }
-
+        
         .lightbox-content {
             display: flex;
             align-items: flex-start;
@@ -1995,7 +1942,7 @@ try {
             max-width: 95vw;
             max-height: 95vh;
         }
-
+        
         .lightbox-image {
             max-width: calc(95vw - 70px);
             max-height: 95vh;
@@ -2005,7 +1952,7 @@ try {
             border: 2px solid var(--orange-bright);
             border-radius: 8px;
         }
-
+        
         .lightbox-close {
             background: rgba(20, 20, 20, 0.9);
             border: 1px solid var(--orange-bright);
@@ -2021,16 +1968,16 @@ try {
             transition: all 0.2s ease;
             flex-shrink: 0;
         }
-
+        
         .lightbox-close:hover {
             background: var(--orange-bright);
             color: black;
             transform: scale(1.1);
         }
-
+        
         /* =====================
-   RESPONSIVE
-===================== */
+        RESPONSIVE
+        ===================== */
         @media (max-width: 1200px) {
             .product-modal-card {
                 grid-template-columns: 1fr;
@@ -2038,134 +1985,103 @@ try {
                 padding: 1rem;
                 overflow-y: auto;
             }
-
             .product-gallery {
                 height: 50vh;
             }
-
             .product-title {
                 font-size: 2rem;
             }
-
             .product-price {
                 font-size: 2.5rem;
             }
-
             .product-description {
                 max-height: 300px;
             }
         }
-
+        
         @media (max-width: 600px) {
             .pagination-container {
                 padding: 0.5rem 1rem;
             }
-
             .pagination-btn {
                 padding: 0.4rem 1rem;
                 font-size: 0.9rem;
             }
-
             .modal-card {
                 padding: 2rem 1.2rem 1.5rem;
             }
-
             .product-modal-card {
                 padding: 0.5rem;
             }
-
             .product-gallery {
                 height: 40vh;
             }
-
             .product-details {
                 padding: 1rem;
             }
-
             .product-title {
                 font-size: 1.5rem;
             }
-
             .product-price {
                 font-size: 2rem;
             }
-
             .product-description {
                 padding: 1rem;
                 font-size: 1rem;
             }
-
-            /* Mobil: csak az ikon jelenjen meg a gombokon */
-            .upload-btn .button-text,
-            .admin-btn .button-text {
+            .upload-btn .button-text, .admin-btn .button-text {
                 display: none;
             }
-
             .product-modal-header {
                 top: 0.5rem;
                 right: 0.5rem;
             }
-
-            /* Mobil lightbox */
             .lightbox-content {
                 flex-direction: column;
                 align-items: center;
             }
-
             .lightbox-image {
                 max-width: 95vw;
                 max-height: calc(95vh - 70px);
             }
         }
-
+        
         @media (prefers-reduced-motion: reduce) {
-
-            .noise,
-            .orb-1,
-            .orb-2,
-            .item-card,
-            .account-dropdown,
-            .pagination-btn,
-            .modal-card,
-            .modal-overlay,
-            .product-modal-card,
-            .product-modal-overlay {
+            .noise, .orb-1, .orb-2, .item-card, .account-dropdown,
+            .pagination-btn, .modal-card, .modal-overlay,
+            .product-modal-card, .product-modal-overlay {
                 animation: none;
                 transition: none;
             }
         }
-
     </style>
 </head>
-
 <body>
     <div class="noise"></div>
     <div class="orb-1"></div>
     <div class="orb-2"></div>
-
-    <!-- Top bar: admin button (if admin) + keresősáv + feltöltés gomb + fiók menü -->
+    
+    <!-- Top bar -->
     <div class="top-bar">
         <div class="top-bar-left">
             <?php if ($isAdmin): ?>
-                <a href="admin.php" class="admin-btn unselectable" id="adminBtn">
-                    <span class="shield-icon">🛡️</span>
-                    <span class="button-text">Admin</span>
-                </a>
+            <a href="admin.php" class="admin-btn unselectable" id="adminBtn">
+                <span class="shield-icon">🛡️</span>
+                <span class="button-text">Admin</span>
+            </a>
             <?php endif; ?>
         </div>
-
-        <!-- KERESŐSÁV KÖZÉPEN -->
+        
         <div class="search-container">
             <input type="text" id="searchInput" class="search-input" placeholder="Keresés termékek között..." autocomplete="off">
             <div id="searchResults" class="search-dropdown"></div>
         </div>
-
+        
         <div class="top-bar-right">
             <button class="upload-btn unselectable" id="openModalBtn" type="button">
                 <span class="plus-icon">＋</span>
                 <span class="button-text">Hirdetés feladása</span>
             </button>
-
             <details class="account-menu">
                 <summary class="account-summary unselectable">
                     <span>⚙️</span> FIÓK
@@ -2193,25 +2109,25 @@ try {
             </details>
         </div>
     </div>
-
-    <!-- Upload Modal - MODOSÍTVA: unselectable osztályok hozzáadva a statikus szövegekhez -->
+    
+    <!-- Upload Modal -->
     <div class="modal-overlay" id="uploadModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-card">
             <button class="modal-close unselectable" id="closeModalBtn" type="button" aria-label="Bezárás">✕</button>
-
             <div class="modal-title unselectable" id="modalTitle">Új hirdetés</div>
             <div class="modal-subtitle unselectable">Tölts fel legalább 1 képet a termékről</div>
-
-            <?php if ($uploadSuccess): ?>
-                <div class="success-banner unselectable">
-                    <span>✓</span> A hirdetés sikeresen fel lett adva!
-                </div>
+            
+            <!-- ✅ MÓDOSÍTVA: GET paraméter ellenőrzése -->
+            <?php if (isset($_GET['upload']) && $_GET['upload'] === 'success'): ?>
+            <div class="success-banner unselectable">
+                <span>✓</span> A hirdetés sikeresen fel lett adva!
+            </div>
             <?php endif; ?>
-
+            
             <?php if ($uploadError): ?>
-                <div class="error-banner unselectable"><?php echo htmlspecialchars($uploadError); ?></div>
+            <div class="error-banner unselectable"><?php echo htmlspecialchars($uploadError); ?></div>
             <?php endif; ?>
-
+            
             <form method="post" id="uploadForm" enctype="multipart/form-data" novalidate>
                 <div class="image-upload-container">
                     <label for="item_images" class="image-upload-label unselectable">
@@ -2225,41 +2141,43 @@ try {
                     <div class="image-preview-container" id="imagePreview"></div>
                     <div class="field-error unselectable" id="images-error" style="margin-top: 0.5rem;">Legalább egy képet fel kell tölteni!</div>
                 </div>
-
+                
                 <div class="form-group">
                     <label class="form-label unselectable" for="item_title">
                         Cím <span class="required-star unselectable">*</span>
                     </label>
-                    <input class="form-input" type="text" id="item_title" name="item_title" placeholder="pl. iPhone 14 Pro 256GB" maxlength="255" value="<?php echo isset($_POST['item_title']) && $uploadError ? htmlspecialchars($_POST['item_title']) : ''; ?>" autocomplete="off">
+                    <input class="form-input" type="text" id="item_title" name="item_title" placeholder="pl. iPhone 14 Pro 256GB" maxlength="255" 
+                           value="<?php echo htmlspecialchars($formData['item_title'] ?? ''); ?>" autocomplete="off">
                     <div class="field-error unselectable" id="title-error">Kérjük, add meg a hirdetés címét!</div>
                 </div>
-
+                
                 <div class="form-group">
                     <label class="form-label unselectable" for="item_description">
                         Leírás <span class="required-star unselectable">*</span>
                     </label>
-                    <textarea class="form-textarea" id="item_description" name="item_description" placeholder="Írd le a termék állapotát, jellemzőit..."><?php echo isset($_POST['item_description']) && $uploadError ? htmlspecialchars($_POST['item_description']) : ''; ?></textarea>
+                    <textarea class="form-textarea" id="item_description" name="item_description" placeholder="Írd le a termék állapotát, jellemzőit..."><?php echo htmlspecialchars($formData['item_description'] ?? ''); ?></textarea>
                     <div class="field-error unselectable" id="desc-error">Kérjük, adj meg egy leírást!</div>
                 </div>
-
+                
                 <div class="form-group">
                     <label class="form-label unselectable" for="item_price">
                         Ár <span class="required-star unselectable">*</span>
                     </label>
                     <div class="price-wrapper">
-                        <input class="form-input" type="number" id="item_price" name="item_price" placeholder="0" min="0" step="1" value="<?php echo isset($_POST['item_price']) && $uploadError ? htmlspecialchars($_POST['item_price']) : ''; ?>">
+                        <input class="form-input" type="number" id="item_price" name="item_price" placeholder="0" min="0" step="1" 
+                               value="<?php echo htmlspecialchars($formData['item_price'] ?? ''); ?>">
                         <span class="price-suffix unselectable">Ft</span>
                     </div>
                     <div class="field-error unselectable" id="price-error">Kérjük, adj meg egy érvényes árat!</div>
                 </div>
-
+                
                 <button type="submit" name="upload_item" class="submit-btn unselectable">
                     Hirdetés feladása
                 </button>
             </form>
         </div>
     </div>
-
+    
     <!-- Report Modal -->
     <div class="report-modal" id="reportModal">
         <div class="report-modal-content">
@@ -2278,13 +2196,11 @@ try {
             </form>
         </div>
     </div>
-
-    <!-- Product Detail Modal - TELJES KÉPERNYŐS VÁLTOZAT -->
+    
+    <!-- Product Detail Modal -->
     <div class="product-modal-overlay" id="productModal">
         <div class="product-modal-card">
-            <!-- Fejléc konténer a jobb felső gomboknak -->
             <div class="product-modal-header">
-                <!-- Hárompontos menü a modálban -->
                 <div class="product-menu" id="productMenuContainer" style="display: none;">
                     <div class="product-menu-button unselectable" onclick="toggleProductMenu(this)">⋮</div>
                     <div class="product-menu-content" id="productMenuContent">
@@ -2292,12 +2208,9 @@ try {
                         <button class="product-menu-item delete unselectable" id="productDeleteBtn" style="display: none;">🗑️ Törlés</button>
                     </div>
                 </div>
-
-                <!-- Bezáró gomb -->
                 <button class="product-modal-close unselectable" id="closeProductModalBtn">✕</button>
             </div>
-
-            <!-- Képgaléria -->
+            
             <div class="product-gallery">
                 <div class="product-main-image-container">
                     <img src="" alt="Termék képe" class="product-main-image" id="productMainImage" style="display: none;">
@@ -2309,206 +2222,187 @@ try {
                 </div>
                 <div class="product-thumbnails" id="productThumbnails"></div>
             </div>
-
-            <!-- Termék adatok -->
+            
             <div class="product-details">
                 <h2 class="product-title unselectable" id="productTitle"></h2>
-
                 <div class="product-price unselectable" id="productPrice"></div>
                 <div class="product-seller unselectable" id="productSeller"></div>
                 <div class="product-date unselectable" id="productDate"></div>
                 <div class="product-description unselectable" id="productDescription"></div>
-
-                <!-- Vásárlás gomb -->
                 <button class="product-buy-btn unselectable" id="productBuyBtn">
                     🛒 Vásárlás
                 </button>
             </div>
         </div>
     </div>
-
-    <!-- Lightbox a képek nagyításához -->
+    
+    <!-- Lightbox -->
     <div class="lightbox-overlay" id="lightboxOverlay">
         <div class="lightbox-content">
             <img src="" alt="Nagyított kép" class="lightbox-image" id="lightboxImage">
             <button class="lightbox-close unselectable" id="lightboxClose">✕</button>
         </div>
     </div>
-
+    
     <div class="main-content">
         <?php if (!empty($items)): ?>
-            <div class="items-grid">
-                <?php foreach ($items as $item):
-                    // Get the primary image for this item
-                    $imageStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? AND is_primary = 1 LIMIT 1");
-                    $imageStmt->execute([$item['id']]);
-                    $primaryImage = $imageStmt->fetch(PDO::FETCH_ASSOC);
-
-                    // Get total image count for this item
-                    $countStmt = $conn->prepare("SELECT COUNT(*) as image_count FROM item_images WHERE item_id = ?");
-                    $countStmt->execute([$item['id']]);
-                    $imageCount = $countStmt->fetch(PDO::FETCH_ASSOC)['image_count'];
-
-                    // Get all images for this item (for the modal)
-                    $allImagesStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? ORDER BY sort_order");
-                    $allImagesStmt->execute([$item['id']]);
-                    $allImages = $allImagesStmt->fetchAll(PDO::FETCH_COLUMN);
+        <div class="items-grid">
+            <?php foreach ($items as $item):
+                $imageStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? AND is_primary = 1 LIMIT 1");
+                $imageStmt->execute([$item['id']]);
+                $primaryImage = $imageStmt->fetch(PDO::FETCH_ASSOC);
+                
+                $countStmt = $conn->prepare("SELECT COUNT(*) as image_count FROM item_images WHERE item_id = ?");
+                $countStmt->execute([$item['id']]);
+                $imageCount = $countStmt->fetch(PDO::FETCH_ASSOC)['image_count'];
+                
+                $allImagesStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? ORDER BY sort_order");
+                $allImagesStmt->execute([$item['id']]);
+                $allImages = $allImagesStmt->fetchAll(PDO::FETCH_COLUMN);
+            ?>
+            <div class="item-card"
+                 data-item-id="<?php echo $item['id']; ?>"
+                 data-item-title="<?php echo htmlspecialchars($item['title']); ?>"
+                 data-item-price="<?php echo number_format($item['price'], 0, ',', ' '); ?> Ft"
+                 data-item-seller="<?php echo htmlspecialchars($item['seller_name']); ?>"
+                 data-item-date="<?php echo date('Y-m-d', strtotime($item['created_at'])); ?>"
+                 data-item-description="<?php echo htmlspecialchars($item['description']); ?>"
+                 data-item-images='<?php echo json_encode($allImages); ?>'
+                 data-item-user-id="<?php echo $item['user_id']; ?>">
+                
+                <?php
+                $showMenu = ($item['user_id'] != $_SESSION['user_id'] || $isAdmin);
+                if ($showMenu):
                 ?>
-                    <div class="item-card"
-                        data-item-id="<?php echo $item['id']; ?>"
-                        data-item-title="<?php echo htmlspecialchars($item['title']); ?>"
-                        data-item-price="<?php echo number_format($item['price'], 0, ',', ' '); ?> Ft"
-                        data-item-seller="<?php echo htmlspecialchars($item['seller_name']); ?>"
-                        data-item-date="<?php echo date('Y-m-d', strtotime($item['created_at'])); ?>"
-                        data-item-description="<?php echo htmlspecialchars($item['description']); ?>"
-                        data-item-images='<?php echo json_encode($allImages); ?>'
-                        data-item-user-id="<?php echo $item['user_id']; ?>">
-
-                        <!-- Hárompontos menü -->
-                        <?php
-                        $showMenu = ($item['user_id'] != $_SESSION['user_id'] || $isAdmin);
-                        if ($showMenu):
-                        ?>
-                            <div class="card-menu">
-                                <div class="card-menu-button unselectable" onclick="toggleMenu(this); event.stopPropagation();">⋮</div>
-                                <div class="card-menu-content">
-                                    <?php if ($item['user_id'] != $_SESSION['user_id'] || $isAdmin): ?>
-                                        <button class="card-menu-item unselectable" onclick="openReportModal('<?php echo $item['id']; ?>'); event.stopPropagation();">
-                                            ⚠️ Bejelentés
-                                        </button>
-                                    <?php endif; ?>
-
-                                    <?php if ($isAdmin): ?>
-                                        <form method="post" style="margin:0; padding:0;" onsubmit="return confirm('Biztosan törölni szeretnéd ezt a hirdetést?');" onclick="event.stopPropagation();">
-                                            <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
-                                            <input type="hidden" name="delete_item" value="1">
-                                            <button type="submit" class="card-menu-item delete unselectable">🗑️ Törlés</button>
-                                        </form>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
+                <div class="card-menu">
+                    <div class="card-menu-button unselectable" onclick="toggleMenu(this); event.stopPropagation();">⋮</div>
+                    <div class="card-menu-content">
+                        <?php if ($item['user_id'] != $_SESSION['user_id'] || $isAdmin): ?>
+                        <button class="card-menu-item unselectable" onclick="openReportModal('<?php echo $item['id']; ?>'); event.stopPropagation();">
+                            ⚠️ Bejelentés
+                        </button>
                         <?php endif; ?>
-
-                        <?php if ($primaryImage): ?>
-                            <img src="<?php echo htmlspecialchars($primaryImage['image_path']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" class="item-image">
-                        <?php else: ?>
-                            <div class="item-image-placeholder">
-                                <span class="placeholder-text unselectable">📷 Nincs kép</span>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if ($imageCount > 1): ?>
-                            <div class="image-count-badge unselectable">+<?php echo $imageCount - 1; ?> kép</div>
-                        <?php endif; ?>
-
-                        <div class="item-title unselectable"><?php echo htmlspecialchars($item['title']); ?></div>
-                        <div class="item-price unselectable"><?php echo number_format($item['price'], 0, ',', ' '); ?> Ft</div>
-                        <div class="item-seller unselectable">Eladó: <?php echo htmlspecialchars($item['seller_name']); ?></div>
-                        <div class="item-date unselectable"><?php echo date('Y-m-d', strtotime($item['created_at'])); ?></div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-
-            <?php if ($totalPages > 1): ?>
-                <div class="floating-pagination">
-                    <div class="pagination-container">
-                        <?php if ($page > 1): ?>
-                            <a href="?page=<?php echo $page - 1; ?>" class="pagination-btn unselectable">Előző</a>
-                        <?php else: ?>
-                            <span class="pagination-btn disabled unselectable">Előző</span>
-                        <?php endif; ?>
-
-                        <?php if ($page < $totalPages): ?>
-                            <a href="?page=<?php echo $page + 1; ?>" class="pagination-btn unselectable">Következő</a>
-                        <?php else: ?>
-                            <span class="pagination-btn disabled unselectable">Következő</span>
+                        <?php if ($isAdmin): ?>
+                        <form method="post" style="margin:0; padding:0;" onsubmit="return confirm('Biztosan törölni szeretnéd ezt a hirdetést?');" onclick="event.stopPropagation();">
+                            <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                            <input type="hidden" name="delete_item" value="1">
+                            <button type="submit" class="card-menu-item delete unselectable">🗑️ Törlés</button>
+                        </form>
                         <?php endif; ?>
                     </div>
                 </div>
-            <?php endif; ?>
+                <?php endif; ?>
+                
+                <?php if ($primaryImage): ?>
+                <img src="<?php echo htmlspecialchars($primaryImage['image_path']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" class="item-image">
+                <?php else: ?>
+                <div class="item-image-placeholder">
+                    <span class="placeholder-text unselectable">📷 Nincs kép</span>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($imageCount > 1): ?>
+                <div class="image-count-badge unselectable">+<?php echo $imageCount - 1; ?> kép</div>
+                <?php endif; ?>
+                
+                <div class="item-title unselectable"><?php echo htmlspecialchars($item['title']); ?></div>
+                <div class="item-price unselectable"><?php echo number_format($item['price'], 0, ',', ' '); ?> Ft</div>
+                <div class="item-seller unselectable">Eladó: <?php echo htmlspecialchars($item['seller_name']); ?></div>
+                <div class="item-date unselectable"><?php echo date('Y-m-d', strtotime($item['created_at'])); ?></div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        
+        <?php if ($totalPages > 1): ?>
+        <div class="floating-pagination">
+            <div class="pagination-container">
+                <?php if ($page > 1): ?>
+                <a href="?page=<?php echo $page - 1; ?>" class="pagination-btn unselectable">Előző</a>
+                <?php else: ?>
+                <span class="pagination-btn disabled unselectable">Előző</span>
+                <?php endif; ?>
+                <?php if ($page < $totalPages): ?>
+                <a href="?page=<?php echo $page + 1; ?>" class="pagination-btn unselectable">Következő</a>
+                <?php else: ?>
+                <span class="pagination-btn disabled unselectable">Következő</span>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
         <?php endif; ?>
     </div>
-
+    
     <script>
-        // Current product data - globális változók
+        // Current product data
         let currentProductImages = [];
         let currentImageIndex = 0;
         let currentProductId = null;
         let currentProductUserId = null;
-
+        
         // Upload modal functionality
         const modal = document.getElementById('uploadModal');
         const openBtn = document.getElementById('openModalBtn');
         const closeBtn = document.getElementById('closeModalBtn');
-
+        
         function openModal() {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
-
+        
         function closeModal() {
             modal.classList.remove('active');
             document.body.style.overflow = '';
         }
-
+        
         openBtn.addEventListener('click', openModal);
         closeBtn.addEventListener('click', closeModal);
-
+        
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeModal();
         });
-
+        
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
         });
-
-        // Image preview functionality - JAVÍTOTT VERZIÓ
+        
+        // Image preview functionality
         const imageInput = document.getElementById('item_images');
         const previewContainer = document.getElementById('imagePreview');
         const imagesError = document.getElementById('images-error');
         let selectedFiles = [];
-
+        
         imageInput.addEventListener('change', function(e) {
             const files = Array.from(e.target.files);
-
             const validFiles = files.filter(file => {
                 const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
                 const maxSize = 5 * 1024 * 1024;
-
                 if (!validTypes.includes(file.type)) {
                     alert(`A ${file.name} fájl formátuma nem támogatott!`);
                     return false;
                 }
-
                 if (file.size > maxSize) {
                     alert(`A ${file.name} fájl mérete nagyobb, mint 5MB!`);
                     return false;
                 }
-
                 return true;
             });
-
             selectedFiles = validFiles;
             updatePreview();
         });
-
+        
         function updatePreview() {
             previewContainer.innerHTML = '';
-
             selectedFiles.forEach((file, index) => {
                 const reader = new FileReader();
                 const previewItem = document.createElement('div');
                 previewItem.className = 'image-preview-item';
                 previewItem.setAttribute('data-index', index);
-
                 reader.onload = function(e) {
                     previewItem.innerHTML = `
                         <img src="${e.target.result}" alt="Preview">
                         <div class="image-preview-remove" data-index="${index}">×</div>
                         ${index === 0 ? '<div class="primary-badge unselectable">Főkép</div>' : ''}
                     `;
-                    
-                    // Eseménykezelő hozzáadása a remove gombhoz
                     const removeBtn = previewItem.querySelector('.image-preview-remove');
                     if (removeBtn) {
                         removeBtn.addEventListener('click', function(e) {
@@ -2518,31 +2412,23 @@ try {
                         });
                     }
                 };
-
                 reader.readAsDataURL(file);
                 previewContainer.appendChild(previewItem);
             });
-            
             validateImages();
         }
-
+        
         function removeImageAtIndex(indexToRemove) {
-            // Kép eltávolítása a selectedFiles tömbből
             selectedFiles.splice(indexToRemove, 1);
-            
-            // DataTransfer objektum frissítése a file inputhoz
             const dt = new DataTransfer();
             selectedFiles.forEach(file => dt.items.add(file));
             imageInput.files = dt.files;
-            
-            // Preview frissítése
             updatePreview();
         }
-
+        
         function validateImages() {
             const isValid = selectedFiles.length > 0;
             const uploadContainer = document.querySelector('.image-upload-container');
-            
             if (!isValid) {
                 imagesError.style.display = 'block';
                 if (uploadContainer) uploadContainer.style.borderColor = '#ff4d4d';
@@ -2552,12 +2438,12 @@ try {
             }
             return isValid;
         }
-
+        
         const form = document.getElementById('uploadForm');
         const titleInput = document.getElementById('item_title');
         const descInput = document.getElementById('item_description');
         const priceInput = document.getElementById('item_price');
-
+        
         function validateField(input, errorId, condition) {
             const errEl = document.getElementById(errorId);
             if (!condition) {
@@ -2569,35 +2455,33 @@ try {
             errEl.style.display = 'none';
             return true;
         }
-
+        
         form.addEventListener('submit', (e) => {
             let valid = true;
             valid = validateImages() && valid;
             valid = validateField(titleInput, 'title-error', titleInput.value.trim() !== '') && valid;
             valid = validateField(descInput, 'desc-error', descInput.value.trim() !== '') && valid;
             valid = validateField(priceInput, 'price-error', priceInput.value !== '' && parseFloat(priceInput.value) >= 0) && valid;
-
             if (!valid) e.preventDefault();
         });
-
+        
         [titleInput, descInput, priceInput].forEach(el => {
             el.addEventListener('input', () => el.classList.remove('invalid'));
         });
-
-        <?php if ($uploadError || $uploadSuccess): ?>
-            openModal();
+        
+        <?php if (isset($_GET['upload']) && $_GET['upload'] === 'success' || $uploadError): ?>
+        openModal();
         <?php endif; ?>
-
+        
         // Card menu functionality
         function toggleMenu(button) {
             const menu = button.nextElementSibling;
             menu.classList.toggle('show');
-
             document.querySelectorAll('.card-menu-content').forEach(m => {
                 if (m !== menu) m.classList.remove('show');
             });
         }
-
+        
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.card-menu')) {
                 document.querySelectorAll('.card-menu-content').forEach(menu => {
@@ -2605,47 +2489,45 @@ try {
                 });
             }
         });
-
+        
         // Report modal functionality
         const reportModal = document.getElementById('reportModal');
         const reportItemId = document.getElementById('reportItemId');
-
+        
         function openReportModal(itemId) {
             reportItemId.value = itemId;
             reportModal.classList.add('show');
             document.body.style.overflow = 'hidden';
         }
-
+        
         function closeReportModal() {
             reportModal.classList.remove('show');
             document.body.style.overflow = '';
         }
-
+        
         reportModal.addEventListener('click', function(e) {
             if (e.target === reportModal) closeReportModal();
         });
-
+        
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && reportModal.classList.contains('show')) closeReportModal();
         });
-
+        
         // Product modal functionality
         const productModal = document.getElementById('productModal');
         const closeProductModalBtn = document.getElementById('closeProductModalBtn');
         const productMainImage = document.getElementById('productMainImage');
         const productNoImagePlaceholder = document.getElementById('productNoImagePlaceholder');
-
         const lightboxOverlay = document.getElementById('lightboxOverlay');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
-
+        
         function setMainImage(index) {
             if (index >= 0 && index < currentProductImages.length && currentProductImages[index]) {
                 productMainImage.style.display = 'block';
                 productNoImagePlaceholder.style.display = 'none';
                 productMainImage.src = currentProductImages[index];
                 currentImageIndex = index;
-
                 productMainImage.onload = function() {
                     adjustImageContainerHeight();
                 };
@@ -2654,7 +2536,6 @@ try {
                     productNoImagePlaceholder.style.display = 'block';
                     adjustImageContainerHeight();
                 };
-
                 document.querySelectorAll('.product-thumbnail').forEach((thumb, i) => {
                     thumb.classList.toggle('active', i === index);
                 });
@@ -2664,17 +2545,15 @@ try {
                 adjustImageContainerHeight();
             }
         }
-
+        
         function adjustImageContainerHeight() {
             const imageContainer = document.querySelector('.product-main-image-container');
             const gallery = document.querySelector('.product-gallery');
             const thumbnails = document.querySelector('.product-thumbnails');
-
             if (imageContainer) {
                 const galleryPadding = 32;
                 const thumbnailsHeight = thumbnails ? thumbnails.offsetHeight : 100;
                 const availableHeight = gallery.clientHeight - galleryPadding - thumbnailsHeight - 20;
-
                 if (productMainImage.style.display !== 'none' && productMainImage.complete && productMainImage.naturalHeight > 0) {
                     const imageHeight = Math.min(productMainImage.naturalHeight, availableHeight);
                     imageContainer.style.height = imageHeight + 'px';
@@ -2683,11 +2562,10 @@ try {
                 }
             }
         }
-
+        
         document.querySelectorAll('.item-card').forEach(card => {
             card.addEventListener('click', function(e) {
                 if (e.target.closest('.card-menu') || e.target.closest('.report-modal')) return;
-
                 const productId = this.dataset.itemId;
                 const title = this.dataset.itemTitle;
                 const price = this.dataset.itemPrice;
@@ -2696,21 +2574,21 @@ try {
                 const description = this.dataset.itemDescription;
                 const images = JSON.parse(this.dataset.itemImages || '[]');
                 const userId = this.dataset.itemUserId;
-
+                
                 currentProductId = productId;
                 currentProductUserId = userId;
                 currentProductImages = images;
                 currentImageIndex = 0;
-
+                
                 document.getElementById('productTitle').textContent = title;
                 document.getElementById('productPrice').textContent = price;
                 document.getElementById('productSeller').innerHTML = `Eladó: <strong>${seller}</strong>`;
                 document.getElementById('productDate').textContent = date;
                 document.getElementById('productDescription').textContent = description;
-
+                
                 const thumbnailsContainer = document.getElementById('productThumbnails');
                 thumbnailsContainer.innerHTML = '';
-
+                
                 if (images.length > 0) {
                     images.forEach((img, index) => {
                         const thumbnail = document.createElement('div');
@@ -2726,54 +2604,51 @@ try {
                 } else {
                     setMainImage(-1);
                 }
-
+                
                 const prevBtn = document.getElementById('galleryPrev');
                 const nextBtn = document.getElementById('galleryNext');
                 prevBtn.classList.toggle('hidden', images.length <= 1);
                 nextBtn.classList.toggle('hidden', images.length <= 1);
-
+                
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    const isOwner = (parseInt(userId) === <?php echo $_SESSION['user_id']; ?>);
-                    const isAdmin = <?php echo $isAdmin ? 'true' : 'false'; ?>;
-
-                    const menuContainer = document.getElementById('productMenuContainer');
-                    const reportBtn = document.getElementById('productReportBtn');
-                    const deleteBtn = document.getElementById('productDeleteBtn');
-
-                    if (!isOwner || isAdmin) {
-                        menuContainer.style.display = 'block';
-
-                        reportBtn.onclick = () => {
-                            closeProductModal();
-                            openReportModal(productId);
+                const isOwner = (parseInt(userId) === <?php echo $_SESSION['user_id']; ?>);
+                const isAdmin = <?php echo $isAdmin ? 'true' : 'false'; ?>;
+                const menuContainer = document.getElementById('productMenuContainer');
+                const reportBtn = document.getElementById('productReportBtn');
+                const deleteBtn = document.getElementById('productDeleteBtn');
+                
+                if (!isOwner || isAdmin) {
+                    menuContainer.style.display = 'block';
+                    reportBtn.onclick = () => {
+                        closeProductModal();
+                        openReportModal(productId);
+                    };
+                    if (isAdmin) {
+                        deleteBtn.style.display = 'block';
+                        deleteBtn.onclick = () => {
+                            if (confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) {
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.innerHTML = `
+                                    <input type="hidden" name="item_id" value="${productId}">
+                                    <input type="hidden" name="delete_item" value="1">
+                                `;
+                                document.body.appendChild(form);
+                                form.submit();
+                            }
                         };
-
-                        if (isAdmin) {
-                            deleteBtn.style.display = 'block';
-                            deleteBtn.onclick = () => {
-                                if (confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) {
-                                    const form = document.createElement('form');
-                                    form.method = 'POST';
-                                    form.innerHTML = `
-                                        <input type="hidden" name="item_id" value="${productId}">
-                                        <input type="hidden" name="delete_item" value="1">
-                                    `;
-                                    document.body.appendChild(form);
-                                    form.submit();
-                                }
-                            };
-                        } else {
-                            deleteBtn.style.display = 'none';
-                        }
                     } else {
-                        menuContainer.style.display = 'none';
+                        deleteBtn.style.display = 'none';
                     }
+                } else {
+                    menuContainer.style.display = 'none';
+                }
                 <?php endif; ?>
-
+                
                 openProductModal();
             });
         });
-
+        
         function openProductModal() {
             productModal.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -2781,39 +2656,39 @@ try {
                 adjustImageContainerHeight();
             }, 100);
         }
-
+        
         function closeProductModal() {
             if (lightboxOverlay.classList.contains('active')) closeLightbox();
             productModal.classList.remove('active');
             document.body.style.overflow = '';
         }
-
+        
         document.getElementById('galleryPrev').addEventListener('click', (e) => {
             e.stopPropagation();
             const newIndex = currentImageIndex - 1;
             setMainImage(newIndex >= 0 ? newIndex : currentProductImages.length - 1);
         });
-
+        
         document.getElementById('galleryNext').addEventListener('click', (e) => {
             e.stopPropagation();
             const newIndex = currentImageIndex + 1;
             setMainImage(newIndex < currentProductImages.length ? newIndex : 0);
         });
-
+        
         closeProductModalBtn.addEventListener('click', closeProductModal);
-
+        
         productModal.addEventListener('click', (e) => {
             if (e.target === productModal) closeProductModal();
         });
-
+        
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && productModal.classList.contains('active')) closeProductModal();
         });
-
+        
         document.getElementById('productBuyBtn').addEventListener('click', () => {
             alert('Vásárlás funkció még nem elérhető!');
         });
-
+        
         function toggleProductMenu(button) {
             const menu = button.nextElementSibling;
             menu.classList.toggle('show');
@@ -2821,7 +2696,7 @@ try {
                 if (m !== menu) m.classList.remove('show');
             });
         }
-
+        
         productMainImage.addEventListener('click', (e) => {
             e.stopPropagation();
             if (productMainImage.src && productMainImage.style.display !== 'none' && !productMainImage.src.includes('svg')) {
@@ -2829,47 +2704,46 @@ try {
                 lightboxOverlay.classList.add('active');
             }
         });
-
+        
         function closeLightbox() {
             lightboxOverlay.classList.remove('active');
         }
-
+        
         lightboxClose.addEventListener('click', closeLightbox);
-
+        
         lightboxOverlay.addEventListener('click', (e) => {
             if (e.target === lightboxOverlay) closeLightbox();
         });
-
+        
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && lightboxOverlay.classList.contains('active')) closeLightbox();
         });
-
+        
         window.addEventListener('resize', () => {
             if (productModal.classList.contains('active')) adjustImageContainerHeight();
         });
-
-        // ── TÉMAVÁLTÓ (JAVÍTVA: body attribútum is frissül) ──
+        
+        // ── TÉMAVÁLTÓ ──
         (function() {
             const checkbox = document.getElementById('themeSwitchMain');
             const themeLink = document.getElementById('themeStylesheet');
-
+            
             function applyTheme(theme) {
                 themeLink.href = theme === 'light' ? 'theme-light.css' : 'theme-dark.css';
                 localStorage.setItem('theme', theme);
                 checkbox.checked = (theme === 'light');
                 document.documentElement.setAttribute('data-theme', theme);
                 document.body.setAttribute('data-theme', theme);
-
+                
                 const placeholder = document.getElementById('productNoImagePlaceholder');
                 if (placeholder) {
                     placeholder.style.color = theme === 'light' ? '#7a9200' : '#ff8c00';
                 }
-
+                
                 if (productModal && productModal.classList.contains('active') && currentProductImages && currentProductImages.length > 0) {
                     if (productMainImage && currentProductImages[currentImageIndex]) {
                         productMainImage.src = currentProductImages[currentImageIndex];
                     }
-
                     const thumbnailsContainer = document.getElementById('productThumbnails');
                     if (thumbnailsContainer) {
                         const thumbnails = thumbnailsContainer.querySelectorAll('.product-thumbnail');
@@ -2882,29 +2756,29 @@ try {
                     }
                 }
             }
-
+            
             const saved = localStorage.getItem('theme') || 'dark';
             applyTheme(saved);
-
+            
             checkbox.addEventListener('change', function() {
                 applyTheme(this.checked ? 'light' : 'dark');
             });
         })();
-
+        
         // =====================
         // KERESÉS FUNKCIÓ (AJAX)
         // =====================
         const searchInput = document.getElementById('searchInput');
         const searchResults = document.getElementById('searchResults');
         let searchTimeout;
-
+        
         function performSearch() {
             const query = searchInput.value.trim();
             if (query.length < 2) {
                 searchResults.classList.remove('show');
                 return;
             }
-
+            
             fetch(`?search_query=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
@@ -2912,12 +2786,11 @@ try {
                         searchResults.classList.remove('show');
                         return;
                     }
-
-                    // Aktuális téma lekérése a placeholder SVG színéhez
+                    
                     const isLightMode = document.body.getAttribute('data-theme') === 'light';
                     const placeholderColor = isLightMode ? '#7a9200' : '#ff8c00';
                     const placeholderSvg = `data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22${encodeURIComponent(placeholderColor)}%22%3E%3Cpath%20d%3D%22M4%204h16v2H4V4zm2%204h12v2H6V8zm14-4v16H4V4h16z%22%2F%3E%3C%2Fsvg%3E`;
-
+                    
                     searchResults.innerHTML = data.map(item => `
                         <div class="search-result-item" data-item-id="${item.id}">
                             <img src="${item.primary_image || ''}" class="search-result-image" onerror="this.src='${placeholderSvg}'">
@@ -2928,10 +2801,9 @@ try {
                             </div>
                         </div>
                     `).join('');
-
+                    
                     searchResults.classList.add('show');
-
-                    // Kattintás a találatra
+                    
                     document.querySelectorAll('.search-result-item').forEach(el => {
                         el.addEventListener('click', () => {
                             const itemId = el.dataset.itemId;
@@ -2941,19 +2813,18 @@ try {
                 })
                 .catch(err => console.error('Search error:', err));
         }
-
+        
         searchInput.addEventListener('input', () => {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(performSearch, 300);
         });
-
+        
         document.addEventListener('click', (e) => {
             if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
                 searchResults.classList.remove('show');
             }
         });
-
-        // Termék részletek lekérése a beépített JSON API-ról
+        
         function fetchItemDetails(itemId) {
             fetch(`?get_item=${itemId}`)
                 .then(response => response.json())
@@ -2962,21 +2833,21 @@ try {
                         console.error(item.error);
                         return;
                     }
-
+                    
                     currentProductId = item.id;
                     currentProductUserId = item.user_id;
                     currentProductImages = item.images;
                     currentImageIndex = 0;
-
+                    
                     document.getElementById('productTitle').textContent = item.title;
                     document.getElementById('productPrice').textContent = `${Number(item.price).toLocaleString('hu-HU')} Ft`;
                     document.getElementById('productSeller').innerHTML = `Eladó: <strong>${escapeHtml(item.seller_name)}</strong>`;
                     document.getElementById('productDate').textContent = item.created_at.substring(0,10);
                     document.getElementById('productDescription').textContent = item.description;
-
+                    
                     const thumbnailsContainer = document.getElementById('productThumbnails');
                     thumbnailsContainer.innerHTML = '';
-
+                    
                     if (item.images && item.images.length > 0) {
                         item.images.forEach((img, index) => {
                             const thumbnail = document.createElement('div');
@@ -2992,18 +2863,18 @@ try {
                     } else {
                         setMainImage(-1);
                     }
-
+                    
                     const prevBtn = document.getElementById('galleryPrev');
                     const nextBtn = document.getElementById('galleryNext');
                     prevBtn.classList.toggle('hidden', !item.images || item.images.length <= 1);
                     nextBtn.classList.toggle('hidden', !item.images || item.images.length <= 1);
-
+                    
                     const menuContainer = document.getElementById('productMenuContainer');
                     const reportBtn = document.getElementById('productReportBtn');
                     const deleteBtn = document.getElementById('productDeleteBtn');
                     const isOwner = (parseInt(item.user_id) === <?php echo $_SESSION['user_id']; ?>);
                     const isAdmin = <?php echo $isAdmin ? 'true' : 'false'; ?>;
-
+                    
                     if (!isOwner || isAdmin) {
                         menuContainer.style.display = 'block';
                         reportBtn.onclick = () => {
@@ -3013,7 +2884,7 @@ try {
                         if (isAdmin) {
                             deleteBtn.style.display = 'block';
                             deleteBtn.onclick = () => {
-                                if (confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) {
+                                if (confirm('Biztosan törlöd ezt a terméket?')) {
                                     const form = document.createElement('form');
                                     form.method = 'POST';
                                     form.innerHTML = `
@@ -3030,12 +2901,12 @@ try {
                     } else {
                         menuContainer.style.display = 'none';
                     }
-
+                    
                     openProductModal();
                 })
                 .catch(err => console.error('Error fetching item details:', err));
         }
-
+        
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/[&<>]/g, function(m) {
@@ -3047,5 +2918,4 @@ try {
         }
     </script>
 </body>
-
 </html>
