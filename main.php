@@ -1227,6 +1227,12 @@ try {
             user-select: none;
             -webkit-user-select: none;
         }
+        
+        /* Ensure input fields remain selectable */
+        input, textarea {
+            user-select: text;
+            -webkit-user-select: text;
+        }
 
         /* Theme toggle inside dropdown */
         .theme-toggle-row {
@@ -2188,63 +2194,63 @@ try {
         </div>
     </div>
 
-    <!-- Upload Modal -->
+    <!-- Upload Modal - MODOSÍTVA: unselectable osztályok hozzáadva a statikus szövegekhez -->
     <div class="modal-overlay" id="uploadModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-card">
-            <button class="modal-close" id="closeModalBtn" type="button" aria-label="Bezárás">✕</button>
+            <button class="modal-close unselectable" id="closeModalBtn" type="button" aria-label="Bezárás">✕</button>
 
-            <div class="modal-title" id="modalTitle">Új hirdetés</div>
-            <div class="modal-subtitle">Tölts fel legalább 1 képet a termékről</div>
+            <div class="modal-title unselectable" id="modalTitle">Új hirdetés</div>
+            <div class="modal-subtitle unselectable">Tölts fel legalább 1 képet a termékről</div>
 
             <?php if ($uploadSuccess): ?>
-                <div class="success-banner">
+                <div class="success-banner unselectable">
                     <span>✓</span> A hirdetés sikeresen fel lett adva!
                 </div>
             <?php endif; ?>
 
             <?php if ($uploadError): ?>
-                <div class="error-banner"><?php echo htmlspecialchars($uploadError); ?></div>
+                <div class="error-banner unselectable"><?php echo htmlspecialchars($uploadError); ?></div>
             <?php endif; ?>
 
             <form method="post" id="uploadForm" enctype="multipart/form-data" novalidate>
                 <div class="image-upload-container">
-                    <label for="item_images" class="image-upload-label">
-                        <span class="image-upload-icon">📸</span>
-                        <span class="image-upload-hint">
+                    <label for="item_images" class="image-upload-label unselectable">
+                        <span class="image-upload-icon unselectable">📸</span>
+                        <span class="image-upload-hint unselectable">
                             Kattints ide a képek kiválasztásához<br>
                             <small>Támogatott formátumok: JPEG, PNG, GIF, WebP (max. 5MB/kép)</small>
                         </span>
                     </label>
                     <input type="file" id="item_images" name="item_images[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
                     <div class="image-preview-container" id="imagePreview"></div>
-                    <div class="field-error" id="images-error" style="margin-top: 0.5rem;">Legalább egy képet fel kell tölteni!</div>
+                    <div class="field-error unselectable" id="images-error" style="margin-top: 0.5rem;">Legalább egy képet fel kell tölteni!</div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="item_title">
-                        Cím <span class="required-star">*</span>
+                    <label class="form-label unselectable" for="item_title">
+                        Cím <span class="required-star unselectable">*</span>
                     </label>
                     <input class="form-input" type="text" id="item_title" name="item_title" placeholder="pl. iPhone 14 Pro 256GB" maxlength="255" value="<?php echo isset($_POST['item_title']) && $uploadError ? htmlspecialchars($_POST['item_title']) : ''; ?>" autocomplete="off">
-                    <div class="field-error" id="title-error">Kérjük, add meg a hirdetés címét!</div>
+                    <div class="field-error unselectable" id="title-error">Kérjük, add meg a hirdetés címét!</div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="item_description">
-                        Leírás <span class="required-star">*</span>
+                    <label class="form-label unselectable" for="item_description">
+                        Leírás <span class="required-star unselectable">*</span>
                     </label>
                     <textarea class="form-textarea" id="item_description" name="item_description" placeholder="Írd le a termék állapotát, jellemzőit..."><?php echo isset($_POST['item_description']) && $uploadError ? htmlspecialchars($_POST['item_description']) : ''; ?></textarea>
-                    <div class="field-error" id="desc-error">Kérjük, adj meg egy leírást!</div>
+                    <div class="field-error unselectable" id="desc-error">Kérjük, adj meg egy leírást!</div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="item_price">
-                        Ár <span class="required-star">*</span>
+                    <label class="form-label unselectable" for="item_price">
+                        Ár <span class="required-star unselectable">*</span>
                     </label>
                     <div class="price-wrapper">
                         <input class="form-input" type="number" id="item_price" name="item_price" placeholder="0" min="0" step="1" value="<?php echo isset($_POST['item_price']) && $uploadError ? htmlspecialchars($_POST['item_price']) : ''; ?>">
-                        <span class="price-suffix">Ft</span>
+                        <span class="price-suffix unselectable">Ft</span>
                     </div>
-                    <div class="field-error" id="price-error">Kérjük, adj meg egy érvényes árat!</div>
+                    <div class="field-error unselectable" id="price-error">Kérjük, adj meg egy érvényes árat!</div>
                 </div>
 
                 <button type="submit" name="upload_item" class="submit-btn unselectable">
@@ -2258,17 +2264,17 @@ try {
     <div class="report-modal" id="reportModal">
         <div class="report-modal-content">
             <div class="report-modal-header">
-                <h3 class="report-modal-title">Hirdetés bejelentése</h3>
-                <button class="report-modal-close" onclick="closeReportModal()">✕</button>
+                <h3 class="report-modal-title unselectable">Hirdetés bejelentése</h3>
+                <button class="report-modal-close unselectable" onclick="closeReportModal()">✕</button>
             </div>
             <form method="post" id="reportForm">
                 <input type="hidden" name="item_id" id="reportItemId">
                 <input type="hidden" name="report_item" value="1">
                 <div class="report-form-group">
-                    <label class="report-form-label">Bejelentés oka:</label>
+                    <label class="report-form-label unselectable">Bejelentés oka:</label>
                     <textarea name="report_reason" class="report-form-textarea" required placeholder="Kérjük, részletezd a problémát..."></textarea>
                 </div>
-                <button type="submit" class="report-submit-btn">Bejelentés küldése</button>
+                <button type="submit" class="report-submit-btn unselectable">Bejelentés küldése</button>
             </form>
         </div>
     </div>
@@ -2280,15 +2286,15 @@ try {
             <div class="product-modal-header">
                 <!-- Hárompontos menü a modálban -->
                 <div class="product-menu" id="productMenuContainer" style="display: none;">
-                    <div class="product-menu-button" onclick="toggleProductMenu(this)">⋮</div>
+                    <div class="product-menu-button unselectable" onclick="toggleProductMenu(this)">⋮</div>
                     <div class="product-menu-content" id="productMenuContent">
-                        <button class="product-menu-item" id="productReportBtn">⚠️ Bejelentés</button>
-                        <button class="product-menu-item delete" id="productDeleteBtn" style="display: none;">🗑️ Törlés</button>
+                        <button class="product-menu-item unselectable" id="productReportBtn">⚠️ Bejelentés</button>
+                        <button class="product-menu-item delete unselectable" id="productDeleteBtn" style="display: none;">🗑️ Törlés</button>
                     </div>
                 </div>
 
                 <!-- Bezáró gomb -->
-                <button class="product-modal-close" id="closeProductModalBtn">✕</button>
+                <button class="product-modal-close unselectable" id="closeProductModalBtn">✕</button>
             </div>
 
             <!-- Képgaléria -->
@@ -2298,23 +2304,23 @@ try {
                     <div class="product-no-image-placeholder unselectable" id="productNoImagePlaceholder" style="display: none;">
                         📷 Nincs kép
                     </div>
-                    <button class="gallery-nav prev" id="galleryPrev">❮</button>
-                    <button class="gallery-nav next" id="galleryNext">❯</button>
+                    <button class="gallery-nav prev unselectable" id="galleryPrev">❮</button>
+                    <button class="gallery-nav next unselectable" id="galleryNext">❯</button>
                 </div>
                 <div class="product-thumbnails" id="productThumbnails"></div>
             </div>
 
             <!-- Termék adatok -->
             <div class="product-details">
-                <h2 class="product-title" id="productTitle"></h2>
+                <h2 class="product-title unselectable" id="productTitle"></h2>
 
-                <div class="product-price" id="productPrice"></div>
-                <div class="product-seller" id="productSeller"></div>
-                <div class="product-date" id="productDate"></div>
-                <div class="product-description" id="productDescription"></div>
+                <div class="product-price unselectable" id="productPrice"></div>
+                <div class="product-seller unselectable" id="productSeller"></div>
+                <div class="product-date unselectable" id="productDate"></div>
+                <div class="product-description unselectable" id="productDescription"></div>
 
                 <!-- Vásárlás gomb -->
-                <button class="product-buy-btn" id="productBuyBtn">
+                <button class="product-buy-btn unselectable" id="productBuyBtn">
                     🛒 Vásárlás
                 </button>
             </div>
@@ -2325,7 +2331,7 @@ try {
     <div class="lightbox-overlay" id="lightboxOverlay">
         <div class="lightbox-content">
             <img src="" alt="Nagyított kép" class="lightbox-image" id="lightboxImage">
-            <button class="lightbox-close" id="lightboxClose">✕</button>
+            <button class="lightbox-close unselectable" id="lightboxClose">✕</button>
         </div>
     </div>
 
@@ -2364,10 +2370,10 @@ try {
                         if ($showMenu):
                         ?>
                             <div class="card-menu">
-                                <div class="card-menu-button" onclick="toggleMenu(this); event.stopPropagation();">⋮</div>
+                                <div class="card-menu-button unselectable" onclick="toggleMenu(this); event.stopPropagation();">⋮</div>
                                 <div class="card-menu-content">
                                     <?php if ($item['user_id'] != $_SESSION['user_id'] || $isAdmin): ?>
-                                        <button class="card-menu-item" onclick="openReportModal('<?php echo $item['id']; ?>'); event.stopPropagation();">
+                                        <button class="card-menu-item unselectable" onclick="openReportModal('<?php echo $item['id']; ?>'); event.stopPropagation();">
                                             ⚠️ Bejelentés
                                         </button>
                                     <?php endif; ?>
@@ -2376,7 +2382,7 @@ try {
                                         <form method="post" style="margin:0; padding:0;" onsubmit="return confirm('Biztosan törölni szeretnéd ezt a hirdetést?');" onclick="event.stopPropagation();">
                                             <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
                                             <input type="hidden" name="delete_item" value="1">
-                                            <button type="submit" class="card-menu-item delete">🗑️ Törlés</button>
+                                            <button type="submit" class="card-menu-item delete unselectable">🗑️ Törlés</button>
                                         </form>
                                     <?php endif; ?>
                                 </div>
@@ -2387,18 +2393,18 @@ try {
                             <img src="<?php echo htmlspecialchars($primaryImage['image_path']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" class="item-image">
                         <?php else: ?>
                             <div class="item-image-placeholder">
-                                <span class="placeholder-text">📷 Nincs kép</span>
+                                <span class="placeholder-text unselectable">📷 Nincs kép</span>
                             </div>
                         <?php endif; ?>
 
                         <?php if ($imageCount > 1): ?>
-                            <div class="image-count-badge">+<?php echo $imageCount - 1; ?> kép</div>
+                            <div class="image-count-badge unselectable">+<?php echo $imageCount - 1; ?> kép</div>
                         <?php endif; ?>
 
-                        <div class="item-title"><?php echo htmlspecialchars($item['title']); ?></div>
-                        <div class="item-price"><?php echo number_format($item['price'], 0, ',', ' '); ?> Ft</div>
-                        <div class="item-seller">Eladó: <?php echo htmlspecialchars($item['seller_name']); ?></div>
-                        <div class="item-date"><?php echo date('Y-m-d', strtotime($item['created_at'])); ?></div>
+                        <div class="item-title unselectable"><?php echo htmlspecialchars($item['title']); ?></div>
+                        <div class="item-price unselectable"><?php echo number_format($item['price'], 0, ',', ' '); ?> Ft</div>
+                        <div class="item-seller unselectable">Eladó: <?php echo htmlspecialchars($item['seller_name']); ?></div>
+                        <div class="item-date unselectable"><?php echo date('Y-m-d', strtotime($item['created_at'])); ?></div>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -2456,7 +2462,7 @@ try {
             if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
         });
 
-        // Image preview functionality
+        // Image preview functionality - JAVÍTOTT VERZIÓ
         const imageInput = document.getElementById('item_images');
         const previewContainer = document.getElementById('imagePreview');
         const imagesError = document.getElementById('images-error');
@@ -2493,33 +2499,58 @@ try {
                 const reader = new FileReader();
                 const previewItem = document.createElement('div');
                 previewItem.className = 'image-preview-item';
+                previewItem.setAttribute('data-index', index);
 
                 reader.onload = function(e) {
                     previewItem.innerHTML = `
                         <img src="${e.target.result}" alt="Preview">
                         <div class="image-preview-remove" data-index="${index}">×</div>
-                        ${index === 0 ? '<div class="primary-badge">Főkép</div>' : ''}
+                        ${index === 0 ? '<div class="primary-badge unselectable">Főkép</div>' : ''}
                     `;
+                    
+                    // Eseménykezelő hozzáadása a remove gombhoz
+                    const removeBtn = previewItem.querySelector('.image-preview-remove');
+                    if (removeBtn) {
+                        removeBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const idx = parseInt(this.dataset.index);
+                            removeImageAtIndex(idx);
+                        });
+                    }
                 };
 
                 reader.readAsDataURL(file);
                 previewContainer.appendChild(previewItem);
             });
-
-            document.querySelectorAll('.image-preview-remove').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const index = parseInt(this.dataset.index);
-                    selectedFiles.splice(index, 1);
-
-                    const dt = new DataTransfer();
-                    selectedFiles.forEach(file => dt.items.add(file));
-                    imageInput.files = dt.files;
-
-                    updatePreview();
-                });
-            });
-
+            
             validateImages();
+        }
+
+        function removeImageAtIndex(indexToRemove) {
+            // Kép eltávolítása a selectedFiles tömbből
+            selectedFiles.splice(indexToRemove, 1);
+            
+            // DataTransfer objektum frissítése a file inputhoz
+            const dt = new DataTransfer();
+            selectedFiles.forEach(file => dt.items.add(file));
+            imageInput.files = dt.files;
+            
+            // Preview frissítése
+            updatePreview();
+        }
+
+        function validateImages() {
+            const isValid = selectedFiles.length > 0;
+            const uploadContainer = document.querySelector('.image-upload-container');
+            
+            if (!isValid) {
+                imagesError.style.display = 'block';
+                if (uploadContainer) uploadContainer.style.borderColor = '#ff4d4d';
+            } else {
+                imagesError.style.display = 'none';
+                if (uploadContainer) uploadContainer.style.borderColor = 'rgba(255, 140, 0, 0.3)';
+            }
+            return isValid;
         }
 
         const form = document.getElementById('uploadForm');
@@ -2537,18 +2568,6 @@ try {
             input.classList.remove('invalid');
             errEl.style.display = 'none';
             return true;
-        }
-
-        function validateImages() {
-            const isValid = selectedFiles.length > 0;
-            if (!isValid) {
-                imagesError.style.display = 'block';
-                document.querySelector('.image-upload-container').style.borderColor = '#ff4d4d';
-            } else {
-                imagesError.style.display = 'none';
-                document.querySelector('.image-upload-container').style.borderColor = 'rgba(255, 140, 0, 0.3)';
-            }
-            return isValid;
         }
 
         form.addEventListener('submit', (e) => {

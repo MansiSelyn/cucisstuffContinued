@@ -360,6 +360,7 @@ background: rgba(176, 203, 31, 0.2);
 body[data-theme="light"] .form-label {
 color: #6a7a20;
 }
+/* REPORT MODAL - LIGHT THEME - TELJES JAVÍTÁS */
 body[data-theme="light"] .report-modal-content {
 background: rgba(244, 252, 220, 0.97);
 border-color: #B0CB1F;
@@ -367,6 +368,9 @@ color: #1a1f00;
 }
 body[data-theme="light"] .report-modal-title {
 color: #7a9200;
+}
+body[data-theme="light"] .report-form-label {
+color: #1a1f00;
 }
 body[data-theme="light"] .report-form-textarea {
 background: rgba(240, 252, 200, 0.80);
@@ -382,6 +386,27 @@ color: #1a1f00;
 }
 body[data-theme="light"] .report-submit-btn:hover {
 box-shadow: 0 5px 20px rgba(176, 203, 31, 0.40);
+}
+/* Report modal bezáró gomb - LIGHT MODE JAVÍTÁS */
+body[data-theme="light"] .report-modal-close {
+    background: rgba(176, 203, 31, 0.15);
+    border: 1px solid #B0CB1F;
+    color: #7a9200;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+body[data-theme="light"] .report-modal-close:hover {
+    background: #B0CB1F;
+    color: #1a1f00;
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(176, 203, 31, 0.5);
 }
 /* ============================================
 PRODUCT MODAL - LIGHT THEME

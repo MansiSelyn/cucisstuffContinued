@@ -306,53 +306,220 @@ body[data-theme="dark"] .pagination-btn:hover {
     color: var(--orange-bright);
 }
 
+/* ============================================
+   DARK MODE – TELJESEN ÁTLÁTSZÓ MODÁL LÉKEREKÍTETT NARANCS BORDERREL
+   ============================================ */
+
+/* Modal overlay - semi-transparent background */
+body[data-theme="dark"] .modal-overlay {
+    background: rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Modal card - transparent with orange rounded border */
 body[data-theme="dark"] .modal-card {
-    background: rgba(10, 10, 10, 0.92);
-    border-color: rgba(255, 140, 0, 0.35);
-    color: var(--text-primary);
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border: 2px solid var(--orange-bright) !important;
+    border-radius: 32px !important;
+    box-shadow: 0 0 40px rgba(255, 140, 0, 0.35) !important;
+    padding: 2rem !important;
+    max-width: 500px !important;
+    width: 100% !important;
+    transition: all 0.3s ease;
+}
+
+/* Hover effect - stronger glow */
+body[data-theme="dark"] .modal-card:hover {
+    box-shadow: 0 0 60px rgba(255, 140, 0, 0.55) !important;
+    border-color: #ffaa33 !important;
+}
+
+/* Form container - transparent */
+body[data-theme="dark"] #uploadForm {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+/* Image upload container - transparent with dashed border */
+body[data-theme="dark"] .image-upload-container {
+    background: transparent !important;
+    border: 2px dashed rgba(255, 140, 0, 0.4) !important;
+    border-radius: 20px !important;
+    transition: all 0.3s ease;
+}
+
+body[data-theme="dark"] .image-upload-container:hover {
+    border-color: var(--orange-bright) !important;
+    background: rgba(255, 140, 0, 0.05) !important;
+}
+
+/* Form groups */
+body[data-theme="dark"] .form-group {
+    background: transparent !important;
+}
+
+/* Labels */
+body[data-theme="dark"] .form-label {
+    color: rgba(255, 255, 255, 0.85) !important;
+    background: transparent !important;
+    font-weight: 500;
+}
+
+body[data-theme="dark"] .form-label .required-star {
+    color: var(--orange-bright);
+}
+
+/* Input fields - styled for readability */
+body[data-theme="dark"] .form-input,
+body[data-theme="dark"] .form-textarea {
+    background: rgba(0, 0, 0, 0.75) !important;
+    border: 1px solid rgba(255, 140, 0, 0.4) !important;
+    border-radius: 16px !important;
+    color: var(--text-primary) !important;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+
+body[data-theme="dark"] .form-input:focus,
+body[data-theme="dark"] .form-textarea:focus {
+    border-color: var(--orange-bright) !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.25) !important;
+    outline: none;
+}
+
+/* Price wrapper */
+body[data-theme="dark"] .price-wrapper {
+    background: transparent !important;
+}
+
+body[data-theme="dark"] .price-suffix {
+    color: var(--orange-bright) !important;
+    background: transparent !important;
+    font-weight: 600;
+}
+
+/* Error messages */
+body[data-theme="dark"] .field-error {
+    background: transparent !important;
+    color: #ff6b6b !important;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+}
+
+/* Success/error banners */
+body[data-theme="dark"] .success-banner,
+body[data-theme="dark"] .error-banner {
+    background: rgba(0, 0, 0, 0.7) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(255, 140, 0, 0.3) !important;
+    border-radius: 16px !important;
+}
+
+body[data-theme="dark"] .success-banner {
+    color: #5dffa0 !important;
+}
+
+body[data-theme="dark"] .error-banner {
+    color: #ff8080 !important;
+}
+
+/* Submit button */
+body[data-theme="dark"] .submit-btn {
+    background: linear-gradient(135deg, rgba(255, 140, 0, 0.9), rgba(255, 85, 0, 0.9)) !important;
+    border: none !important;
+    border-radius: 40px !important;
+    box-shadow: 0 4px 20px rgba(255, 140, 0, 0.3) !important;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+body[data-theme="dark"] .submit-btn:hover {
+    background: linear-gradient(135deg, #ff8c00, #ff4400) !important;
+    box-shadow: 0 6px 28px rgba(255, 140, 0, 0.5) !important;
+    transform: translateY(-2px);
+}
+
+/* Modal title and subtitle */
+body[data-theme="dark"] .modal-title,
+body[data-theme="dark"] .modal-subtitle {
+    background: transparent !important;
+    color: var(--orange-bright) !important;
+    text-shadow: 0 0 10px rgba(255, 140, 0, 0.3);
 }
 
 body[data-theme="dark"] .modal-title {
-    color: var(--orange-bright);
+    font-size: 1.8rem;
+    font-weight: bold;
 }
 
+body[data-theme="dark"] .modal-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: 1.5rem;
+}
+
+/* Image preview items */
+body[data-theme="dark"] .image-preview-item {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 140, 0, 0.4) !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+}
+
+body[data-theme="dark"] .image-preview-remove {
+    background: rgba(0, 0, 0, 0.7) !important;
+    border: 1px solid var(--orange-bright) !important;
+    border-radius: 50% !important;
+}
+
+body[data-theme="dark"] .image-preview-remove:hover {
+    background: rgba(255, 0, 0, 0.7) !important;
+}
+
+body[data-theme="dark"] .primary-badge {
+    background: var(--orange-bright) !important;
+    color: black !important;
+    border-radius: 8px !important;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+}
+
+/* Image upload label */
+body[data-theme="dark"] .image-upload-label {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+body[data-theme="dark"] .image-upload-icon {
+    color: var(--orange-bright) !important;
+    font-size: 2rem;
+}
+
+body[data-theme="dark"] .image-upload-hint small {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Modal close button */
 body[data-theme="dark"] .modal-close {
-    color: rgba(255, 255, 255, 0.4);
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 140, 0, 0.4) !important;
+    border-radius: 50% !important;
+    color: var(--orange-bright) !important;
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
 }
 
 body[data-theme="dark"] .modal-close:hover {
-    color: var(--orange-bright);
-}
-
-body[data-theme="dark"] .form-label {
-    color: rgba(255, 255, 255, 0.6);
-}
-
-body[data-theme="dark"] .report-modal-content {
-    background: rgba(10, 10, 10, 0.95);
-    border-color: var(--orange-bright);
-}
-
-body[data-theme="dark"] .report-modal-title {
-    color: var(--orange-bright);
-}
-
-body[data-theme="dark"] .report-form-textarea {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 140, 0, 0.3);
-    color: var(--text-primary);
-}
-
-body[data-theme="dark"] .report-form-textarea:focus {
-    border-color: var(--orange-bright);
-}
-
-body[data-theme="dark"] .report-submit-btn {
-    background: linear-gradient(135deg, var(--orange-bright), #ff5500);
-}
-
-body[data-theme="dark"] .report-submit-btn:hover {
-    box-shadow: 0 5px 20px rgba(255, 140, 0, 0.4);
+    background: rgba(255, 140, 0, 0.2) !important;
+    color: #ffaa33 !important;
+    transform: scale(1.05);
 }
 
 /* ============================================
@@ -479,6 +646,36 @@ body[data-theme="dark"] .product-menu-item.delete:hover {
 }
 
 /* ============================================
+   REPORT MODAL - DARK THEME
+   ============================================ */
+body[data-theme="dark"] .report-modal-content {
+    background: rgba(10, 10, 10, 0.95);
+    border-color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .report-modal-title {
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .report-form-textarea {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 140, 0, 0.3);
+    color: var(--text-primary);
+}
+
+body[data-theme="dark"] .report-form-textarea:focus {
+    border-color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .report-submit-btn {
+    background: linear-gradient(135deg, var(--orange-bright), #ff5500);
+}
+
+body[data-theme="dark"] .report-submit-btn:hover {
+    box-shadow: 0 5px 20px rgba(255, 140, 0, 0.4);
+}
+
+/* ============================================
    LIGHTBOX - DARK THEME
    ============================================ */
 body[data-theme="dark"] .lightbox-overlay {
@@ -511,7 +708,7 @@ body[data-theme="dark"] h1 {
 }
 
 /* ============================================
-   SCROLLBAR - DARK THEME (EGYSZERŰSÍTVE)
+   SCROLLBAR - DARK THEME
    ============================================ */
 body[data-theme="dark"] ::-webkit-scrollbar-track {
     background: #0a0a0a;
