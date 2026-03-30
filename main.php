@@ -2054,6 +2054,57 @@ try {
                 transition: none;
             }
         }
+        
+        /* =====================
+        MOBIL TOP BAR RENDEZÉS
+        ===================== */
+        @media (max-width: 600px) {
+            .top-bar {
+                flex-wrap: wrap;
+                justify-content: space-between;
+                padding: 0.5rem;
+                gap: 0.5rem;
+                position: relative;
+            }
+        
+            /* Bal és jobb oldali elemek egymás mellett, statikus pozícióban */
+            .top-bar-left,
+            .top-bar-right {
+                position: static;
+                width: auto;
+            }
+        
+            /* Keresőmező az egész sor alatt */
+            .search-container {
+                order: 3;
+                width: 100%;
+                max-width: none;
+                margin: 0.5rem 0 0;
+                flex: none;
+            }
+        
+            /* Csak az ikonok maradnak a gombokon */
+            .upload-btn .button-text,
+            .admin-btn .button-text,
+            .account-summary .button-text {
+                display: none;
+            }
+        
+            /* Gombok méretének csökkentése, hogy jobban elférjenek */
+            .upload-btn,
+            .admin-btn,
+            .account-summary {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+        
+            /* A fiók legördülő menüje ne lógjon ki a képernyőn */
+            .account-dropdown {
+                right: 0;
+                left: auto;
+                width: 240px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2084,7 +2135,8 @@ try {
             </button>
             <details class="account-menu">
                 <summary class="account-summary unselectable">
-                    <span>⚙️</span> FIÓK
+                    <span>⚙️</span>
+                    <span class="button-text">FIÓK</span>
                 </summary>
                 <div class="account-dropdown">
                     <div class="user-info unselectable">
