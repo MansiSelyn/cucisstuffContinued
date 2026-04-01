@@ -729,3 +729,164 @@ body[data-theme="dark"] ::selection {
     background: rgba(255, 120, 0, 0.35);
     color: #fff;
 }
+
+/* ============================================
+   EDIT MODAL - DARK THEME
+   ============================================ */
+body[data-theme="dark"] .edit-modal {
+    background: rgba(0, 0, 0, 0.85) !important;
+    backdrop-filter: blur(8px);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 5500;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+body[data-theme="dark"] .edit-modal.show {
+    display: flex;
+    opacity: 1;
+}
+
+body[data-theme="dark"] .edit-modal-content {
+    background: rgba(10, 10, 10, 0.95) !important;
+    border: 2px solid var(--orange-bright) !important;
+    border-radius: 28px !important;
+    box-shadow: 0 0 40px rgba(255, 140, 0, 0.35) !important;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem 1.8rem 1.8rem;
+    transform: translateY(20px) scale(0.98);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+    opacity: 0;
+}
+
+body[data-theme="dark"] .edit-modal.show .edit-modal-content {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+body[data-theme="dark"] .edit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+body[data-theme="dark"] .edit-modal-title {
+    color: var(--orange-bright) !important;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+body[data-theme="dark"] .edit-modal-close {
+    background: rgba(255, 140, 0, 0.15);
+    border: 1px solid var(--orange-bright);
+    color: var(--orange-bright);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+body[data-theme="dark"] .edit-modal-close:hover {
+    background: var(--orange-bright);
+    color: #000;
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(255, 140, 0, 0.5);
+}
+
+body[data-theme="dark"] .edit-form-group {
+    margin-bottom: 1.2rem;
+}
+
+body[data-theme="dark"] .edit-form-label {
+    color: rgba(255, 255, 255, 0.7) !important;
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+}
+
+body[data-theme="dark"] .edit-form-input,
+body[data-theme="dark"] .edit-form-textarea {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border: 1px solid rgba(255, 140, 0, 0.4) !important;
+    border-radius: 12px;
+    color: var(--text-primary) !important;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: all 0.25s ease;
+    outline: none;
+}
+
+body[data-theme="dark"] .edit-form-input:focus,
+body[data-theme="dark"] .edit-form-textarea:focus {
+    border-color: var(--orange-bright) !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.25) !important;
+}
+
+body[data-theme="dark"] .edit-form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+body[data-theme="dark"] .edit-price-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+body[data-theme="dark"] .edit-price-wrapper .edit-form-input {
+    padding-right: 3rem;
+}
+
+body[data-theme="dark"] .edit-price-suffix {
+    color: var(--orange-bright) !important;
+    position: absolute;
+    right: 1rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    pointer-events: none;
+    user-select: none;
+}
+
+body[data-theme="dark"] .edit-modal .submit-btn {
+    background: linear-gradient(135deg, rgba(255, 140, 0, 0.9), rgba(255, 85, 0, 0.9)) !important;
+    box-shadow: 0 4px 20px rgba(255, 140, 0, 0.3) !important;
+    width: 100%;
+    padding: 0.85rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: all 0.25s ease;
+    margin-top: 0.5rem;
+    color: #0a0500;
+}
+
+body[data-theme="dark"] .edit-modal .submit-btn:hover {
+    background: linear-gradient(135deg, #ff8c00, #ff4400) !important;
+    box-shadow: 0 6px 28px rgba(255, 140, 0, 0.5) !important;
+    transform: translateY(-2px);
+}
