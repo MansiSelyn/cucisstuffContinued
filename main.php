@@ -1089,60 +1089,63 @@ try {
             color: #ff0000;
         }
 
-        /* =====================
-        EDIT MODAL - TRANSPARENT BACKGROUND, GREEN BUTTON
-        ===================== */
+        /* ===================== EDIT MODAL (REDESIGNED) ===================== */
         .edit-modal {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.82);
+            background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(8px);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 5500;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
-
         .edit-modal.show {
             display: flex;
+            opacity: 1;
         }
-
         .edit-modal-content {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            border-radius: 20px;
-            padding: 2rem 2.2rem 2rem 2.2rem;
-            max-width: 520px;
-            width: 93%;
-            max-height: 92vh;
-            overflow-y: auto;
+            width: 100%;
+            max-width: 500px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem 1.8rem 1.8rem;
+            box-shadow: var(--shadow-deep), var(--shadow-orange);
+            transform: translateY(20px) scale(0.98);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+            opacity: 0;
         }
-
+        .edit-modal.show .edit-modal-content {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
         .edit-modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1.5rem;
         }
-
         .edit-modal-title {
-            font-size: 1.35rem;
+            font-size: 1.4rem;
             font-weight: 700;
-            color: #39ff6e;
-            letter-spacing: -0.01em;
-            text-shadow: 0 0 10px rgba(57, 255, 110, 0.3);
+            color: var(--orange-bright);
+            letter-spacing: -0.02em;
+            margin: 0;
+            text-shadow: 0 0 8px var(--orange-glow);
         }
-
         .edit-modal-close {
             background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(57, 255, 110, 0.5);
+            border: 1px solid var(--glass-border);
             border-radius: 50%;
-            color: rgba(57, 255, 110, 0.8);
-            font-size: 1.5rem;
+            color: var(--orange-bright);
+            font-size: 1.3rem;
             cursor: pointer;
             transition: all 0.2s;
             line-height: 1;
@@ -1153,103 +1156,65 @@ try {
             align-items: center;
             justify-content: center;
         }
-
         .edit-modal-close:hover {
-            color: #39ff6e;
-            background: rgba(57, 255, 110, 0.2);
-            border-color: #39ff6e;
+            background: rgba(255, 140, 0, 0.2);
+            border-color: var(--orange-bright);
             transform: scale(1.05);
         }
-
         .edit-form-group {
             margin-bottom: 1.2rem;
         }
-
         .edit-form-label {
             display: block;
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: rgba(57, 255, 110, 0.75);
+            font-size: 0.75rem;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.08em;
+            color: var(--orange-bright);
             margin-bottom: 0.4rem;
         }
-
         .edit-form-input,
         .edit-form-textarea {
             width: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            border: 1px solid rgba(57, 255, 110, 0.3);
-            border-radius: 10px;
-            padding: 0.7rem 1rem;
-            color: #e8ffe8;
-            font-size: 0.95rem;
+            background: var(--input-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
             font-family: inherit;
-            transition: border-color 0.25s, box-shadow 0.25s;
+            font-size: 0.9rem;
+            transition: all 0.25s ease;
             outline: none;
-            resize: vertical;
         }
-
         .edit-form-input:focus,
         .edit-form-textarea:focus {
-            border-color: #39ff6e;
-            box-shadow: 0 0 0 3px rgba(57, 255, 110, 0.15);
-            background: rgba(0, 0, 0, 0.85);
+            border-color: var(--orange-bright);
+            box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.15);
+            background: var(--input-focus-bg);
         }
-
+        .edit-form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
         .edit-price-wrapper {
             position: relative;
             display: flex;
             align-items: center;
         }
-
         .edit-price-wrapper .edit-form-input {
             padding-right: 3rem;
         }
-
         .edit-price-suffix {
             position: absolute;
             right: 1rem;
-            color: rgba(57, 255, 110, 0.6);
+            color: var(--orange-bright);
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             pointer-events: none;
             user-select: none;
         }
-
-        .edit-submit-btn {
-            width: 100%;
-            padding: 0.85rem;
-            background: linear-gradient(135deg, #1aff6e, #00c851) !important;
-            border: none !important;
-            border-radius: 12px !important;
-            color: #001a08 !important;
-            font-size: 1rem;
-            font-weight: 800;
-            cursor: pointer;
-            letter-spacing: 0.03em;
-            transition: all 0.25s ease;
+        .edit-modal .submit-btn {
             margin-top: 0.5rem;
-            box-shadow: 0 4px 22px rgba(57, 255, 110, 0.35) !important;
-        }
-
-        .edit-submit-btn:hover {
-            background: linear-gradient(135deg, #39ff6e, #00e85c) !important;
-            box-shadow: 0 6px 30px rgba(57, 255, 110, 0.55) !important;
-            transform: translateY(-2px);
-        }
-
-        .edit-success-banner {
-            background: rgba(57, 255, 110, 0.1);
-            border: 1px solid rgba(57, 255, 110, 0.35);
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
-            color: #39ff6e;
-            font-size: 0.87rem;
-            margin-bottom: 1.2rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
         }
 
         /* Report Modal Styles */
@@ -2525,7 +2490,7 @@ try {
         </div>
     </div>
 
-    <!-- Edit Modal -->
+    <!-- ===================== EDIT MODAL (REDESIGNED) ===================== -->
     <div class="edit-modal" id="editModal">
         <div class="edit-modal-content">
             <div class="edit-modal-header">
@@ -2533,7 +2498,9 @@ try {
                 <button class="edit-modal-close unselectable" onclick="closeEditModal()">✕</button>
             </div>
             <?php if (isset($_GET['edit']) && $_GET['edit'] === 'success'): ?>
-                <div class="edit-success-banner unselectable"><span>✓</span> Módosítás sikeresen mentve!</div>
+                <div class="success-banner unselectable">
+                    <span>✓</span> Módosítás sikeresen mentve!
+                </div>
             <?php endif; ?>
             <form method="post" id="editForm">
                 <input type="hidden" name="item_id" id="editItemId">
@@ -2553,7 +2520,7 @@ try {
                         <span class="edit-price-suffix unselectable">Ft</span>
                     </div>
                 </div>
-                <button type="submit" class="edit-submit-btn unselectable">💾 Módosítások mentése</button>
+                <button type="submit" class="submit-btn unselectable">💾 Módosítások mentése</button>
             </form>
         </div>
     </div>
@@ -3354,11 +3321,6 @@ try {
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && editModal.classList.contains('show')) closeEditModal();
         });
-
-        <?php if (isset($_GET['edit']) && $_GET['edit'] === 'success'): ?>
-            // Show edit modal briefly on success so user sees the banner
-            // (optional — remove if not desired)
-        <?php endif; ?>
 
         function escapeHtml(str) {
             if (!str) return '';
