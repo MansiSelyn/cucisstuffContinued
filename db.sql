@@ -70,6 +70,50 @@ CREATE TABLE
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     ) ENGINE = InnoDB;
 
+-- Uzenetek tabla
+-- sender_id: az uzenetet kuldő felhasznalo
+-- receiver_id: az uzenetet kapo felhasznalo
+-- id: veletlenszeruen generalt 25 karakteres egyedi azonosito
+CREATE TABLE
+    IF NOT EXISTS uzenetek (
+        id CHAR(25) PRIMARY KEY,
+        sender_id INT NOT NULL,
+        receiver_id INT NOT NULL,
+        message TEXT NOT NULL,
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_read BOOLEAN DEFAULT FALSE,
+        CONSTRAINT fk_uzenetek_sender FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE,
+        CONSTRAINT fk_uzenetek_receiver FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE CASCADE,
+        INDEX idx_sender (sender_id),
+        INDEX idx_receiver (receiver_id),
+        INDEX idx_sent_at (sent_at)
+    ) ENGINE = InnoDB;
+
+-- Admin felhasznalo keresese es beszurasa az adminok tablaba
+INSERT INTO
+    admins (user_id, assigned_at)
+SELECT
+    id,
+    CURRENT_TIMESTAMP
+FROM
+    users
+WHERE
+    username = 'admin'
+    AND id NOT IN (
+        SELECT
+            user_id
+        FROM
+            admins
+    )
+    AND EXISTS (
+        SELECT
+            1
+        FROM
+            users
+        WHERE
+            username = 'admin'
+    );
+
 -- Admin felhasználó keresése és beszúrása az adminok táblába
 INSERT INTO
     admins (user_id, assigned_at)
