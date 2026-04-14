@@ -850,3 +850,124 @@ body[data-theme="light"] .edit-modal .submit-btn:hover {
     box-shadow: 0 6px 28px rgba(176, 203, 31, 0.45) !important;
     transform: translateY(-2px);
 }
+/* ============================================
+   FLOATING MESSAGES BUTTON - LIGHT THEME
+   ============================================ */
+body[data-theme="light"] .floating-messages-btn {
+    background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
+    box-shadow: 0 6px 24px rgba(176, 203, 31, 0.40) !important;
+    color: #1a1f00 !important;
+}
+
+body[data-theme="light"] .floating-messages-btn:hover {
+    box-shadow: 0 10px 36px rgba(176, 203, 31, 0.60) !important;
+}
+
+body[data-theme="light"] .floating-messages-badge {
+    background: #cc1111 !important;
+    border-color: #d8e0b0 !important;
+    color: #fff !important;
+}
+
+/* ============================================
+   SELLER POPUP FULLSCREEN - LIGHT THEME
+   ============================================ */
+body[data-theme="light"] .seller-popup-overlay {
+    background: rgba(216, 224, 176, 0.97) !important;
+}
+
+body[data-theme="light"] .seller-popup-card {
+    background: #edf3c8 !important;
+}
+
+body[data-theme="light"] .seller-popup-topbar {
+    background: rgba(237, 243, 200, 0.95) !important;
+    border-bottom-color: rgba(140, 170, 10, 0.28) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07) !important;
+}
+
+body[data-theme="light"] .seller-popup-topbar-title {
+    color: #7a9200 !important;
+}
+
+body[data-theme="light"] .seller-popup-close {
+    background: rgba(176, 203, 31, 0.15) !important;
+    border-color: rgba(140, 170, 10, 0.38) !important;
+    color: #7a9200 !important;
+}
+
+body[data-theme="light"] .seller-popup-close:hover {
+    background: #B0CB1F !important;
+    color: #1a1f00 !important;
+}
+
+body[data-theme="light"] .seller-popup-avatar {
+    background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
+    box-shadow: 0 0 40px rgba(176, 203, 31, 0.35) !important;
+    color: #1a1f00 !important;
+}
+
+body[data-theme="light"] .seller-popup-name {
+    color: #7a9200 !important;
+}
+
+body[data-theme="light"] .seller-popup-meta {
+    color: rgba(26, 31, 0, 0.45) !important;
+}
+
+body[data-theme="light"] .seller-stat {
+    background: rgba(176, 203, 31, 0.12) !important;
+    border-color: rgba(140, 170, 10, 0.25) !important;
+}
+
+body[data-theme="light"] .seller-stat-value {
+    color: #7a9200 !important;
+}
+
+body[data-theme="light"] .seller-stat-label {
+    color: rgba(26, 31, 0, 0.45) !important;
+}
+
+body[data-theme="light"] .seller-popup-items-title {
+    color: rgba(26, 31, 0, 0.35) !important;
+}
+
+body[data-theme="light"] .seller-item-thumb {
+    background: rgba(255, 255, 255, 0.7) !important;
+    border-color: rgba(140, 170, 10, 0.20) !important;
+}
+
+body[data-theme="light"] .seller-item-thumb:hover {
+    border-color: #B0CB1F !important;
+    box-shadow: 0 8px 24px rgba(176, 203, 31, 0.25) !important;
+}
+
+body[data-theme="light"] .seller-item-thumb-placeholder {
+    background: rgba(176, 203, 31, 0.10) !important;
+    color: rgba(140, 170, 10, 0.40) !important;
+}
+
+body[data-theme="light"] .seller-item-info {
+    background: rgba(255, 255, 255, 0.55) !important;
+}
+
+body[data-theme="light"] .seller-item-title {
+    color: rgba(26, 31, 0, 0.80) !important;
+}
+
+body[data-theme="light"] .seller-item-price {
+    color: #7a9200 !important;
+}
+
+body[data-theme="light"] .seller-popup-msg-btn {
+    background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
+    color: #1a1f00 !important;
+}
+
+body[data-theme="light"] .seller-popup-msg-btn:hover {
+    box-shadow: 0 10px 30px rgba(176, 203, 31, 0.45) !important;
+}
+
+body[data-theme="light"] .item-seller:hover {
+    color: #7a9200 !important;
+}

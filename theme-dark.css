@@ -890,3 +890,123 @@ body[data-theme="dark"] .edit-modal .submit-btn:hover {
     box-shadow: 0 6px 28px rgba(255, 140, 0, 0.5) !important;
     transform: translateY(-2px);
 }
+/* ============================================
+   FLOATING MESSAGES BUTTON - DARK THEME
+   ============================================ */
+body[data-theme="dark"] .floating-messages-btn {
+    background: linear-gradient(135deg, #ff9a1f, #e07800) !important;
+    box-shadow: 0 6px 24px rgba(255, 140, 0, 0.45) !important;
+    color: #000 !important;
+}
+
+body[data-theme="dark"] .floating-messages-btn:hover {
+    box-shadow: 0 10px 36px rgba(255, 140, 0, 0.65) !important;
+}
+
+body[data-theme="dark"] .floating-messages-badge {
+    background: #cc1111 !important;
+    border-color: #000 !important;
+    color: #fff !important;
+}
+
+/* ============================================
+   SELLER POPUP FULLSCREEN - DARK THEME
+   ============================================ */
+body[data-theme="dark"] .seller-popup-overlay {
+    background: rgba(0, 0, 0, 0.98) !important;
+}
+
+body[data-theme="dark"] .seller-popup-card {
+    background: rgba(4, 4, 4, 0.99) !important;
+}
+
+body[data-theme="dark"] .seller-popup-topbar {
+    background: rgba(4, 4, 4, 0.94) !important;
+    border-bottom-color: rgba(255, 140, 0, 0.18) !important;
+}
+
+body[data-theme="dark"] .seller-popup-topbar-title {
+    color: var(--orange-bright) !important;
+}
+
+body[data-theme="dark"] .seller-popup-close {
+    background: rgba(255, 140, 0, 0.1) !important;
+    border-color: rgba(255, 140, 0, 0.25) !important;
+    color: var(--orange-bright) !important;
+}
+
+body[data-theme="dark"] .seller-popup-close:hover {
+    background: var(--orange-bright) !important;
+    color: #000 !important;
+}
+
+body[data-theme="dark"] .seller-popup-avatar {
+    background: linear-gradient(135deg, #ff9a1f, #e07800) !important;
+    box-shadow: 0 0 40px rgba(255, 140, 0, 0.3) !important;
+    color: #000 !important;
+}
+
+body[data-theme="dark"] .seller-popup-name {
+    color: var(--orange-bright) !important;
+}
+
+body[data-theme="dark"] .seller-popup-meta {
+    color: rgba(255, 255, 255, 0.38) !important;
+}
+
+body[data-theme="dark"] .seller-stat {
+    background: rgba(255, 140, 0, 0.07) !important;
+    border-color: rgba(255, 140, 0, 0.15) !important;
+}
+
+body[data-theme="dark"] .seller-stat-value {
+    color: var(--orange-bright) !important;
+}
+
+body[data-theme="dark"] .seller-stat-label {
+    color: rgba(255, 255, 255, 0.38) !important;
+}
+
+body[data-theme="dark"] .seller-popup-items-title {
+    color: rgba(255, 255, 255, 0.28) !important;
+}
+
+body[data-theme="dark"] .seller-item-thumb {
+    background: rgba(0, 0, 0, 0.5) !important;
+    border-color: rgba(255, 140, 0, 0.12) !important;
+}
+
+body[data-theme="dark"] .seller-item-thumb:hover {
+    border-color: var(--orange-bright) !important;
+    box-shadow: 0 8px 24px rgba(255, 140, 0, 0.2) !important;
+}
+
+body[data-theme="dark"] .seller-item-thumb-placeholder {
+    background: rgba(255, 140, 0, 0.07) !important;
+    color: rgba(255, 140, 0, 0.3) !important;
+}
+
+body[data-theme="dark"] .seller-item-info {
+    background: rgba(0, 0, 0, 0.45) !important;
+}
+
+body[data-theme="dark"] .seller-item-title {
+    color: rgba(245, 240, 232, 0.82) !important;
+}
+
+body[data-theme="dark"] .seller-item-price {
+    color: var(--orange-bright) !important;
+}
+
+body[data-theme="dark"] .seller-popup-msg-btn {
+    background: linear-gradient(135deg, #ff9a1f, #e07800) !important;
+    color: #000 !important;
+}
+
+body[data-theme="dark"] .seller-popup-msg-btn:hover {
+    box-shadow: 0 10px 30px rgba(255, 140, 0, 0.4) !important;
+}
+
+body[data-theme="dark"] .item-seller:hover {
+    color: var(--orange-bright) !important;
+}

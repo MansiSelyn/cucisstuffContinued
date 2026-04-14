@@ -2402,19 +2402,19 @@ try {
         }
 
         /* =====================
-        SELLER PROFILE POPUP
+        SELLER PROFILE POPUP — FULLSCREEN
         ===================== */
         .seller-popup-overlay {
             position: fixed;
             inset: 0;
             z-index: 6000;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(6px);
+            background: rgba(0,0,0,0.98);
+            backdrop-filter: blur(16px);
             display: none;
             align-items: center;
             justify-content: center;
             opacity: 0;
-            transition: opacity 0.25s ease;
+            transition: opacity 0.3s ease;
         }
 
         .seller-popup-overlay.active {
@@ -2423,39 +2423,52 @@ try {
         }
 
         .seller-popup-card {
-            background: rgba(10,10,10,0.97);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 2rem;
-            width: min(460px, 92vw);
-            max-height: 85vh;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5,5,5,0.99);
+            border: none;
+            border-radius: 0;
+            padding: 0;
             overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(255,140,0,0.15);
             position: relative;
-            transform: scale(0.95);
-            transition: transform 0.25s ease;
+            transform: scale(0.98);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         .seller-popup-overlay.active .seller-popup-card {
             transform: scale(1);
         }
 
+        /* Fullscreen header bar */
+        .seller-popup-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(5,5,5,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
         .seller-popup-close {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
             background: rgba(255,140,0,0.1);
             border: 1px solid var(--glass-border);
             color: var(--orange-bright);
-            width: 36px;
-            height: 36px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
+            flex-shrink: 0;
         }
 
         .seller-popup-close:hover {
@@ -2463,115 +2476,136 @@ try {
             color: #000;
         }
 
+        .seller-popup-topbar-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--orange-bright);
+            flex: 1;
+        }
+
+        /* Inner content area */
+        .seller-popup-body {
+            flex: 1;
+            max-width: 560px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
         .seller-popup-avatar {
-            width: 72px;
-            height: 72px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--orange-bright), #ff5500);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 2.4rem;
             font-weight: 700;
             color: #000;
-            margin: 0 auto 1rem;
+            margin: 0 auto 1.2rem;
+            box-shadow: 0 0 40px rgba(255,140,0,0.3);
         }
 
         .seller-popup-name {
             text-align: center;
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             font-weight: 700;
             color: var(--orange-bright);
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.35rem;
         }
 
         .seller-popup-meta {
             text-align: center;
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             color: rgba(255,255,255,0.4);
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
         }
 
         .seller-popup-stats {
             display: flex;
             gap: 1rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
         }
 
         .seller-stat {
             flex: 1;
             background: rgba(255,140,0,0.07);
             border: 1px solid rgba(255,140,0,0.15);
-            border-radius: 14px;
-            padding: 0.9rem;
+            border-radius: 16px;
+            padding: 1.1rem;
             text-align: center;
         }
 
         .seller-stat-value {
-            font-size: 1.4rem;
+            font-size: 1.6rem;
             font-weight: 700;
             color: var(--orange-bright);
         }
 
         .seller-stat-label {
-            font-size: 0.75rem;
+            font-size: 0.78rem;
             color: rgba(255,255,255,0.4);
-            margin-top: 2px;
+            margin-top: 3px;
         }
 
         .seller-popup-items-title {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: rgba(255,255,255,0.35);
-            margin-bottom: 0.75rem;
+            letter-spacing: 0.1em;
+            color: rgba(255,255,255,0.3);
+            margin-bottom: 0.9rem;
         }
 
         .seller-popup-items-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 0.7rem;
-            margin-bottom: 1.5rem;
+            gap: 0.8rem;
+            margin-bottom: 2rem;
         }
 
         .seller-item-thumb {
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
             border: 1px solid rgba(255,140,0,0.12);
             cursor: pointer;
             transition: all 0.2s;
+            background: rgba(0,0,0,0.4);
         }
 
         .seller-item-thumb:hover {
             border-color: var(--orange-bright);
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(255,140,0,0.2);
         }
 
         .seller-item-thumb img {
             width: 100%;
-            height: 90px;
+            height: 110px;
             object-fit: cover;
             display: block;
         }
 
         .seller-item-thumb-placeholder {
             width: 100%;
-            height: 90px;
-            background: rgba(255,140,0,0.08);
+            height: 110px;
+            background: rgba(255,140,0,0.07);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(255,140,0,0.4);
-            font-size: 1.5rem;
+            color: rgba(255,140,0,0.35);
+            font-size: 1.8rem;
         }
 
         .seller-item-info {
-            padding: 0.5rem 0.6rem;
-            background: rgba(0,0,0,0.4);
+            padding: 0.6rem 0.75rem;
         }
 
         .seller-item-title {
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -2579,20 +2613,20 @@ try {
         }
 
         .seller-item-price {
-            font-size: 0.78rem;
+            font-size: 0.8rem;
             color: var(--orange-bright);
             font-weight: 600;
-            margin-top: 2px;
+            margin-top: 3px;
         }
 
         .seller-popup-msg-btn {
             width: 100%;
-            padding: 0.9rem;
+            padding: 1.1rem;
             background: linear-gradient(135deg, var(--orange-bright), #ff5500);
             border: none;
-            border-radius: 14px;
+            border-radius: 16px;
             color: #fff;
-            font-size: 1rem;
+            font-size: 1.05rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
@@ -2601,17 +2635,19 @@ try {
             justify-content: center;
             gap: 0.6rem;
             text-decoration: none;
+            margin-top: auto;
         }
 
         .seller-popup-msg-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(255,140,0,0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255,140,0,0.4);
         }
 
         .seller-popup-loading {
             text-align: center;
-            padding: 2rem;
+            padding: 4rem 2rem;
             color: rgba(255,255,255,0.3);
+            font-size: 1rem;
         }
 
         .item-seller { cursor: pointer; transition: color 0.18s; }
@@ -2920,9 +2956,12 @@ try {
     <!-- Seller Profile Popup Overlay -->
     <div class="seller-popup-overlay" id="sellerPopupOverlay">
         <div class="seller-popup-card" id="sellerPopupCard">
-            <button class="seller-popup-close unselectable" id="sellerPopupClose">✕</button>
-            <div id="sellerPopupContent">
-                <div class="seller-popup-loading">Betöltés...</div>
+            <div class="seller-popup-topbar">
+                <button class="seller-popup-close unselectable" id="sellerPopupClose">✕</button>
+                <div class="seller-popup-topbar-title">👤 Eladó profilja</div>
+            </div>
+            <div class="seller-popup-body" id="sellerPopupContent">
+                <div class="seller-popup-loading">⏳ Betöltés...</div>
             </div>
         </div>
     </div>
@@ -3675,7 +3714,6 @@ try {
         function openSellerPopup(sellerId) {
             sellerContent.innerHTML = '<div class="seller-popup-loading">⏳ Betöltés...</div>';
             sellerOverlay.style.display = 'flex';
-            // force reflow then add active class for transition
             sellerOverlay.offsetHeight;
             sellerOverlay.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -3684,7 +3722,7 @@ try {
                 .then(r => r.json())
                 .then(data => {
                     if (data.error) {
-                        sellerContent.innerHTML = `<p style="color:red;text-align:center;">${escapeHtml(data.error)}</p>`;
+                        sellerContent.innerHTML = `<p style="color:red;text-align:center;padding:2rem;">${escapeHtml(data.error)}</p>`;
                         return;
                     }
 
@@ -3692,6 +3730,9 @@ try {
                     const memberSince   = data.created_at ? data.created_at.substring(0, 10) : '—';
                     const adminBadge    = parseInt(data.is_admin) ? ' <span style="font-size:0.7rem;background:rgba(255,215,0,0.2);color:#ffd700;border:1px solid rgba(255,215,0,0.4);border-radius:50px;padding:1px 8px;vertical-align:middle;">Admin</span>' : '';
                     const initial       = data.username ? data.username.charAt(0).toUpperCase() : '?';
+
+                    // Update topbar title
+                    document.querySelector('.seller-popup-topbar-title').textContent = '👤 ' + data.username;
 
                     let itemsHtml = '';
                     if (data.latest_items && data.latest_items.length > 0) {
@@ -3716,7 +3757,7 @@ try {
 
                     const msgBtn = (parseInt(sellerId) !== currentUserId)
                         ? `<a href="uzenetek.php?with=${encodeURIComponent(sellerId)}" class="seller-popup-msg-btn">💬 Üzenet küldése</a>`
-                        : `<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;">Ez a saját profilod</div>`;
+                        : `<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem 0;">Ez a saját profilod</div>`;
 
                     sellerContent.innerHTML = `
                         <div class="seller-popup-avatar">${initial}</div>
@@ -3733,14 +3774,14 @@ try {
                     `;
                 })
                 .catch(() => {
-                    sellerContent.innerHTML = '<p style="color:red;text-align:center;">Hiba történt a betöltés során.</p>';
+                    sellerContent.innerHTML = '<p style="color:red;text-align:center;padding:2rem;">Hiba történt a betöltés során.</p>';
                 });
         }
 
         function closeSellerPopup() {
             sellerOverlay.classList.remove('active');
             document.body.style.overflow = '';
-            setTimeout(() => { sellerOverlay.style.display = 'none'; }, 250);
+            setTimeout(() => { sellerOverlay.style.display = 'none'; }, 300);
         }
 
         sellerCloseBtn.addEventListener('click', closeSellerPopup);
