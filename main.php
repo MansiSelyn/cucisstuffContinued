@@ -868,6 +868,30 @@ try {
             }
         }
 
+        /* Account link (Fiókom) */
+        .account-link {
+            display: block;
+            width: 100%;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .account-link span {
+            display: block;
+            width: 100%;
+            font-size: 0.9rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .account-link span:hover {
+            background: rgba(255, 140, 0, 0.15);
+            color: var(--orange-bright);
+            transform: translateX(5px);
+        }
+
         /* =====================
         MAIN CONTENT & GRID
         ===================== */
@@ -2743,6 +2767,8 @@ try {
                     <div class="user-info unselectable">
                         <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>
                     </div>
+                    <!-- 👇 ÚJ LINK A FIÓKHOZ -->
+                    <a href="account.php" class="account-link"><span>👤 Fiókom</span></a>
                     <div class="dropdown-divider"></div>
                     <div class="theme-toggle-row">
                         <span class="theme-toggle-label">☀️ Világos mód</span>
@@ -3740,8 +3766,8 @@ try {
                         <div class="seller-popup-items-grid">`;
                         data.latest_items.forEach(item => {
                             const imgHtml = item.thumb
-                                ? `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                                   <div class="seller-item-thumb-placeholder" style="display:none;">📷</div>`
+                                ? `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">`
+                                   `<div class="seller-item-thumb-placeholder" style="display:none;">📷</div>`
                                 : `<div class="seller-item-thumb-placeholder">📷</div>`;
                             itemsHtml += `
                                 <div class="seller-item-thumb" onclick="closeSellerPopup(); fetchItemDetails('${escapeHtml(item.id)}');">
