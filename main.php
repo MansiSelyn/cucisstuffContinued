@@ -1,12 +1,27 @@
 <?php
 session_start();
+
+// =============================================
+// 1. KIJELENTKEZÉS
+// =============================================
 if (isset($_POST['logout'])) {
     $_SESSION = array();
     session_destroy();
     header("Location: index.php");
     exit();
 }
+
+// =============================================
+// 2. BEJELENTKEZÉS ELLENŐRZÉS
+// =============================================
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    // Ha AJAX kérés (JSON választ vár), akkor ne redirecteljünk, hanem küldjünk JSON hibát
+    if (isset($_GET['search_query']) || isset($_GET['get_item']) || isset($_GET['get_seller'])) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Nincs bejelentkezve']);
+        exit();
+    }
+    // Normál oldalbetöltés esetén átirányítás
     header("Location: index.php");
     exit();
 }
@@ -40,20 +55,24 @@ try {
     // =============================================
     if (isset($_GET['search_query']) && strlen($_GET['search_query']) >= 2) {
         header('Content-Type: application/json');
-        $query = '%' . $_GET['search_query'] . '%';
-        $stmt = $conn->prepare("
-            SELECT 
-                i.id, i.title, i.price, u.username as seller_name,
-                (SELECT image_path FROM item_images WHERE item_id = i.id AND is_primary = 1 LIMIT 1) as primary_image
-            FROM items i
-            JOIN users u ON i.user_id = u.id
-            WHERE i.title LIKE :q OR i.description LIKE :q
-            ORDER BY i.created_at DESC
-            LIMIT 10
-        ");
-        $stmt->execute([':q' => $query]);
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode($results);
+        try {
+            $query = '%' . $_GET['search_query'] . '%';
+            $stmt = $conn->prepare("
+                SELECT 
+                    i.id, i.title, i.price, u.username as seller_name,
+                    (SELECT image_path FROM item_images WHERE item_id = i.id AND is_primary = 1 LIMIT 1) as primary_image
+                FROM items i
+                JOIN users u ON i.user_id = u.id
+                WHERE i.title LIKE :q OR i.description LIKE :q
+                ORDER BY i.created_at DESC
+                LIMIT 10
+            ");
+            $stmt->execute([':q' => $query]);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($results);
+        } catch (PDOException $e) {
+            echo json_encode(['error' => 'Adatbázis hiba: ' . $e->getMessage()]);
+        }
         exit;
     }
 
@@ -62,30 +81,34 @@ try {
     // =============================================
     if (isset($_GET['get_item']) && !empty($_GET['get_item'])) {
         header('Content-Type: application/json');
-        $itemId = $_GET['get_item'];
+        try {
+            $itemId = $_GET['get_item'];
 
-        // Fetch item details
-        $stmt = $conn->prepare("
-            SELECT i.id, i.title, i.description, i.price, i.created_at, u.username as seller_name, i.user_id
-            FROM items i
-            JOIN users u ON i.user_id = u.id
-            WHERE i.id = ?
-        ");
-        $stmt->execute([$itemId]);
-        $item = $stmt->fetch(PDO::FETCH_ASSOC);
+            // Fetch item details
+            $stmt = $conn->prepare("
+                SELECT i.id, i.title, i.description, i.price, i.created_at, u.username as seller_name, i.user_id
+                FROM items i
+                JOIN users u ON i.user_id = u.id
+                WHERE i.id = ?
+            ");
+            $stmt->execute([$itemId]);
+            $item = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$item) {
-            echo json_encode(['error' => 'Termék nem található']);
-            exit;
+            if (!$item) {
+                echo json_encode(['error' => 'Termék nem található']);
+                exit;
+            }
+
+            // Fetch all images for the item
+            $imgStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? ORDER BY sort_order");
+            $imgStmt->execute([$itemId]);
+            $images = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
+            $item['images'] = $images;
+
+            echo json_encode($item);
+        } catch (PDOException $e) {
+            echo json_encode(['error' => 'Adatbázis hiba: ' . $e->getMessage()]);
         }
-
-        // Fetch all images for the item
-        $imgStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? ORDER BY sort_order");
-        $imgStmt->execute([$itemId]);
-        $images = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
-        $item['images'] = $images;
-
-        echo json_encode($item);
         exit;
     }
 
@@ -94,38 +117,42 @@ try {
     // =============================================
     if (isset($_GET['get_seller']) && !empty($_GET['get_seller'])) {
         header('Content-Type: application/json');
-        $sellerId = (int)$_GET['get_seller'];
+        try {
+            $sellerId = (int)$_GET['get_seller'];
 
-        $sellerStmt = $conn->prepare("
-            SELECT u.id, u.username, u.created_at,
-                   COUNT(DISTINCT i.id) AS item_count,
-                   (SELECT COUNT(*) FROM admins WHERE user_id = u.id) AS is_admin
-            FROM users u
-            LEFT JOIN items i ON i.user_id = u.id
-            WHERE u.id = ?
-            GROUP BY u.id, u.username, u.created_at
-        ");
-        $sellerStmt->execute([$sellerId]);
-        $seller = $sellerStmt->fetch(PDO::FETCH_ASSOC);
+            $sellerStmt = $conn->prepare("
+                SELECT u.id, u.username, u.created_at,
+                       COUNT(DISTINCT i.id) AS item_count,
+                       (SELECT COUNT(*) FROM admins WHERE user_id = u.id) AS is_admin
+                FROM users u
+                LEFT JOIN items i ON i.user_id = u.id
+                WHERE u.id = ?
+                GROUP BY u.id, u.username, u.created_at
+            ");
+            $sellerStmt->execute([$sellerId]);
+            $seller = $sellerStmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$seller) {
-            echo json_encode(['error' => 'Felhasználó nem található']);
-            exit;
+            if (!$seller) {
+                echo json_encode(['error' => 'Felhasználó nem található']);
+                exit;
+            }
+
+            // Latest items
+            $latestStmt = $conn->prepare("
+                SELECT i.id, i.title, i.price,
+                       (SELECT image_path FROM item_images WHERE item_id = i.id AND is_primary = 1 LIMIT 1) as thumb
+                FROM items i
+                WHERE i.user_id = ?
+                ORDER BY i.created_at DESC
+                LIMIT 4
+            ");
+            $latestStmt->execute([$sellerId]);
+            $seller['latest_items'] = $latestStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode($seller);
+        } catch (PDOException $e) {
+            echo json_encode(['error' => 'Adatbázis hiba: ' . $e->getMessage()]);
         }
-
-        // Latest items
-        $latestStmt = $conn->prepare("
-            SELECT i.id, i.title, i.price,
-                   (SELECT image_path FROM item_images WHERE item_id = i.id AND is_primary = 1 LIMIT 1) as thumb
-            FROM items i
-            WHERE i.user_id = ?
-            ORDER BY i.created_at DESC
-            LIMIT 4
-        ");
-        $latestStmt->execute([$sellerId]);
-        $seller['latest_items'] = $latestStmt->fetchAll(PDO::FETCH_ASSOC);
-
-        echo json_encode($seller);
         exit;
     }
 
@@ -1068,6 +1095,12 @@ try {
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
+            cursor: pointer;
+            transition: color 0.18s;
+        }
+
+        .item-seller:hover {
+            color: var(--orange-bright);
         }
 
         .item-date {
@@ -2180,6 +2213,7 @@ try {
         .product-seller {
             font-size: 1.2rem;
             color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
         }
 
         .product-seller strong {
@@ -2688,23 +2722,6 @@ try {
             padding: 4rem 2rem;
             color: rgba(255, 255, 255, 0.3);
             font-size: 1rem;
-        }
-
-        .item-seller {
-            cursor: pointer;
-            transition: color 0.18s;
-        }
-
-        .item-seller:hover {
-            color: var(--orange-bright);
-        }
-
-        .product-seller {
-            cursor: pointer;
-        }
-
-        .product-seller:hover strong {
-            text-shadow: 0 0 12px var(--orange-glow);
         }
 
         /* =====================
@@ -3586,6 +3603,10 @@ try {
             fetch(`?search_query=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
+                    if (data.error) {
+                        console.error(data.error);
+                        return;
+                    }
                     if (data.length === 0) {
                         searchResults.classList.remove('show');
                         return;
@@ -3795,8 +3816,8 @@ try {
                         <div class="seller-popup-items-grid">`;
                         data.latest_items.forEach(item => {
                             const imgHtml = item.thumb ?
-                                `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">`
-                            `<div class="seller-item-thumb-placeholder" style="display:none;">📷</div>`: `<div class="seller-item-thumb-placeholder">📷</div>`;
+                                `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="seller-item-thumb-placeholder" style="display:none;">📷</div>` :
+                                `<div class="seller-item-thumb-placeholder">📷</div>`;
                             itemsHtml += `
                                 <div class="seller-item-thumb" onclick="closeSellerPopup(); fetchItemDetails('${escapeHtml(item.id)}');">
                                     ${imgHtml}
@@ -3828,7 +3849,7 @@ try {
                     `;
                 })
                 .catch(() => {
-                    sellerContent.innerHTML = '<p style="color:red;text-align:center;padding:2rem;">Hiba történt a betöltés során.</p>';
+                    sellerContent.innerHTML = '<p style="color:red;text-align:center;padding:2rem;">Hálózati hiba történt.</p>';
                 });
         }
 
