@@ -2774,6 +2774,17 @@ try {
                 width: 240px;
             }
         }
+
+        /* Admin badge sötétebb light módban – a theme-light.css-ben is felülírjuk */
+        .admin-badge {
+            font-size: 0.7rem;
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            border-radius: 50px;
+            padding: 1px 8px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 
@@ -2812,7 +2823,7 @@ try {
                     <div class="user-info unselectable">
                         <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>
                     </div>
-                    <!-- 👇 ÚJ LINK A FIÓKHOZ -->
+                    <!-- 👇 FIÓKOM LINK -->
                     <a href="account.php" class="account-link"><span>👤 Fiókom</span></a>
                     <div class="dropdown-divider"></div>
                     <div class="theme-toggle-row">
@@ -3030,10 +3041,10 @@ try {
         <div class="seller-popup-card" id="sellerPopupCard">
             <div class="seller-popup-topbar">
                 <button class="seller-popup-close unselectable" id="sellerPopupClose">✕</button>
-                <div class="seller-popup-topbar-title">👤 Eladó profilja</div>
+                <div class="seller-popup-topbar-title unselectable">👤 Eladó profilja</div>
             </div>
             <div class="seller-popup-body" id="sellerPopupContent">
-                <div class="seller-popup-loading">⏳ Betöltés...</div>
+                <div class="seller-popup-loading unselectable">⏳ Betöltés...</div>
             </div>
         </div>
     </div>
@@ -3788,7 +3799,7 @@ try {
         const sellerCloseBtn = document.getElementById('sellerPopupClose');
 
         function openSellerPopup(sellerId) {
-            sellerContent.innerHTML = '<div class="seller-popup-loading">⏳ Betöltés...</div>';
+            sellerContent.innerHTML = '<div class="seller-popup-loading unselectable">⏳ Betöltés...</div>';
             sellerOverlay.style.display = 'flex';
             sellerOverlay.offsetHeight;
             sellerOverlay.classList.add('active');
@@ -3798,13 +3809,13 @@ try {
                 .then(r => r.json())
                 .then(data => {
                     if (data.error) {
-                        sellerContent.innerHTML = `<p style="color:red;text-align:center;padding:2rem;">${escapeHtml(data.error)}</p>`;
+                        sellerContent.innerHTML = `<p style="color:red;text-align:center;padding:2rem;" class="unselectable">${escapeHtml(data.error)}</p>`;
                         return;
                     }
 
                     const currentUserId = <?php echo (int)$_SESSION['user_id']; ?>;
                     const memberSince = data.created_at ? data.created_at.substring(0, 10) : '—';
-                    const adminBadge = parseInt(data.is_admin) ? ' <span style="font-size:0.7rem;background:rgba(255,215,0,0.2);color:#ffd700;border:1px solid rgba(255,215,0,0.4);border-radius:50px;padding:1px 8px;vertical-align:middle;">Admin</span>' : '';
+                    const adminBadge = parseInt(data.is_admin) ? ' <span class="admin-badge unselectable">Admin</span>' : '';
                     const initial = data.username ? data.username.charAt(0).toUpperCase() : '?';
 
                     // Update topbar title
@@ -3812,18 +3823,18 @@ try {
 
                     let itemsHtml = '';
                     if (data.latest_items && data.latest_items.length > 0) {
-                        itemsHtml = `<div class="seller-popup-items-title">Legutóbbi hirdetések</div>
+                        itemsHtml = `<div class="seller-popup-items-title unselectable">Legutóbbi hirdetések</div>
                         <div class="seller-popup-items-grid">`;
                         data.latest_items.forEach(item => {
                             const imgHtml = item.thumb ?
-                                `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="seller-item-thumb-placeholder" style="display:none;">📷</div>` :
-                                `<div class="seller-item-thumb-placeholder">📷</div>`;
+                                `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="seller-item-thumb-placeholder unselectable" style="display:none;">📷</div>` :
+                                `<div class="seller-item-thumb-placeholder unselectable">📷</div>`;
                             itemsHtml += `
                                 <div class="seller-item-thumb" onclick="closeSellerPopup(); fetchItemDetails('${escapeHtml(item.id)}');">
                                     ${imgHtml}
                                     <div class="seller-item-info">
-                                        <div class="seller-item-title">${escapeHtml(item.title)}</div>
-                                        <div class="seller-item-price">${Number(item.price).toLocaleString('hu-HU')} Ft</div>
+                                        <div class="seller-item-title unselectable">${escapeHtml(item.title)}</div>
+                                        <div class="seller-item-price unselectable">${Number(item.price).toLocaleString('hu-HU')} Ft</div>
                                     </div>
                                 </div>`;
                         });
@@ -3831,17 +3842,17 @@ try {
                     }
 
                     const msgBtn = (parseInt(sellerId) !== currentUserId) ?
-                        `<a href="uzenetek.php?with=${encodeURIComponent(sellerId)}" class="seller-popup-msg-btn">💬 Üzenet küldése</a>` :
-                        `<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem 0;">Ez a saját profilod</div>`;
+                        `<a href="uzenetek.php?with=${encodeURIComponent(sellerId)}" class="seller-popup-msg-btn unselectable">💬 Üzenet küldése</a>` :
+                        `<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem 0;" class="unselectable">Ez a saját profilod</div>`;
 
                     sellerContent.innerHTML = `
-                        <div class="seller-popup-avatar">${initial}</div>
-                        <div class="seller-popup-name">${escapeHtml(data.username)}${adminBadge}</div>
-                        <div class="seller-popup-meta">Tag azóta: ${memberSince}</div>
+                        <div class="seller-popup-avatar unselectable">${initial}</div>
+                        <div class="seller-popup-name unselectable">${escapeHtml(data.username)}${adminBadge}</div>
+                        <div class="seller-popup-meta unselectable">Tag azóta: ${memberSince}</div>
                         <div class="seller-popup-stats">
-                            <div class="seller-stat">
-                                <div class="seller-stat-value">${data.item_count}</div>
-                                <div class="seller-stat-label">Hirdetés</div>
+                            <div class="seller-stat unselectable">
+                                <div class="seller-stat-value unselectable">${data.item_count}</div>
+                                <div class="seller-stat-label unselectable">Hirdetés</div>
                             </div>
                         </div>
                         ${itemsHtml}
@@ -3849,7 +3860,7 @@ try {
                     `;
                 })
                 .catch(() => {
-                    sellerContent.innerHTML = '<p style="color:red;text-align:center;padding:2rem;">Hálózati hiba történt.</p>';
+                    sellerContent.innerHTML = '<p style="color:red;text-align:center;padding:2rem;" class="unselectable">Hálózati hiba történt.</p>';
                 });
         }
 
