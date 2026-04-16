@@ -214,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   .status-msg.success { background: rgba(0, 200, 100, 0.15); border: 1px solid #00c851; color: #5dffa0; }
 
   /* =====================
-     PRODUCT MODAL STÍLUSOK
+     PRODUCT MODAL STÍLUSOK - ÁTRENDEZVE
      ===================== */
   .product-modal-overlay {
       position: fixed;
@@ -239,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       background: rgba(5, 5, 5, 0.99);
       position: relative;
       display: grid;
-      grid-template-columns: 1.5fr 1fr;
+      grid-template-columns: 2fr 1fr;
       gap: 2rem;
       padding: 2rem;
       transform: scale(0.98);
@@ -250,14 +250,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   .product-modal-overlay.active .product-modal-card {
       transform: scale(1);
   }
+  
+  /* Fejléc (menu + close) - alulra kerül a galériában */
   .product-modal-header {
       position: absolute;
-      top: 1.5rem;
+      bottom: 1.5rem;
       right: 1.5rem;
       display: flex;
       gap: 1rem;
       z-index: 100;
   }
+  
   .product-modal-close {
       background: rgba(20, 20, 20, 0.8);
       border: 1px solid var(--orange-bright);
@@ -306,7 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   }
   .product-menu-content {
       position: absolute;
-      top: 55px;
+      bottom: 55px;  /* felfelé nyílik, mert lent van a gomb */
       right: 0;
       min-width: 180px;
       background: rgba(10, 10, 10, 0.95);
@@ -364,6 +367,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       align-items: center;
       justify-content: center;
       min-height: 300px;
+      flex: 1;
   }
   .product-main-image {
       max-width: 100%;
@@ -417,16 +421,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   .gallery-nav.hidden {
       display: none;
   }
+  
+  /* Thumbnails - felülre kerülnek */
   .product-thumbnails {
       display: flex;
       gap: 1rem;
       overflow-x: auto;
       padding: 0.5rem 0;
       min-height: 100px;
+      order: -1;  /* felülre kerül */
+      margin-bottom: 1rem;
   }
+  
   .product-thumbnail {
-      width: 100px;
-      height: 100px;
+      width: 120px;
+      height: 120px;
       border-radius: 12px;
       overflow: hidden;
       cursor: pointer;
@@ -450,7 +459,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   .product-details {
       display: flex;
       flex-direction: column;
-      gap: 2rem;
+      gap: 1.5rem;
       padding: 2rem;
       background: rgba(10, 10, 10, 0.8);
       border-radius: 24px;
@@ -509,7 +518,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
-      margin-top: auto;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -613,8 +621,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
           font-size: 1rem;
       }
       .product-modal-header {
-          top: 0.5rem;
+          bottom: 0.5rem;
           right: 0.5rem;
+      }
+      .product-modal-close {
+          width: 36px;
+          height: 36px;
+          font-size: 1.2rem;
+      }
+      .product-menu-button {
+          width: 36px;
+          height: 36px;
+          font-size: 1.3rem;
       }
       .lightbox-content {
           flex-direction: column;
@@ -623,6 +641,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       .lightbox-image {
           max-width: 95vw;
           max-height: calc(95vh - 70px);
+      }
+      .product-thumbnail {
+          width: 80px;
+          height: 80px;
+      }
+      .product-buy-btn {
+          padding: 1rem 1.5rem;
+          font-size: 1.2rem;
       }
   }
   
@@ -711,6 +737,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
 <!-- ===================== TERMÉK MODAL ===================== -->
 <div class="product-modal-overlay" id="productModal">
     <div class="product-modal-card">
+        <!-- Fejléc (menu + close) - mostantól LENT jelenik meg a galériában -->
         <div class="product-modal-header">
             <div class="product-menu" id="productMenuContainer" style="display: none;">
                 <div class="product-menu-button unselectable" onclick="toggleProductMenu(this)">⋮</div>
