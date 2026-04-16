@@ -34,29 +34,29 @@ try {
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // ================================
-    // AJAX – Új üzenetek lekérése (polling)
+    // AJAX – Új üzenetek lekérése (polling) IDŐBÉLYEG ALAPJÁN
     // ================================
-    if (isset($_GET['ajax_get_messages']) && isset($_GET['with']) && isset($_GET['last_id'])) {
+    if (isset($_GET['ajax_get_messages']) && isset($_GET['with']) && isset($_GET['last_timestamp'])) {
         header('Content-Type: application/json');
         $partnerId = (int)$_GET['with'];
-        $lastId    = $_GET['last_id'];
+        $lastTimestamp = $_GET['last_timestamp']; // pl. "2025-03-15 14:25:30"
 
-        // Frissítjük a kapott üzenetek olvasottsági státuszát
+        // A fogadott üzenetek olvasottá jelölése
         $updateRead = $conn->prepare("
             UPDATE uzenetek SET is_read = 1
             WHERE sender_id = ? AND receiver_id = ? AND is_read = 0
         ");
         $updateRead->execute([$partnerId, $currentUserId]);
 
-        // Új üzenetek lekérése
+        // Új üzenetek a megadott időpont után
         $stmt = $conn->prepare("
             SELECT id, sender_id, receiver_id, message, sent_at, is_read
             FROM uzenetek
             WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))
-              AND id > ?
+              AND sent_at > ?
             ORDER BY sent_at ASC
         ");
-        $stmt->execute([$currentUserId, $partnerId, $partnerId, $currentUserId, $lastId]);
+        $stmt->execute([$currentUserId, $partnerId, $partnerId, $currentUserId, $lastTimestamp]);
         $newMessages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode(['messages' => $newMessages]);
@@ -64,7 +64,7 @@ try {
     }
 
     // ================================
-    // AJAX – Üzenet küldése
+    // AJAX – Üzenet küldése (nem redirect)
     // ================================
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message_ajax'])) {
         header('Content-Type: application/json');
@@ -223,7 +223,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Üzenetek</title>
+    <title>Üzenetek – Valós idejű</title>
     <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -279,7 +279,6 @@ try {
             user-select: none;
         }
 
-        /* Top Bar */
         .top-bar {
             position: fixed;
             top: 0;
@@ -482,7 +481,6 @@ try {
             transform: translateX(5px);
         }
 
-        /* Layout */
         .messages-layout {
             display: grid;
             grid-template-columns: 300px 1fr;
@@ -1140,7 +1138,7 @@ try {
                         ?>
                             <div class="msg-row <?php echo $isOwn ? 'sent' : 'received'; ?>" data-msg-id="<?php echo htmlspecialchars($msg['id']); ?>">
                                 <?php if (!$isOwn): ?>
-                                    <div class="msg-bubble received">
+                                    <div class="msg-bubble received" data-sent-at="<?php echo $msg['sent_at']; ?>">
                                         <?php echo nl2br(htmlspecialchars($msg['message'])); ?>
                                         <div class="msg-time"><?php echo date('H:i', strtotime($msg['sent_at'])); ?></div>
                                     </div>
@@ -1160,7 +1158,7 @@ try {
                                             <button class="msg-dropdown-item delete-msg" data-msg-id="<?php echo htmlspecialchars($msg['id']); ?>">🗑️ Törlés</button>
                                         </div>
                                     </div>
-                                    <div class="msg-bubble sent">
+                                    <div class="msg-bubble sent" data-sent-at="<?php echo $msg['sent_at']; ?>">
                                         <?php echo nl2br(htmlspecialchars($msg['message'])); ?>
                                         <div class="msg-time">
                                             <?php echo date('H:i', strtotime($msg['sent_at'])); ?>
@@ -1243,7 +1241,7 @@ try {
     <script>
         const currentUserId = <?php echo $currentUserId; ?>;
         const partnerId = <?php echo $withUserId ?: 0; ?>;
-        let lastMessageId = '';
+        let lastTimestamp = '';
         let pollInterval = null;
 
         const messagesList = document.getElementById('messagesList');
@@ -1271,6 +1269,15 @@ try {
             if (messagesList) messagesList.scrollTop = messagesList.scrollHeight;
         }
 
+        function getMaxTimestampFromDOM() {
+            let maxTs = '';
+            document.querySelectorAll('.msg-bubble').forEach(bubble => {
+                const ts = bubble.getAttribute('data-sent-at');
+                if (ts && ts > maxTs) maxTs = ts;
+            });
+            return maxTs;
+        }
+
         function appendMessage(msg) {
             const isOwn = (parseInt(msg.sender_id) === currentUserId);
             const msgDiv = document.createElement('div');
@@ -1281,7 +1288,7 @@ try {
             
             if (!isOwn) {
                 msgDiv.innerHTML = `
-                    <div class="msg-bubble received">
+                    <div class="msg-bubble received" data-sent-at="${escapeHtml(msg.sent_at)}">
                         ${escapeHtml(msg.message).replace(/\n/g, '<br>')}
                         <div class="msg-time">${timeStr}</div>
                     </div>
@@ -1301,7 +1308,7 @@ try {
                             <button class="msg-dropdown-item delete-msg" data-msg-id="${escapeHtml(msg.id)}">🗑️ Törlés</button>
                         </div>
                     </div>
-                    <div class="msg-bubble sent">
+                    <div class="msg-bubble sent" data-sent-at="${escapeHtml(msg.sent_at)}">
                         ${escapeHtml(msg.message).replace(/\n/g, '<br>')}
                         <div class="msg-time">${timeStr} ${msg.is_read ? '✓✓' : '✓'}</div>
                     </div>
@@ -1313,24 +1320,21 @@ try {
 
         async function pollNewMessages() {
             if (!partnerId) return;
-            if (!lastMessageId) {
-                const existing = document.querySelectorAll('.msg-row');
-                let maxId = '';
-                existing.forEach(row => {
-                    const id = row.getAttribute('data-msg-id');
-                    if (id && id > maxId) maxId = id;
-                });
-                lastMessageId = maxId || '';
+            if (!lastTimestamp) {
+                lastTimestamp = getMaxTimestampFromDOM();
+                if (!lastTimestamp) {
+                    lastTimestamp = '1970-01-01 00:00:00';
+                }
             }
             try {
-                const response = await fetch(`?ajax_get_messages=1&with=${partnerId}&last_id=${encodeURIComponent(lastMessageId)}`);
+                const response = await fetch(`?ajax_get_messages=1&with=${partnerId}&last_timestamp=${encodeURIComponent(lastTimestamp)}`);
                 const data = await response.json();
                 if (data.messages && data.messages.length > 0) {
                     for (const msg of data.messages) {
                         if (!document.querySelector(`.msg-row[data-msg-id="${msg.id}"]`)) {
                             appendMessage(msg);
                         }
-                        if (msg.id > lastMessageId) lastMessageId = msg.id;
+                        if (msg.sent_at > lastTimestamp) lastTimestamp = msg.sent_at;
                     }
                 }
             } catch (err) {
@@ -1359,18 +1363,20 @@ try {
                 if (data.success) {
                     msgInput.value = '';
                     msgInput.style.height = 'auto';
+                    // Optimista frissítés: ideiglenes üzenet hozzáadása (majd a polling frissíti a valós ID-ra)
                     const tempId = 'temp_' + Date.now();
                     const now = new Date();
-                    const timeStr = now.toLocaleTimeString('hu-HU', {hour: '2-digit', minute:'2-digit'});
+                    const sentAt = now.toISOString().slice(0, 19).replace('T', ' ');
                     const tempMsg = {
                         id: tempId,
                         sender_id: currentUserId,
                         receiver_id: receiver,
                         message: message,
-                        sent_at: now.toISOString(),
+                        sent_at: sentAt,
                         is_read: 0
                     };
                     appendMessage(tempMsg);
+                    if (sentAt > lastTimestamp) lastTimestamp = sentAt;
                     scrollToBottom();
                 } else {
                     showToast(data.error || 'Hiba az üzenet küldésekor.');
@@ -1398,13 +1404,8 @@ try {
         }
 
         if (partnerId) {
-            const existingMsgs = document.querySelectorAll('.msg-row');
-            let maxId = '';
-            existingMsgs.forEach(row => {
-                const id = row.getAttribute('data-msg-id');
-                if (id && id > maxId) maxId = id;
-            });
-            lastMessageId = maxId;
+            lastTimestamp = getMaxTimestampFromDOM();
+            if (!lastTimestamp) lastTimestamp = '1970-01-01 00:00:00';
             pollInterval = setInterval(pollNewMessages, 2000);
         }
 
