@@ -141,42 +141,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --status-bg-from: rgba(10, 6, 0, 0.98);
             --status-bg-to: rgba(0, 0, 0, 0.92);
             --h1-color: #f5f0e8;
-            --h1-shadow: 0 0 10px rgba(255,140,0,0.6), 0 0 30px rgba(255,80,0,0.3), 0 2px 4px rgba(0,0,0,0.8);
+            --h1-shadow: 0 0 10px rgba(255, 140, 0, 0.6), 0 0 30px rgba(255, 80, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.8);
             --body-before-bg:
                 radial-gradient(ellipse 80% 60% at 18% 12%, #7a3800 0%, transparent 55%),
                 radial-gradient(ellipse 60% 50% at 85% 80%, #3a1800 0%, transparent 50%),
                 radial-gradient(ellipse 100% 100% at 50% 50%, #0d0d0d 0%, #000 100%);
             --body-after-bg:
-                radial-gradient(ellipse 500px 300px at 15% 10%, rgba(255,100,0,0.18) 0%, transparent 70%),
-                radial-gradient(ellipse 400px 400px at 90% 90%, rgba(180,60,0,0.12) 0%, transparent 60%),
-                radial-gradient(ellipse 300px 200px at 50% 0%, rgba(255,140,0,0.08) 0%, transparent 60%);
-            --orb1-bg: radial-gradient(circle, rgba(255,140,0,0.25) 0%, rgba(255,80,0,0.08) 45%, transparent 70%);
-            --orb2-bg: radial-gradient(circle, rgba(180,60,0,0.20) 0%, rgba(100,30,0,0.06) 50%, transparent 70%);
+                radial-gradient(ellipse 500px 300px at 15% 10%, rgba(255, 100, 0, 0.18) 0%, transparent 70%),
+                radial-gradient(ellipse 400px 400px at 90% 90%, rgba(180, 60, 0, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 300px 200px at 50% 0%, rgba(255, 140, 0, 0.08) 0%, transparent 60%);
+            --orb1-bg: radial-gradient(circle, rgba(255, 140, 0, 0.25) 0%, rgba(255, 80, 0, 0.08) 45%, transparent 70%);
+            --orb2-bg: radial-gradient(circle, rgba(180, 60, 0, 0.20) 0%, rgba(100, 30, 0, 0.06) 50%, transparent 70%);
             --status-border: rgba(255, 140, 0, 0.25);
-            --status-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 30px rgba(0,0,0,0.8), 0 0 60px rgba(255,100,0,0.06);
-            --form-before-bg: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), rgba(255,200,100,0.14), transparent);
-            --form-after-bg: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,140,0,0.07) 0%, transparent 60%);
+            --status-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 4px 30px rgba(0, 0, 0, 0.8), 0 0 60px rgba(255, 100, 0, 0.06);
+            --form-before-bg: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), rgba(255, 200, 100, 0.14), transparent);
+            --form-after-bg: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 140, 0, 0.07) 0%, transparent 60%);
             --input-border: rgba(255, 140, 0, 0.15);
-            --input-shadow: 0 4px 16px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.04) inset, 0 -1px 0 rgba(0,0,0,0.5) inset;
+            --input-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 -1px 0 rgba(0, 0, 0, 0.5) inset;
             --input-focus-border: rgba(255, 140, 0, 0.5);
-            --input-focus-shadow: 0 0 0 3px rgba(255,120,0,0.18), 0 0 20px rgba(255,100,0,0.25), 0 4px 16px rgba(0,0,0,0.6), 0 1px 0 rgba(255,200,100,0.06) inset;
+            --input-focus-shadow: 0 0 0 3px rgba(255, 120, 0, 0.18), 0 0 20px rgba(255, 100, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 200, 100, 0.06) inset;
             --input-focus-color: #fff;
             --btn-submit-bg: linear-gradient(180deg, #ffab35 0%, #e07800 50%, #b35500 100%);
             --btn-submit-color: #0a0500;
-            --btn-submit-shadow: 0 8px 0 #6b3000, 0 12px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,200,100,0.3) inset, 0 1px 0 rgba(255,230,150,0.4) inset;
+            --btn-submit-shadow: 0 8px 0 #6b3000, 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 200, 100, 0.3) inset, 0 1px 0 rgba(255, 230, 150, 0.4) inset;
             --btn-submit-hover-bg: linear-gradient(180deg, #ffbe55 0%, #f08800 50%, #c06000 100%);
-            --btn-submit-hover-shadow: 0 10px 0 #6b3000, 0 15px 40px rgba(0,0,0,0.6), 0 0 30px rgba(255,140,0,0.3), 0 0 0 1px rgba(255,200,100,0.35) inset;
-            --btn-submit-active-shadow: 0 2px 0 #6b3000, 0 8px 20px rgba(0,0,0,0.4);
+            --btn-submit-hover-shadow: 0 10px 0 #6b3000, 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 140, 0, 0.3), 0 0 0 1px rgba(255, 200, 100, 0.35) inset;
+            --btn-submit-active-shadow: 0 2px 0 #6b3000, 0 8px 20px rgba(0, 0, 0, 0.4);
             --btn-ghost-bg: transparent;
             --btn-ghost-color: #ff9a1f;
             --btn-ghost-border: rgba(255, 140, 0, 0.3);
-            --btn-ghost-shadow: 0 2px 12px rgba(0,0,0,0.4);
-            --btn-ghost-text-shadow: 0 0 8px rgba(255,140,0,0.4);
+            --btn-ghost-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+            --btn-ghost-text-shadow: 0 0 8px rgba(255, 140, 0, 0.4);
             --btn-ghost-hover-bg: rgba(255, 120, 0, 0.08);
             --btn-ghost-hover-border: rgba(255, 140, 0, 0.6);
             --btn-ghost-hover-color: #fff;
-            --btn-ghost-hover-shadow: 0 0 20px rgba(255,100,0,0.2), 0 0 0 1px rgba(255,140,0,0.15) inset;
-            --btn-ghost-hover-text-shadow: 0 0 12px rgba(255,160,0,0.7);
+            --btn-ghost-hover-shadow: 0 0 20px rgba(255, 100, 0, 0.2), 0 0 0 1px rgba(255, 140, 0, 0.15) inset;
+            --btn-ghost-hover-text-shadow: 0 0 12px rgba(255, 160, 0, 0.7);
         }
 
         /* ══════════════════════════════════════════
@@ -203,41 +203,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --status-bg-from: rgba(244, 252, 220, 0.98);
             --status-bg-to: rgba(234, 248, 195, 0.95);
             --h1-color: #7a9200;
-            --h1-shadow: 0 0 10px rgba(176,203,31,0.6), 0 0 30px rgba(140,180,10,0.3), 0 2px 4px rgba(0,0,0,0.2);
+            --h1-shadow: 0 0 10px rgba(176, 203, 31, 0.6), 0 0 30px rgba(140, 180, 10, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
             --body-before-bg:
-                radial-gradient(ellipse 80% 60% at 18% 12%, rgba(200,230,60,0.35) 0%, transparent 55%),
-                radial-gradient(ellipse 60% 50% at 85% 80%, rgba(160,200,20,0.20) 0%, transparent 50%),
+                radial-gradient(ellipse 80% 60% at 18% 12%, rgba(200, 230, 60, 0.35) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 50% at 85% 80%, rgba(160, 200, 20, 0.20) 0%, transparent 50%),
                 radial-gradient(ellipse 100% 100% at 50% 50%, #d8e0b0 0%, #c8d0a0 100%);
             --body-after-bg:
-                radial-gradient(ellipse 500px 300px at 15% 10%, rgba(176,203,31,0.12) 0%, transparent 70%),
-                radial-gradient(ellipse 400px 400px at 90% 90%, rgba(140,180,10,0.09) 0%, transparent 60%),
-                radial-gradient(ellipse 300px 200px at 50% 0%, rgba(200,220,50,0.08) 0%, transparent 60%);
-            --orb1-bg: radial-gradient(circle, rgba(176,203,31,0.20) 0%, rgba(140,180,10,0.06) 45%, transparent 70%);
-            --orb2-bg: radial-gradient(circle, rgba(160,200,20,0.15) 0%, rgba(100,140,5,0.04) 50%, transparent 70%);
+                radial-gradient(ellipse 500px 300px at 15% 10%, rgba(176, 203, 31, 0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 400px 400px at 90% 90%, rgba(140, 180, 10, 0.09) 0%, transparent 60%),
+                radial-gradient(ellipse 300px 200px at 50% 0%, rgba(200, 220, 50, 0.08) 0%, transparent 60%);
+            --orb1-bg: radial-gradient(circle, rgba(176, 203, 31, 0.20) 0%, rgba(140, 180, 10, 0.06) 45%, transparent 70%);
+            --orb2-bg: radial-gradient(circle, rgba(160, 200, 20, 0.15) 0%, rgba(100, 140, 5, 0.04) 50%, transparent 70%);
             --status-border: rgba(140, 170, 10, 0.28);
-            --status-shadow: 0 1px 0 rgba(255,255,255,0.85) inset, 0 4px 30px rgba(0,0,0,0.05), 0 0 60px rgba(176,203,31,0.05);
-            --form-before-bg: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), rgba(210,240,100,0.4), transparent);
-            --form-after-bg: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(176,203,31,0.07) 0%, transparent 60%);
+            --status-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 4px 30px rgba(0, 0, 0, 0.05), 0 0 60px rgba(176, 203, 31, 0.05);
+            --form-before-bg: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), rgba(210, 240, 100, 0.4), transparent);
+            --form-after-bg: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(176, 203, 31, 0.07) 0%, transparent 60%);
             --input-border: rgba(140, 170, 10, 0.22);
-            --input-shadow: 0 4px 16px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.95) inset, 0 -1px 0 rgba(0,0,0,0.03) inset;
+            --input-shadow: 0 4px 16px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(255, 255, 255, 0.95) inset, 0 -1px 0 rgba(0, 0, 0, 0.03) inset;
             --input-focus-border: rgba(140, 170, 10, 0.55);
-            --input-focus-shadow: 0 0 0 3px rgba(176,203,31,0.15), 0 0 20px rgba(176,203,31,0.12), 0 4px 16px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset;
+            --input-focus-shadow: 0 0 0 3px rgba(176, 203, 31, 0.15), 0 0 20px rgba(176, 203, 31, 0.12), 0 4px 16px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
             --input-focus-color: #1a1f00;
             --btn-submit-bg: linear-gradient(180deg, #d4e840 0%, #B0CB1F 50%, #8aA000 100%);
             --btn-submit-color: #1a1f00;
-            --btn-submit-shadow: 0 8px 0 #607000, 0 12px 30px rgba(0,0,0,0.14), 0 0 0 1px rgba(220,255,80,0.35) inset, 0 1px 0 rgba(240,255,150,0.5) inset;
+            --btn-submit-shadow: 0 8px 0 #607000, 0 12px 30px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(220, 255, 80, 0.35) inset, 0 1px 0 rgba(240, 255, 150, 0.5) inset;
             --btn-submit-hover-bg: linear-gradient(180deg, #e0f050 0%, #c4df25 50%, #9ab800 100%);
-            --btn-submit-hover-shadow: 0 10px 0 #607000, 0 15px 40px rgba(0,0,0,0.18), 0 0 30px rgba(176,203,31,0.25), 0 0 0 1px rgba(220,255,80,0.4) inset;
-            --btn-submit-active-shadow: 0 2px 0 #607000, 0 8px 20px rgba(0,0,0,0.12);
+            --btn-submit-hover-shadow: 0 10px 0 #607000, 0 15px 40px rgba(0, 0, 0, 0.18), 0 0 30px rgba(176, 203, 31, 0.25), 0 0 0 1px rgba(220, 255, 80, 0.4) inset;
+            --btn-submit-active-shadow: 0 2px 0 #607000, 0 8px 20px rgba(0, 0, 0, 0.12);
             --btn-ghost-bg: rgba(240, 252, 200, 0.55);
             --btn-ghost-color: #7a9200;
             --btn-ghost-border: rgba(140, 170, 10, 0.32);
-            --btn-ghost-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            --btn-ghost-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
             --btn-ghost-text-shadow: none;
             --btn-ghost-hover-bg: rgba(210, 240, 100, 0.35);
             --btn-ghost-hover-border: rgba(140, 170, 10, 0.55);
             --btn-ghost-hover-color: #507000;
-            --btn-ghost-hover-shadow: 0 0 20px rgba(176,203,31,0.14), 0 0 0 1px rgba(176,203,31,0.14) inset;
+            --btn-ghost-hover-shadow: 0 0 20px rgba(176, 203, 31, 0.14), 0 0 0 1px rgba(176, 203, 31, 0.14) inset;
             --btn-ghost-hover-text-shadow: none;
         }
 
@@ -252,7 +252,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 0;
         }
 
-        html { -webkit-font-smoothing: antialiased; }
+        html {
+            -webkit-font-smoothing: antialiased;
+        }
 
         body {
             min-height: 100vh;
@@ -332,8 +334,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         @keyframes orbPulse {
-            from { transform: scale(1) translate(0, 0); opacity: 0.8; }
-            to   { transform: scale(1.15) translate(20px, 15px); opacity: 1; }
+            from {
+                transform: scale(1) translate(0, 0);
+                opacity: 0.8;
+            }
+
+            to {
+                transform: scale(1.15) translate(20px, 15px);
+                opacity: 1;
+            }
         }
 
         /* ── THEME TOGGLE BUTTON ── */
@@ -368,16 +377,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transform: none;
         }
 
-        #themeToggle::after { display: none; }
+        #themeToggle::after {
+            display: none;
+        }
 
         /* Sun icon: visible in dark mode, hidden in light */
-        [data-theme="dark"]  .icon-sun  { display: inline; }
-        [data-theme="dark"]  .icon-moon { display: none; }
-        [data-theme="light"] .icon-sun  { display: none; }
-        [data-theme="light"] .icon-moon { display: inline; }
+        [data-theme="dark"] .icon-sun {
+            display: inline;
+        }
+
+        [data-theme="dark"] .icon-moon {
+            display: none;
+        }
+
+        [data-theme="light"] .icon-sun {
+            display: none;
+        }
+
+        [data-theme="light"] .icon-moon {
+            display: inline;
+        }
+
         /* fallback (before JS runs, :root = dark) */
-        .icon-sun  { display: inline; }
-        .icon-moon { display: none; }
+        .icon-sun {
+            display: inline;
+        }
+
+        .icon-moon {
+            display: none;
+        }
 
         /* ── TOP STATUS BAR ── */
         .login-status {
@@ -416,11 +444,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transition: color 0.4s ease, text-shadow 0.4s ease;
         }
 
-        h1 span { color: var(--orange-bright); font-weight: 700; }
+        h1 span {
+            color: var(--orange-bright);
+            font-weight: 700;
+        }
 
         @keyframes titleFadeIn {
-            from { opacity: 0; transform: translateY(-12px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* ── GLASSMORPHIC CARD ── */
@@ -438,15 +476,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 24px;
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow-deep), var(--shadow-orange), 0 0 0 1px rgba(255,255,255,0.03) inset, 0 1px 0 rgba(255,255,255,0.05) inset;
+            box-shadow: var(--shadow-deep), var(--shadow-orange), 0 0 0 1px rgba(255, 255, 255, 0.03) inset, 0 1px 0 rgba(255, 255, 255, 0.05) inset;
             animation: cardRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
             animation-delay: 0.1s;
             transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
         }
 
         @keyframes cardRise {
-            from { opacity: 0; transform: translateY(24px) scale(0.97); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(24px) scale(0.97);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         form::before {
@@ -529,7 +574,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             pointer-events: none;
         }
 
-        button:hover::after { left: 160%; }
+        button:hover::after {
+            left: 160%;
+        }
 
         button[type="submit"] {
             background: var(--btn-submit-bg);
@@ -594,56 +641,163 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         /* ── SCROLLBAR ── */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
-        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
+        }
 
         /* ── SELECTION ── */
-        ::selection { background: var(--orange-glow); color: #fff; }
+        ::selection {
+            background: var(--orange-glow);
+            color: #fff;
+        }
 
         /* ── UNSELECTABLE ── */
-        .unselectable { user-select: none; -webkit-user-select: none; }
+        .unselectable {
+            user-select: none;
+            -webkit-user-select: none;
+        }
 
         /* ── RESPONSIVE ── */
         @media (max-width: 1200px) {
-            body { padding: 24px; padding-top: 80px; }
-            h1 { font-size: 3.2rem; margin-bottom: 40px; letter-spacing: 8px; }
-            form { max-width: 680px; width: 100%; padding: 60px 56px 54px; gap: 28px; border-radius: 36px; }
-            input { padding: 22px 28px; font-size: 1.3rem; border-radius: 70px; }
-            input::placeholder { font-size: 1.2rem; }
-            button { padding: 24px; font-size: 1.3rem; letter-spacing: 4px; border-radius: 70px; }
-            .or-separator { margin: 18px 0 12px; }
-            .or-separator span { font-size: 0.9rem; padding: 0 24px; }
+            body {
+                padding: 24px;
+                padding-top: 80px;
+            }
+
+            h1 {
+                font-size: 3.2rem;
+                margin-bottom: 40px;
+                letter-spacing: 8px;
+            }
+
+            form {
+                max-width: 680px;
+                width: 100%;
+                padding: 60px 56px 54px;
+                gap: 28px;
+                border-radius: 36px;
+            }
+
+            input {
+                padding: 22px 28px;
+                font-size: 1.3rem;
+                border-radius: 70px;
+            }
+
+            input::placeholder {
+                font-size: 1.2rem;
+            }
+
+            button {
+                padding: 24px;
+                font-size: 1.3rem;
+                letter-spacing: 4px;
+                border-radius: 70px;
+            }
+
+            .or-separator {
+                margin: 18px 0 12px;
+            }
+
+            .or-separator span {
+                font-size: 0.9rem;
+                padding: 0 24px;
+            }
         }
 
         @media (min-width: 1201px) and (max-width: 1600px) {
-            body { padding-top: 70px; }
-            form { max-width: 520px; padding: 48px 50px 44px; }
-            h1 { font-size: 2.8rem; }
-            input { padding: 18px 24px; font-size: 1.1rem; }
-            button { padding: 18px; font-size: 1.1rem; }
+            body {
+                padding-top: 70px;
+            }
+
+            form {
+                max-width: 520px;
+                padding: 48px 50px 44px;
+            }
+
+            h1 {
+                font-size: 2.8rem;
+            }
+
+            input {
+                padding: 18px 24px;
+                font-size: 1.1rem;
+            }
+
+            button {
+                padding: 18px;
+                font-size: 1.1rem;
+            }
         }
 
         @media (min-width: 1601px) {
-            form { max-width: 480px; padding: 42px 48px 38px; }
-            h1 { font-size: 2.6rem; }
-            input { padding: 14px 20px; font-size: 0.95rem; }
-            button { padding: 15px; font-size: 0.9rem; }
+            form {
+                max-width: 480px;
+                padding: 42px 48px 38px;
+            }
+
+            h1 {
+                font-size: 2.6rem;
+            }
+
+            input {
+                padding: 14px 20px;
+                font-size: 0.95rem;
+            }
+
+            button {
+                padding: 15px;
+                font-size: 0.9rem;
+            }
         }
 
         @media (max-width: 400px) {
-            body { padding: 16px; padding-top: 70px; }
-            h1 { font-size: 2.4rem; margin-bottom: 30px; letter-spacing: 5px; }
-            form { max-width: 100%; padding: 36px 24px 32px; gap: 20px; border-radius: 28px; }
-            input { padding: 18px 22px; font-size: 1.1rem; }
-            button { padding: 20px; font-size: 1.1rem; }
+            body {
+                padding: 16px;
+                padding-top: 70px;
+            }
+
+            h1 {
+                font-size: 2.4rem;
+                margin-bottom: 30px;
+                letter-spacing: 5px;
+            }
+
+            form {
+                max-width: 100%;
+                padding: 36px 24px 32px;
+                gap: 20px;
+                border-radius: 28px;
+            }
+
+            input {
+                padding: 18px 22px;
+                font-size: 1.1rem;
+            }
+
+            button {
+                padding: 20px;
+                font-size: 1.1rem;
+            }
         }
     </style>
 
     <!-- FOUC megelőzése: téma alkalmazása a DOM renderelés előtt -->
     <script>
-        (function () {
+        (function() {
             var saved = localStorage.getItem('theme') || 'dark';
             document.documentElement.setAttribute('data-theme', saved);
         })();
@@ -703,7 +857,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             applyTheme(saved);
         })();
 
-        document.getElementById('themeToggle').addEventListener('click', function () {
+        document.getElementById('themeToggle').addEventListener('click', function() {
             var current = localStorage.getItem('theme') || 'dark';
             applyTheme(current === 'dark' ? 'light' : 'dark');
         });
@@ -712,10 +866,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         var statusEl = document.getElementById("statusMessage");
         if (statusEl) {
-            setTimeout(function () {
+            setTimeout(function() {
                 statusEl.style.opacity = "0";
                 statusEl.style.transition = "opacity 0.5s ease";
-                setTimeout(function () { statusEl.remove(); }, 500);
+                setTimeout(function() {
+                    statusEl.remove();
+                }, 500);
             }, 3000);
         }
 
@@ -760,4 +916,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 
 </body>
+
 </html>

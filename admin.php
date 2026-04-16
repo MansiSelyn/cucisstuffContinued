@@ -64,7 +64,12 @@ try {
             $message = "Termék törölve.";
         }
         if (isset($_POST['delete_report'], $_POST['report_id'])) {
-            $conn->prepare("DELETE FROM reports WHERE id=?")->execute([$_POST['report_id']]);
+            $repType = $_POST['report_type'] ?? 'item';
+            if ($repType === 'message') {
+                $conn->prepare("DELETE FROM message_reports WHERE id=?")->execute([$_POST['report_id']]);
+            } else {
+                $conn->prepare("DELETE FROM reports WHERE id=?")->execute([$_POST['report_id']]);
+            }
             $message = "Report törölve.";
         }
         if (isset($_POST['update_item'], $_POST['item_id'])) {
@@ -105,13 +110,25 @@ try {
     }
     // Adatok lekérése
     $counts = ['users' => 0, 'items' => 0, 'reports' => 0];
-    foreach (array_keys($counts) as $tbl) {
+    foreach (['users', 'items'] as $tbl) {
         try {
             $counts[$tbl] = $conn->query("SELECT COUNT(*) FROM $tbl")->fetchColumn();
-        } catch (PDOException $e) {
-            if ($tbl === 'reports') $conn->exec("CREATE TABLE IF NOT EXISTS reports (id INT AUTO_INCREMENT PRIMARY KEY, item_id CHAR(12) NOT NULL, user_id INT NOT NULL, reason TEXT NOT NULL, status ENUM('pending','resolved','dismissed') DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB");
-        }
+        } catch (PDOException $e) {}
     }
+    // Report count: termék + üzenet reportok összege
+    try {
+        $cItem = $conn->query("SELECT COUNT(*) FROM reports")->fetchColumn();
+    } catch (PDOException $e) {
+        $cItem = 0;
+        $conn->exec("CREATE TABLE IF NOT EXISTS reports (id INT AUTO_INCREMENT PRIMARY KEY, item_id CHAR(12) NOT NULL, user_id INT NOT NULL, reason TEXT NOT NULL, status ENUM('pending','resolved','dismissed') DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB");
+    }
+    try {
+        $cMsg = $conn->query("SELECT COUNT(*) FROM message_reports")->fetchColumn();
+    } catch (PDOException $e) {
+        $cMsg = 0;
+        $conn->exec("CREATE TABLE IF NOT EXISTS message_reports (id INT AUTO_INCREMENT PRIMARY KEY, message_id CHAR(25) NOT NULL, reporter_user_id INT NOT NULL, reason TEXT NOT NULL, status ENUM('pending','resolved','dismissed') DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (message_id) REFERENCES uzenetek(id) ON DELETE CASCADE, FOREIGN KEY (reporter_user_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB");
+    }
+    $counts['reports'] = (int)$cItem + (int)$cMsg;
     $totalItems = $counts[$view] ?? 0;
     $totalPages = $perPage ? (int)ceil($totalItems / $perPage) : 0;
     $items = $users = $reports = [];
@@ -128,7 +145,32 @@ try {
         $s->execute();
         $users = $s->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($view === 'reports') {
-        $s = $conn->prepare("SELECT r.*,i.title AS item_title,u.username AS reporter_name,i.user_id AS item_owner_id,owner.username AS item_owner_name FROM reports r JOIN items i ON r.item_id=i.id JOIN users u ON r.user_id=u.id JOIN users owner ON i.user_id=owner.id ORDER BY r.created_at DESC LIMIT :o,:l");
+        // Termék reportok
+        $s = $conn->prepare("
+            SELECT r.id, 'item' AS report_type,
+                   r.item_id AS ref_id,
+                   i.title AS ref_title,
+                   u.username AS reporter_name,
+                   owner.username AS target_name,
+                   r.reason, r.status, r.created_at
+            FROM reports r
+            JOIN items i ON r.item_id = i.id
+            JOIN users u ON r.user_id = u.id
+            JOIN users owner ON i.user_id = owner.id
+            UNION ALL
+            SELECT mr.id, 'message' AS report_type,
+                   mr.message_id AS ref_id,
+                   CONCAT('Üzenet: ', LEFT(uz.message, 40)) AS ref_title,
+                   reporter.username AS reporter_name,
+                   sender.username AS target_name,
+                   mr.reason, mr.status, mr.created_at
+            FROM message_reports mr
+            JOIN uzenetek uz ON mr.message_id = uz.id
+            JOIN users reporter ON mr.reporter_user_id = reporter.id
+            JOIN users sender ON uz.sender_id = sender.id
+            ORDER BY created_at DESC
+            LIMIT :o,:l
+        ");
         $s->bindValue(':o', $offset, PDO::PARAM_INT);
         $s->bindValue(':l', $perPage, PDO::PARAM_INT);
         $s->execute();
@@ -1433,9 +1475,10 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>TERMÉK</th>
+                                    <th>TÍPUS</th>
+                                    <th>TÁRGY</th>
                                     <th>BEJELENTŐ</th>
-                                    <th>TULAJDONOS</th>
+                                    <th>ÉRINTETT</th>
                                     <th>INDOK</th>
                                     <th>DÁTUM</th>
                                     <th>OPS</th>
@@ -1445,14 +1488,29 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
                                 <?php foreach ($reports as $r): ?>
                                     <tr>
                                         <td class="mono"><?= $r['id'] ?></td>
-                                        <td><button class="view-item-btn" data-item-id="<?= htmlspecialchars($r['item_id']) ?>"><?= htmlspecialchars($r['item_title']) ?></button></td>
+                                        <td>
+                                            <?php if ($r['report_type'] === 'item'): ?>
+                                                <span style="color:var(--c-amber);letter-spacing:1px;">◧ TERMÉK</span>
+                                            <?php else: ?>
+                                                <span style="color:var(--c-green-mid);letter-spacing:1px;">✉ ÜZENET</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($r['report_type'] === 'item'): ?>
+                                                <button class="view-item-btn" data-item-id="<?= htmlspecialchars($r['ref_id']) ?>"><?= htmlspecialchars($r['ref_title']) ?></button>
+                                            <?php else: ?>
+                                                <span style="color:var(--c-text);font-size:0.8rem;"><?= htmlspecialchars($r['ref_title']) ?></span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?= htmlspecialchars($r['reporter_name']) ?></td>
-                                        <td><?= htmlspecialchars($r['item_owner_name']) ?></td>
+                                        <td><?= htmlspecialchars($r['target_name']) ?></td>
                                         <td class="wrap"><?= htmlspecialchars($r['reason']) ?></td>
                                         <td class="mono"><?= date('Y-m-d', strtotime($r['created_at'])) ?></td>
                                         <td>
-                                            <a href="admin.php?view=items&id=<?= $r['item_id'] ?>" class="act act-view">TERMÉK</a>
-                                            <button class="act act-del" onclick="doDelete('report',<?= $r['id'] ?>)">TÖRL</button>
+                                            <?php if ($r['report_type'] === 'item'): ?>
+                                                <a href="admin.php?view=items&id=<?= $r['ref_id'] ?>" class="act act-view">TERMÉK</a>
+                                            <?php endif; ?>
+                                            <button class="act act-del" onclick="doDelete('report',<?= $r['id'] ?>,'<?= $r['report_type'] ?>')">TÖRL</button>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -1644,14 +1702,16 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
             report: 'delete_report=1&report_id='
         };
 
-        function doDelete(type, id) {
-            if (!confirm(CONFIRM_MSG[type])) return;
+        function doDelete(type, id, subtype) {
+            if (!confirm(CONFIRM_MSG[type] || 'Biztosan törlöd?')) return;
+            let body = POST_KEY[type] + id;
+            if (type === 'report' && subtype) body += '&report_type=' + subtype;
             fetch('admin.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                body: POST_KEY[type] + id
+                body: body
             }).then(() => location.reload());
         }
         // ── TERMÉKMODÁL ──

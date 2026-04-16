@@ -1169,10 +1169,12 @@ try {
             opacity: 0;
             transition: opacity 0.3s ease;
         }
+
         .edit-modal.show {
             display: flex;
             opacity: 1;
         }
+
         .edit-modal-content {
             width: 100%;
             max-width: 500px;
@@ -1186,16 +1188,19 @@ try {
             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
             opacity: 0;
         }
+
         .edit-modal.show .edit-modal-content {
             transform: translateY(0) scale(1);
             opacity: 1;
         }
+
         .edit-modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1.5rem;
         }
+
         .edit-modal-title {
             font-size: 1.4rem;
             font-weight: 700;
@@ -1204,6 +1209,7 @@ try {
             margin: 0;
             text-shadow: 0 0 8px var(--orange-glow);
         }
+
         .edit-modal-close {
             background: rgba(0, 0, 0, 0.5);
             border: 1px solid var(--glass-border);
@@ -1220,14 +1226,17 @@ try {
             align-items: center;
             justify-content: center;
         }
+
         .edit-modal-close:hover {
             background: rgba(255, 140, 0, 0.2);
             border-color: var(--orange-bright);
             transform: scale(1.05);
         }
+
         .edit-form-group {
             margin-bottom: 1.2rem;
         }
+
         .edit-form-label {
             display: block;
             font-size: 0.75rem;
@@ -1237,6 +1246,7 @@ try {
             color: var(--orange-bright);
             margin-bottom: 0.4rem;
         }
+
         .edit-form-input,
         .edit-form-textarea {
             width: 100%;
@@ -1250,24 +1260,29 @@ try {
             transition: all 0.25s ease;
             outline: none;
         }
+
         .edit-form-input:focus,
         .edit-form-textarea:focus {
             border-color: var(--orange-bright);
             box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.15);
             background: var(--input-focus-bg);
         }
+
         .edit-form-textarea {
             resize: vertical;
             min-height: 100px;
         }
+
         .edit-price-wrapper {
             position: relative;
             display: flex;
             align-items: center;
         }
+
         .edit-price-wrapper .edit-form-input {
             padding-right: 3rem;
         }
+
         .edit-price-suffix {
             position: absolute;
             right: 1rem;
@@ -1277,6 +1292,7 @@ try {
             pointer-events: none;
             user-select: none;
         }
+
         .edit-modal .submit-btn {
             margin-top: 0.5rem;
         }
@@ -2398,14 +2414,14 @@ try {
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 6px 24px rgba(255,140,0,0.5);
+            box-shadow: 0 6px 24px rgba(255, 140, 0, 0.5);
             transition: all 0.25s ease;
             text-decoration: none;
         }
 
         .floating-messages-btn:hover {
             transform: scale(1.1) translateY(-2px);
-            box-shadow: 0 10px 32px rgba(255,140,0,0.7);
+            box-shadow: 0 10px 32px rgba(255, 140, 0, 0.7);
         }
 
         .floating-messages-badge {
@@ -2432,7 +2448,7 @@ try {
             position: fixed;
             inset: 0;
             z-index: 6000;
-            background: rgba(0,0,0,0.98);
+            background: rgba(0, 0, 0, 0.98);
             backdrop-filter: blur(16px);
             display: none;
             align-items: center;
@@ -2449,7 +2465,7 @@ try {
         .seller-popup-card {
             width: 100vw;
             height: 100vh;
-            background: rgba(5,5,5,0.99);
+            background: rgba(5, 5, 5, 0.99);
             border: none;
             border-radius: 0;
             padding: 0;
@@ -2474,13 +2490,13 @@ try {
             align-items: center;
             gap: 1rem;
             padding: 0.75rem 1.5rem;
-            background: rgba(5,5,5,0.92);
+            background: rgba(5, 5, 5, 0.92);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--glass-border);
         }
 
         .seller-popup-close {
-            background: rgba(255,140,0,0.1);
+            background: rgba(255, 140, 0, 0.1);
             border: 1px solid var(--glass-border);
             color: var(--orange-bright);
             width: 42px;
@@ -2531,7 +2547,7 @@ try {
             font-weight: 700;
             color: #000;
             margin: 0 auto 1.2rem;
-            box-shadow: 0 0 40px rgba(255,140,0,0.3);
+            box-shadow: 0 0 40px rgba(255, 140, 0, 0.3);
         }
 
         .seller-popup-name {
@@ -2545,7 +2561,7 @@ try {
         .seller-popup-meta {
             text-align: center;
             font-size: 0.88rem;
-            color: rgba(255,255,255,0.4);
+            color: rgba(255, 255, 255, 0.4);
             margin-bottom: 2rem;
         }
 
@@ -2557,8 +2573,8 @@ try {
 
         .seller-stat {
             flex: 1;
-            background: rgba(255,140,0,0.07);
-            border: 1px solid rgba(255,140,0,0.15);
+            background: rgba(255, 140, 0, 0.07);
+            border: 1px solid rgba(255, 140, 0, 0.15);
             border-radius: 16px;
             padding: 1.1rem;
             text-align: center;
@@ -2572,7 +2588,7 @@ try {
 
         .seller-stat-label {
             font-size: 0.78rem;
-            color: rgba(255,255,255,0.4);
+            color: rgba(255, 255, 255, 0.4);
             margin-top: 3px;
         }
 
@@ -2580,7 +2596,7 @@ try {
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: rgba(255,255,255,0.3);
+            color: rgba(255, 255, 255, 0.3);
             margin-bottom: 0.9rem;
         }
 
@@ -2594,16 +2610,16 @@ try {
         .seller-item-thumb {
             border-radius: 14px;
             overflow: hidden;
-            border: 1px solid rgba(255,140,0,0.12);
+            border: 1px solid rgba(255, 140, 0, 0.12);
             cursor: pointer;
             transition: all 0.2s;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0, 0, 0, 0.4);
         }
 
         .seller-item-thumb:hover {
             border-color: var(--orange-bright);
             transform: translateY(-3px);
-            box-shadow: 0 8px 24px rgba(255,140,0,0.2);
+            box-shadow: 0 8px 24px rgba(255, 140, 0, 0.2);
         }
 
         .seller-item-thumb img {
@@ -2616,11 +2632,11 @@ try {
         .seller-item-thumb-placeholder {
             width: 100%;
             height: 110px;
-            background: rgba(255,140,0,0.07);
+            background: rgba(255, 140, 0, 0.07);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(255,140,0,0.35);
+            color: rgba(255, 140, 0, 0.35);
             font-size: 1.8rem;
         }
 
@@ -2633,7 +2649,7 @@ try {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: rgba(255,255,255,0.85);
+            color: rgba(255, 255, 255, 0.85);
         }
 
         .seller-item-price {
@@ -2664,20 +2680,32 @@ try {
 
         .seller-popup-msg-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(255,140,0,0.4);
+            box-shadow: 0 10px 30px rgba(255, 140, 0, 0.4);
         }
 
         .seller-popup-loading {
             text-align: center;
             padding: 4rem 2rem;
-            color: rgba(255,255,255,0.3);
+            color: rgba(255, 255, 255, 0.3);
             font-size: 1rem;
         }
 
-        .item-seller { cursor: pointer; transition: color 0.18s; }
-        .item-seller:hover { color: var(--orange-bright); }
-        .product-seller { cursor: pointer; }
-        .product-seller:hover strong { text-shadow: 0 0 12px var(--orange-glow); }
+        .item-seller {
+            cursor: pointer;
+            transition: color 0.18s;
+        }
+
+        .item-seller:hover {
+            color: var(--orange-bright);
+        }
+
+        .product-seller {
+            cursor: pointer;
+        }
+
+        .product-seller:hover strong {
+            text-shadow: 0 0 12px var(--orange-glow);
+        }
 
         /* =====================
         MOBIL TOP BAR RENDEZÉS
@@ -2970,7 +2998,8 @@ try {
         $unreadStmt = $conn->prepare("SELECT COUNT(*) FROM uzenetek WHERE receiver_id = ? AND is_read = 0");
         $unreadStmt->execute([$_SESSION['user_id']]);
         $unreadMsgCount = (int)$unreadStmt->fetchColumn();
-    } catch (Exception $e) {}
+    } catch (Exception $e) {
+    }
     ?>
     <a href="uzenetek.php" class="floating-messages-btn unselectable" title="Üzenetek">
         💬
@@ -3733,8 +3762,8 @@ try {
         // =============================================
         // SELLER PROFILE POPUP
         // =============================================
-        const sellerOverlay  = document.getElementById('sellerPopupOverlay');
-        const sellerContent  = document.getElementById('sellerPopupContent');
+        const sellerOverlay = document.getElementById('sellerPopupOverlay');
+        const sellerContent = document.getElementById('sellerPopupContent');
         const sellerCloseBtn = document.getElementById('sellerPopupClose');
 
         function openSellerPopup(sellerId) {
@@ -3753,9 +3782,9 @@ try {
                     }
 
                     const currentUserId = <?php echo (int)$_SESSION['user_id']; ?>;
-                    const memberSince   = data.created_at ? data.created_at.substring(0, 10) : '—';
-                    const adminBadge    = parseInt(data.is_admin) ? ' <span style="font-size:0.7rem;background:rgba(255,215,0,0.2);color:#ffd700;border:1px solid rgba(255,215,0,0.4);border-radius:50px;padding:1px 8px;vertical-align:middle;">Admin</span>' : '';
-                    const initial       = data.username ? data.username.charAt(0).toUpperCase() : '?';
+                    const memberSince = data.created_at ? data.created_at.substring(0, 10) : '—';
+                    const adminBadge = parseInt(data.is_admin) ? ' <span style="font-size:0.7rem;background:rgba(255,215,0,0.2);color:#ffd700;border:1px solid rgba(255,215,0,0.4);border-radius:50px;padding:1px 8px;vertical-align:middle;">Admin</span>' : '';
+                    const initial = data.username ? data.username.charAt(0).toUpperCase() : '?';
 
                     // Update topbar title
                     document.querySelector('.seller-popup-topbar-title').textContent = '👤 ' + data.username;
@@ -3765,10 +3794,9 @@ try {
                         itemsHtml = `<div class="seller-popup-items-title">Legutóbbi hirdetések</div>
                         <div class="seller-popup-items-grid">`;
                         data.latest_items.forEach(item => {
-                            const imgHtml = item.thumb
-                                ? `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">`
-                                   `<div class="seller-item-thumb-placeholder" style="display:none;">📷</div>`
-                                : `<div class="seller-item-thumb-placeholder">📷</div>`;
+                            const imgHtml = item.thumb ?
+                                `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">`
+                            `<div class="seller-item-thumb-placeholder" style="display:none;">📷</div>`: `<div class="seller-item-thumb-placeholder">📷</div>`;
                             itemsHtml += `
                                 <div class="seller-item-thumb" onclick="closeSellerPopup(); fetchItemDetails('${escapeHtml(item.id)}');">
                                     ${imgHtml}
@@ -3781,9 +3809,9 @@ try {
                         itemsHtml += '</div>';
                     }
 
-                    const msgBtn = (parseInt(sellerId) !== currentUserId)
-                        ? `<a href="uzenetek.php?with=${encodeURIComponent(sellerId)}" class="seller-popup-msg-btn">💬 Üzenet küldése</a>`
-                        : `<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem 0;">Ez a saját profilod</div>`;
+                    const msgBtn = (parseInt(sellerId) !== currentUserId) ?
+                        `<a href="uzenetek.php?with=${encodeURIComponent(sellerId)}" class="seller-popup-msg-btn">💬 Üzenet küldése</a>` :
+                        `<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem 0;">Ez a saját profilod</div>`;
 
                     sellerContent.innerHTML = `
                         <div class="seller-popup-avatar">${initial}</div>
@@ -3807,11 +3835,15 @@ try {
         function closeSellerPopup() {
             sellerOverlay.classList.remove('active');
             document.body.style.overflow = '';
-            setTimeout(() => { sellerOverlay.style.display = 'none'; }, 300);
+            setTimeout(() => {
+                sellerOverlay.style.display = 'none';
+            }, 300);
         }
 
         sellerCloseBtn.addEventListener('click', closeSellerPopup);
-        sellerOverlay.addEventListener('click', e => { if (e.target === sellerOverlay) closeSellerPopup(); });
+        sellerOverlay.addEventListener('click', e => {
+            if (e.target === sellerOverlay) closeSellerPopup();
+        });
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape' && sellerOverlay.classList.contains('active')) closeSellerPopup();
         });

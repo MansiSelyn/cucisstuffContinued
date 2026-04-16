@@ -1,200 +1,230 @@
 /* ── LIGHT THEME (Green) ── */
 :root {
-/* Zöld paletta a #B0CB1F köré */
---orange-bright: #7a9200;
---orange-mid: #B0CB1F;
---orange-deep: #8aA000;
---orange-glow: rgba(176, 203, 31, 0.45);
---orange-subtle: rgba(176, 203, 31, 0.10);
---glass-bg: rgba(248, 252, 230, 0.90);
---glass-border: rgba(140, 170, 10, 0.30);
---glass-shine: rgba(255, 255, 255, 0.75);
---text-primary: #1a1f00;
---text-muted: #6a7a20;
---input-bg: rgba(245, 252, 215, 0.95);
---shadow-orange: 0 0 40px rgba(176, 203, 31, 0.15);
---shadow-deep: 0 30px 80px rgba(0, 0, 0, 0.10);
---body-bg: #d8e0b0;
---scrollbar-track: #e8f0c0;
---scrollbar-thumb: rgba(140, 170, 10, 0.35);
---scrollbar-thumb-hover: rgba(140, 170, 10, 0.6);
---placeholder-color: #9aaa50;
---input-focus-bg: rgba(242, 252, 200, 1);
---status-bg-from: rgba(244, 252, 220, 0.98);
---status-bg-to: rgba(234, 248, 195, 0.95);
+    /* Zöld paletta a #B0CB1F köré */
+    --orange-bright: #7a9200;
+    --orange-mid: #B0CB1F;
+    --orange-deep: #8aA000;
+    --orange-glow: rgba(176, 203, 31, 0.45);
+    --orange-subtle: rgba(176, 203, 31, 0.10);
+    --glass-bg: rgba(248, 252, 230, 0.90);
+    --glass-border: rgba(140, 170, 10, 0.30);
+    --glass-shine: rgba(255, 255, 255, 0.75);
+    --text-primary: #1a1f00;
+    --text-muted: #6a7a20;
+    --input-bg: rgba(245, 252, 215, 0.95);
+    --shadow-orange: 0 0 40px rgba(176, 203, 31, 0.15);
+    --shadow-deep: 0 30px 80px rgba(0, 0, 0, 0.10);
+    --body-bg: #d8e0b0;
+    --scrollbar-track: #e8f0c0;
+    --scrollbar-thumb: rgba(140, 170, 10, 0.35);
+    --scrollbar-thumb-hover: rgba(140, 170, 10, 0.6);
+    --placeholder-color: #9aaa50;
+    --input-focus-bg: rgba(242, 252, 200, 1);
+    --status-bg-from: rgba(244, 252, 220, 0.98);
+    --status-bg-to: rgba(234, 248, 195, 0.95);
 }
+
 /* Base light green gradient */
 body::before {
-background:
-radial-gradient(ellipse 80% 60% at 18% 12%, rgba(200, 230, 60, 0.35) 0%, transparent 55%),
-radial-gradient(ellipse 60% 50% at 85% 80%, rgba(160, 200, 20, 0.20) 0%, transparent 50%),
-radial-gradient(ellipse 100% 100% at 50% 50%, #d8e0b0 0%, #c8d0a0 100%);
+    background:
+        radial-gradient(ellipse 80% 60% at 18% 12%, rgba(200, 230, 60, 0.35) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 50% at 85% 80%, rgba(160, 200, 20, 0.20) 0%, transparent 50%),
+        radial-gradient(ellipse 100% 100% at 50% 50%, #d8e0b0 0%, #c8d0a0 100%);
 }
+
 body::after {
-background:
-radial-gradient(ellipse 500px 300px at 15% 10%, rgba(176, 203, 31, 0.12) 0%, transparent 70%),
-radial-gradient(ellipse 400px 400px at 90% 90%, rgba(140, 180, 10, 0.09) 0%, transparent 60%),
-radial-gradient(ellipse 300px 200px at 50% 0%, rgba(200, 220, 50, 0.08) 0%, transparent 60%);
+    background:
+        radial-gradient(ellipse 500px 300px at 15% 10%, rgba(176, 203, 31, 0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 400px at 90% 90%, rgba(140, 180, 10, 0.09) 0%, transparent 60%),
+        radial-gradient(ellipse 300px 200px at 50% 0%, rgba(200, 220, 50, 0.08) 0%, transparent 60%);
 }
+
 /* Orbs */
 .orb-1 {
-background: radial-gradient(circle, rgba(176, 203, 31, 0.20) 0%, rgba(140, 180, 10, 0.06) 45%, transparent 70%);
+    background: radial-gradient(circle, rgba(176, 203, 31, 0.20) 0%, rgba(140, 180, 10, 0.06) 45%, transparent 70%);
 }
+
 .orb-2 {
-background: radial-gradient(circle, rgba(160, 200, 20, 0.15) 0%, rgba(100, 140, 5, 0.04) 50%, transparent 70%);
+    background: radial-gradient(circle, rgba(160, 200, 20, 0.15) 0%, rgba(100, 140, 5, 0.04) 50%, transparent 70%);
 }
+
 /* Status bar */
 .login-status {
-background: linear-gradient(180deg, var(--status-bg-from) 0%, var(--status-bg-to) 100%);
-border-bottom: 1px solid rgba(140, 170, 10, 0.28);
-box-shadow:
-0 1px 0 rgba(255, 255, 255, 0.85) inset,
-0 4px 30px rgba(0, 0, 0, 0.05),
-0 0 60px rgba(176, 203, 31, 0.05);
-color: var(--orange-bright) !important;
-text-shadow: none !important;
+    background: linear-gradient(180deg, var(--status-bg-from) 0%, var(--status-bg-to) 100%);
+    border-bottom: 1px solid rgba(140, 170, 10, 0.28);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.85) inset,
+        0 4px 30px rgba(0, 0, 0, 0.05),
+        0 0 60px rgba(176, 203, 31, 0.05);
+    color: var(--orange-bright) !important;
+    text-shadow: none !important;
 }
+
 /* Form (csak index.php login/register form) */
 #loginForm,
 #registerForm {
-background: var(--glass-bg);
-border: 1px solid var(--glass-border);
-box-shadow:
-var(--shadow-deep),
-var(--shadow-orange),
-0 0 0 1px rgba(255, 255, 255, 0.65) inset,
-0 1px 0 rgba(255, 255, 255, 0.9) inset;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+        var(--shadow-deep),
+        var(--shadow-orange),
+        0 0 0 1px rgba(255, 255, 255, 0.65) inset,
+        0 1px 0 rgba(255, 255, 255, 0.9) inset;
 }
+
 #loginForm::before,
 #registerForm::before {
-background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), rgba(210, 240, 100, 0.4), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), rgba(210, 240, 100, 0.4), transparent);
 }
+
 #loginForm::after,
 #registerForm::after {
-background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(176, 203, 31, 0.07) 0%, transparent 60%);
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(176, 203, 31, 0.07) 0%, transparent 60%);
 }
+
 /* Input (csak index.php login/register form) */
 #loginForm input,
 #registerForm input {
-background: var(--input-bg);
-color: var(--text-primary);
-border: 1px solid rgba(140, 170, 10, 0.22);
-box-shadow:
-0 4px 16px rgba(0, 0, 0, 0.05),
-0 1px 0 rgba(255, 255, 255, 0.95) inset,
-0 -1px 0 rgba(0, 0, 0, 0.03) inset;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid rgba(140, 170, 10, 0.22);
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.05),
+        0 1px 0 rgba(255, 255, 255, 0.95) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.03) inset;
 }
+
 #loginForm input:focus,
 #registerForm input:focus {
-border-color: rgba(140, 170, 10, 0.55);
-background: var(--input-focus-bg);
-box-shadow:
-0 0 0 3px rgba(176, 203, 31, 0.15),
-0 0 20px rgba(176, 203, 31, 0.12),
-0 4px 16px rgba(0, 0, 0, 0.05),
-0 1px 0 rgba(255, 255, 255, 0.9) inset;
-color: #1a1f00;
+    border-color: rgba(140, 170, 10, 0.55);
+    background: var(--input-focus-bg);
+    box-shadow:
+        0 0 0 3px rgba(176, 203, 31, 0.15),
+        0 0 20px rgba(176, 203, 31, 0.12),
+        0 4px 16px rgba(0, 0, 0, 0.05),
+        0 1px 0 rgba(255, 255, 255, 0.9) inset;
+    color: #1a1f00;
 }
+
 #loginForm input::placeholder,
 #registerForm input::placeholder {
-color: var(--placeholder-color);
+    color: var(--placeholder-color);
 }
+
 /* Submit button (csak index.php login/register form) */
 #loginForm button[type="submit"],
 #registerForm button[type="submit"] {
-background: linear-gradient(180deg, #d4e840 0%, #B0CB1F 50%, #8aA000 100%);
-color: #1a1f00;
-box-shadow:
-0 8px 0 #607000,
-0 12px 30px rgba(0, 0, 0, 0.14),
-0 0 0 1px rgba(220, 255, 80, 0.35) inset,
-0 1px 0 rgba(240, 255, 150, 0.5) inset;
-text-shadow: 0 1px 0 rgba(200, 230, 60, 0.3);
+    background: linear-gradient(180deg, #d4e840 0%, #B0CB1F 50%, #8aA000 100%);
+    color: #1a1f00;
+    box-shadow:
+        0 8px 0 #607000,
+        0 12px 30px rgba(0, 0, 0, 0.14),
+        0 0 0 1px rgba(220, 255, 80, 0.35) inset,
+        0 1px 0 rgba(240, 255, 150, 0.5) inset;
+    text-shadow: 0 1px 0 rgba(200, 230, 60, 0.3);
 }
+
 #loginForm button[type="submit"]:hover,
 #registerForm button[type="submit"]:hover {
-background: linear-gradient(180deg, #e0f050 0%, #c4df25 50%, #9ab800 100%);
-box-shadow:
-0 10px 0 #607000,
-0 15px 40px rgba(0, 0, 0, 0.18),
-0 0 30px rgba(176, 203, 31, 0.25),
-0 0 0 1px rgba(220, 255, 80, 0.4) inset;
+    background: linear-gradient(180deg, #e0f050 0%, #c4df25 50%, #9ab800 100%);
+    box-shadow:
+        0 10px 0 #607000,
+        0 15px 40px rgba(0, 0, 0, 0.18),
+        0 0 30px rgba(176, 203, 31, 0.25),
+        0 0 0 1px rgba(220, 255, 80, 0.4) inset;
 }
+
 #loginForm button[type="submit"]:active,
 #registerForm button[type="submit"]:active {
-box-shadow:
-0 2px 0 #607000,
-0 8px 20px rgba(0, 0, 0, 0.12);
+    box-shadow:
+        0 2px 0 #607000,
+        0 8px 20px rgba(0, 0, 0, 0.12);
 }
+
 /* Ghost button (csak index.php login/register form) */
 #loginForm button[type="button"],
 #registerForm button[type="button"] {
-background: rgba(240, 252, 200, 0.55);
-color: var(--orange-bright);
-border: 1px solid rgba(140, 170, 10, 0.32);
-box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-text-shadow: none;
+    background: rgba(240, 252, 200, 0.55);
+    color: var(--orange-bright);
+    border: 1px solid rgba(140, 170, 10, 0.32);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    text-shadow: none;
 }
+
 #loginForm button[type="button"]:hover,
 #registerForm button[type="button"]:hover {
-background: rgba(210, 240, 100, 0.35);
-border-color: rgba(140, 170, 10, 0.55);
-color: #507000;
-box-shadow:
-0 0 20px rgba(176, 203, 31, 0.14),
-0 0 0 1px rgba(176, 203, 31, 0.14) inset;
-text-shadow: none;
+    background: rgba(210, 240, 100, 0.35);
+    border-color: rgba(140, 170, 10, 0.55);
+    color: #507000;
+    box-shadow:
+        0 0 20px rgba(176, 203, 31, 0.14),
+        0 0 0 1px rgba(176, 203, 31, 0.14) inset;
+    text-shadow: none;
 }
+
 /* Theme toggle icon (index.php) */
 #themeToggle .icon-sun {
-display: none;
+    display: none;
 }
+
 #themeToggle .icon-moon {
-display: inline;
+    display: inline;
 }
+
 /* ── MAIN.PHP LIGHT OVERRIDES ── */
 body[data-theme="light"] {
-background: #d8e0b0 !important;
-color: #1a1f00 !important;
+    background: #d8e0b0 !important;
+    color: #1a1f00 !important;
 }
+
 body[data-theme="light"]::before {
-background:
-radial-gradient(ellipse 80% 60% at 18% 12%, rgba(200, 230, 60, 0.30) 0%, transparent 55%),
-radial-gradient(ellipse 60% 50% at 85% 80%, rgba(160, 200, 20, 0.18) 0%, transparent 50%),
-radial-gradient(ellipse 100% 100% at 50% 50%, #d8e0b0 0%, #c8d0a0 100%) !important;
+    background:
+        radial-gradient(ellipse 80% 60% at 18% 12%, rgba(200, 230, 60, 0.30) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 50% at 85% 80%, rgba(160, 200, 20, 0.18) 0%, transparent 50%),
+        radial-gradient(ellipse 100% 100% at 50% 50%, #d8e0b0 0%, #c8d0a0 100%) !important;
 }
+
 body[data-theme="light"] .orb-1 {
-background: radial-gradient(circle, rgba(176, 203, 31, 0.22) 0%, rgba(140, 180, 10, 0.06) 45%, transparent 70%) !important;
+    background: radial-gradient(circle, rgba(176, 203, 31, 0.22) 0%, rgba(140, 180, 10, 0.06) 45%, transparent 70%) !important;
 }
+
 body[data-theme="light"] .orb-2 {
-background: radial-gradient(circle, rgba(160, 200, 20, 0.16) 0%, rgba(100, 140, 5, 0.04) 50%, transparent 70%) !important;
+    background: radial-gradient(circle, rgba(160, 200, 20, 0.16) 0%, rgba(100, 140, 5, 0.04) 50%, transparent 70%) !important;
 }
+
 body[data-theme="light"] .account-summary {
-border-color: rgba(140, 170, 10, 0.38);
-background: rgba(240, 252, 200, 0.80);
-color: #7a9200;
+    border-color: rgba(140, 170, 10, 0.38);
+    background: rgba(240, 252, 200, 0.80);
+    color: #7a9200;
 }
+
 body[data-theme="light"] .account-summary:hover {
-background: rgba(210, 240, 100, 0.40);
-border-color: #B0CB1F;
+    background: rgba(210, 240, 100, 0.40);
+    border-color: #B0CB1F;
 }
+
 body[data-theme="light"] .account-dropdown {
-background: rgba(244, 252, 220, 0.97);
-border-color: rgba(140, 170, 10, 0.28);
-box-shadow: 0 10px 40px rgba(0, 0, 0, 0.09), 0 0 20px rgba(176, 203, 31, 0.12);
+    background: rgba(244, 252, 220, 0.97);
+    border-color: rgba(140, 170, 10, 0.28);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.09), 0 0 20px rgba(176, 203, 31, 0.12);
 }
+
 body[data-theme="light"] .user-info {
-color: #1a1f00;
+    color: #1a1f00;
 }
+
 body[data-theme="light"] .user-info strong {
-color: #7a9200;
+    color: #7a9200;
 }
+
 body[data-theme="light"] .dropdown-divider {
-background: linear-gradient(90deg, transparent, #B0CB1F, transparent);
+    background: linear-gradient(90deg, transparent, #B0CB1F, transparent);
 }
+
 body[data-theme="light"] .logout-button {
-color: #1a1f00;
+    color: #1a1f00;
 }
+
 /* LOGOUT GOMB RÉSZLETES HOVER HATÁSA - DARK MÓD MINTÁJÁRA */
 body[data-theme="light"] .logout-button span {
     display: block;
@@ -235,157 +265,194 @@ body[data-theme="light"] .logout-button span:hover::before {
     width: 200px;
     height: 200px;
 }
+
 body[data-theme="light"] .theme-toggle-row {
-color: #1a1f00;
+    color: #1a1f00;
 }
+
 body[data-theme="light"] .theme-toggle-label {
-opacity: 0.85;
+    opacity: 0.85;
 }
+
 body[data-theme="light"] .upload-btn {
-background: rgba(176, 203, 31, 0.18);
-border-color: rgba(140, 170, 10, 0.38);
-color: #7a9200;
+    background: rgba(176, 203, 31, 0.18);
+    border-color: rgba(140, 170, 10, 0.38);
+    color: #7a9200;
 }
+
 body[data-theme="light"] .upload-btn:hover {
-background: rgba(176, 203, 31, 0.32);
-border-color: #B0CB1F;
-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 0 16px rgba(176, 203, 31, 0.30);
+    background: rgba(176, 203, 31, 0.32);
+    border-color: #B0CB1F;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 0 16px rgba(176, 203, 31, 0.30);
 }
+
 body[data-theme="light"] .admin-btn {
-background: rgba(255, 215, 0, 0.16);
-border-color: rgba(200, 170, 0, 0.32);
-color: #9a7a00;
+    background: rgba(255, 215, 0, 0.16);
+    border-color: rgba(200, 170, 0, 0.32);
+    color: #9a7a00;
 }
+
 body[data-theme="light"] .admin-btn:hover {
-background: rgba(255, 215, 0, 0.30);
-border-color: #d4a800;
-color: #7a5a00;
+    background: rgba(255, 215, 0, 0.30);
+    border-color: #d4a800;
+    color: #7a5a00;
 }
+
 body[data-theme="light"] .item-card {
-background: rgba(240, 252, 200, 0.70);
-border-color: rgba(140, 170, 10, 0.22);
-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06), 0 0 20px rgba(176, 203, 31, 0.08);
-color: #1a1f00;
+    background: rgba(240, 252, 200, 0.70);
+    border-color: rgba(140, 170, 10, 0.22);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06), 0 0 20px rgba(176, 203, 31, 0.08);
+    color: #1a1f00;
 }
+
 body[data-theme="light"] .item-card:hover {
-border-color: #B0CB1F;
-box-shadow: 0 12px 35px rgba(0, 0, 0, 0.10), 0 0 32px rgba(176, 203, 31, 0.20);
+    border-color: #B0CB1F;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.10), 0 0 32px rgba(176, 203, 31, 0.20);
 }
+
 body[data-theme="light"] .item-title,
 body[data-theme="light"] .item-price {
-color: #7a9200;
-text-shadow: none;
+    color: #7a9200;
+    text-shadow: none;
 }
+
 body[data-theme="light"] .item-seller,
 body[data-theme="light"] .item-date {
-color: #3a4a00;
+    color: #3a4a00;
 }
+
 body[data-theme="light"] .item-image {
-border-color: rgba(140, 170, 10, 0.20);
+    border-color: rgba(140, 170, 10, 0.20);
 }
+
 /* Nincs kép placeholder világos módban */
 body[data-theme="light"] .item-image-placeholder {
-background: rgba(240, 252, 200, 0.7) !important;
-border: 1px solid rgba(140, 170, 10, 0.4) !important;
-display: flex;
-align-items: center;
-justify-content: center;
+    background: rgba(240, 252, 200, 0.7) !important;
+    border: 1px solid rgba(140, 170, 10, 0.4) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
 body[data-theme="light"] .item-image-placeholder .placeholder-text {
-color: #7a9200 !important;
-opacity: 0.9;
+    color: #7a9200 !important;
+    opacity: 0.9;
 }
+
 body[data-theme="light"] .image-count-badge {
-background: rgba(240, 252, 200, 0.92);
-border-color: rgba(140, 170, 10, 0.30);
-color: #7a9200;
+    background: rgba(240, 252, 200, 0.92);
+    border-color: rgba(140, 170, 10, 0.30);
+    color: #7a9200;
 }
+
 body[data-theme="light"] .card-menu-button {
-color: #7a9200;
+    color: #7a9200;
 }
+
 body[data-theme="light"] .card-menu-button:hover {
-color: #4a6000;
+    color: #4a6000;
 }
+
 body[data-theme="light"] .card-menu-content {
-background: rgba(244, 252, 220, 0.98);
-border-color: rgba(140, 170, 10, 0.25);
+    background: rgba(244, 252, 220, 0.98);
+    border-color: rgba(140, 170, 10, 0.25);
 }
+
 body[data-theme="light"] .card-menu-item {
-color: #1a1f00;
+    color: #1a1f00;
 }
+
 body[data-theme="light"] .card-menu-item:hover {
-background: rgba(176, 203, 31, 0.18);
-color: #7a9200;
+    background: rgba(176, 203, 31, 0.18);
+    color: #7a9200;
 }
+
 /* Card menu delete button hover - LIGHT MODE */
 body[data-theme="light"] .card-menu-item.delete {
     color: #d32f2f !important;
 }
+
 body[data-theme="light"] .card-menu-item.delete:hover {
     background: rgba(255, 80, 80, 0.15) !important;
     color: #c62828 !important;
 }
+
 body[data-theme="light"] .pagination-container {
-background: rgba(240, 252, 200, 0.88);
-border-color: rgba(140, 170, 10, 0.25);
+    background: rgba(240, 252, 200, 0.88);
+    border-color: rgba(140, 170, 10, 0.25);
 }
+
 body[data-theme="light"] .pagination-btn {
-background: rgba(176, 203, 31, 0.13);
-border-color: rgba(140, 170, 10, 0.25);
-color: #1a1f00;
+    background: rgba(176, 203, 31, 0.13);
+    border-color: rgba(140, 170, 10, 0.25);
+    color: #1a1f00;
 }
+
 body[data-theme="light"] .pagination-btn:hover {
-background: rgba(176, 203, 31, 0.26);
-color: #7a9200;
+    background: rgba(176, 203, 31, 0.26);
+    color: #7a9200;
 }
+
 body[data-theme="light"] .modal-card {
-background: rgba(244, 252, 220, 0.97);
-border-color: rgba(140, 170, 10, 0.40);
-box-shadow: 0 20px 60px rgba(0, 0, 0, 0.10), 0 0 40px rgba(176, 203, 31, 0.15);
-color: #1a1f00;
+    background: rgba(244, 252, 220, 0.97);
+    border-color: rgba(140, 170, 10, 0.40);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.10), 0 0 40px rgba(176, 203, 31, 0.15);
+    color: #1a1f00;
 }
+
 body[data-theme="light"] .modal-title,
 body[data-theme="light"] .modal-subtitle {
-color: #7a9200;
+    color: #7a9200;
 }
+
 /* Upload modal bezáró gomb */
 body[data-theme="light"] .modal-close {
-color: #7a9200;
+    color: #7a9200;
 }
+
 body[data-theme="light"] .modal-close:hover {
-color: #1a1f00;
-background: rgba(176, 203, 31, 0.2);
+    color: #1a1f00;
+    background: rgba(176, 203, 31, 0.2);
 }
+
 body[data-theme="light"] .form-label {
-color: #6a7a20;
+    color: #6a7a20;
 }
+
 /* REPORT MODAL - LIGHT THEME - TELJES JAVÍTÁS */
 body[data-theme="light"] .report-modal-content {
-background: rgba(244, 252, 220, 0.97);
-border-color: #B0CB1F;
-color: #1a1f00;
+    background: rgba(244, 252, 220, 0.97);
+    border-color: #B0CB1F;
+    color: #1a1f00;
 }
+
 body[data-theme="light"] .report-modal-title {
-color: #7a9200;
+    color: #7a9200;
 }
+
 body[data-theme="light"] .report-form-label {
-color: #1a1f00;
+    color: #1a1f00;
 }
+
 body[data-theme="light"] .report-form-textarea {
-background: rgba(240, 252, 200, 0.80);
-border-color: rgba(140, 170, 10, 0.28);
-color: #1a1f00;
+    background: rgba(240, 252, 200, 0.80);
+    border-color: rgba(140, 170, 10, 0.28);
+    color: #1a1f00;
 }
+
 body[data-theme="light"] .report-form-textarea:focus {
-border-color: #B0CB1F;
+    border-color: #B0CB1F;
 }
+
 body[data-theme="light"] .report-submit-btn {
-background: linear-gradient(135deg, #B0CB1F, #8aA000);
-color: #1a1f00;
+    background: linear-gradient(135deg, #B0CB1F, #8aA000);
+    color: #1a1f00;
 }
+
 body[data-theme="light"] .report-submit-btn:hover {
-box-shadow: 0 5px 20px rgba(176, 203, 31, 0.40);
+    box-shadow: 0 5px 20px rgba(176, 203, 31, 0.40);
 }
+
 /* Report modal bezáró gomb - LIGHT MODE JAVÍTÁS */
 body[data-theme="light"] .report-modal-close {
     background: rgba(176, 203, 31, 0.15);
@@ -401,272 +468,330 @@ body[data-theme="light"] .report-modal-close {
     cursor: pointer;
     transition: all 0.2s ease;
 }
+
 body[data-theme="light"] .report-modal-close:hover {
     background: #B0CB1F;
     color: #1a1f00;
     transform: scale(1.05);
     box-shadow: 0 0 12px rgba(176, 203, 31, 0.5);
 }
+
 /* ============================================
 PRODUCT MODAL - LIGHT THEME
 ============================================ */
 body[data-theme="light"] .product-modal-overlay {
-background: rgba(220, 230, 180, 0.98) !important;
+    background: rgba(220, 230, 180, 0.98) !important;
 }
+
 body[data-theme="light"] .product-modal-card {
-background: rgba(240, 248, 210, 0.98) !important;
-border-color: rgba(140, 170, 10, 0.3) !important;
+    background: rgba(240, 248, 210, 0.98) !important;
+    border-color: rgba(140, 170, 10, 0.3) !important;
 }
+
 /* Product modal bezáró gomb */
 body[data-theme="light"] .product-modal-close {
-background: rgba(176, 203, 31, 0.2);
-border-color: #B0CB1F;
-color: #7a9200;
+    background: rgba(176, 203, 31, 0.2);
+    border-color: #B0CB1F;
+    color: #7a9200;
 }
+
 body[data-theme="light"] .product-modal-close:hover {
-background: #B0CB1F;
-color: #1a1f00;
+    background: #B0CB1F;
+    color: #1a1f00;
 }
+
 /* Product galéria */
 body[data-theme="light"] .product-gallery {
-background: rgba(240, 248, 210, 0.8) !important;
+    background: rgba(240, 248, 210, 0.8) !important;
 }
+
 body[data-theme="light"] .product-main-image-container {
-background: #f0f5d8 !important;
-border-color: rgba(140, 170, 10, 0.3) !important;
+    background: #f0f5d8 !important;
+    border-color: rgba(140, 170, 10, 0.3) !important;
 }
+
 body[data-theme="light"] .product-details {
-background: rgba(240, 248, 210, 0.95) !important;
-border-color: rgba(140, 170, 10, 0.2) !important;
+    background: rgba(240, 248, 210, 0.95) !important;
+    border-color: rgba(140, 170, 10, 0.2) !important;
 }
+
 body[data-theme="light"] .product-title {
-color: #7a9200 !important;
+    color: #7a9200 !important;
 }
+
 body[data-theme="light"] .product-price {
-color: #7a9200 !important;
-text-shadow: 0 0 30px rgba(176, 203, 31, 0.45) !important;
+    color: #7a9200 !important;
+    text-shadow: 0 0 30px rgba(176, 203, 31, 0.45) !important;
 }
+
 /* Eladó szövegének színezése */
 body[data-theme="light"] .product-seller {
-color: #7a9200 !important;
+    color: #7a9200 !important;
 }
+
 body[data-theme="light"] .product-seller strong {
-color: #1a1f00 !important;
+    color: #1a1f00 !important;
 }
+
 body[data-theme="light"] .product-date {
-color: #6a7a20 !important;
+    color: #6a7a20 !important;
 }
+
 body[data-theme="light"] .product-description {
-background: rgba(255, 255, 255, 0.8) !important;
-color: #1a1f00 !important;
-border-color: rgba(140, 170, 10, 0.2) !important;
+    background: rgba(255, 255, 255, 0.8) !important;
+    color: #1a1f00 !important;
+    border-color: rgba(140, 170, 10, 0.2) !important;
 }
+
 body[data-theme="light"] .product-buy-btn {
-background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
-color: #1a1f00 !important;
+    background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
+    color: #1a1f00 !important;
 }
+
 body[data-theme="light"] .product-buy-btn:hover {
-box-shadow: 0 10px 30px rgba(176, 203, 31, 0.4) !important;
+    box-shadow: 0 10px 30px rgba(176, 203, 31, 0.4) !important;
 }
+
 body[data-theme="light"] .product-thumbnail {
-border-color: transparent;
+    border-color: transparent;
 }
+
 body[data-theme="light"] .product-thumbnail.active {
-border-color: #B0CB1F !important;
-box-shadow: 0 0 20px rgba(176, 203, 31, 0.3) !important;
+    border-color: #B0CB1F !important;
+    box-shadow: 0 0 20px rgba(176, 203, 31, 0.3) !important;
 }
+
 body[data-theme="light"] .product-thumbnail img {
-border: 1px solid rgba(140, 170, 10, 0.2);
+    border: 1px solid rgba(140, 170, 10, 0.2);
 }
+
 body[data-theme="light"] .gallery-nav {
-background: rgba(240, 248, 210, 0.9) !important;
-border-color: #B0CB1F !important;
-color: #7a9200 !important;
+    background: rgba(240, 248, 210, 0.9) !important;
+    border-color: #B0CB1F !important;
+    color: #7a9200 !important;
 }
+
 body[data-theme="light"] .gallery-nav:hover {
-background: #B0CB1F !important;
-color: #1a1f00 !important;
-transform: translateY(-50%) scale(1.1);
+    background: #B0CB1F !important;
+    color: #1a1f00 !important;
+    transform: translateY(-50%) scale(1.1);
 }
+
 body[data-theme="light"] .product-menu-button {
-background: rgba(240, 248, 210, 0.9) !important;
-border-color: #B0CB1F !important;
-color: #7a9200 !important;
+    background: rgba(240, 248, 210, 0.9) !important;
+    border-color: #B0CB1F !important;
+    color: #7a9200 !important;
 }
+
 body[data-theme="light"] .product-menu-button:hover {
-background: #B0CB1F !important;
-color: #1a1f00 !important;
+    background: #B0CB1F !important;
+    color: #1a1f00 !important;
 }
+
 body[data-theme="light"] .product-menu-content {
-background: rgba(244, 252, 220, 0.98) !important;
-border-color: rgba(140, 170, 10, 0.3) !important;
-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 30px rgba(176, 203, 31, 0.15) !important;
+    background: rgba(244, 252, 220, 0.98) !important;
+    border-color: rgba(140, 170, 10, 0.3) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 30px rgba(176, 203, 31, 0.15) !important;
 }
+
 body[data-theme="light"] .product-menu-item {
-color: #1a1f00 !important;
+    color: #1a1f00 !important;
 }
+
 body[data-theme="light"] .product-menu-item:hover {
-background: rgba(176, 203, 31, 0.2) !important;
-color: #7a9200 !important;
+    background: rgba(176, 203, 31, 0.2) !important;
+    color: #7a9200 !important;
 }
+
 body[data-theme="light"] .product-menu-item.delete:hover {
-background: rgba(255, 80, 80, 0.15) !important;
-color: #d32f2f !important;
+    background: rgba(255, 80, 80, 0.15) !important;
+    color: #d32f2f !important;
 }
+
 /* ============================================
 LIGHTBOX - LIGHT THEME
 ============================================ */
 body[data-theme="light"] .lightbox-overlay {
-background: rgba(220, 230, 180, 0.98) !important;
+    background: rgba(220, 230, 180, 0.98) !important;
 }
+
 body[data-theme="light"] .lightbox-image {
-border-color: #B0CB1F !important;
+    border-color: #B0CB1F !important;
 }
+
 body[data-theme="light"] .lightbox-close {
-background: rgba(240, 248, 210, 0.9) !important;
-border-color: #B0CB1F !important;
-color: #7a9200 !important;
+    background: rgba(240, 248, 210, 0.9) !important;
+    border-color: #B0CB1F !important;
+    color: #7a9200 !important;
 }
+
 body[data-theme="light"] .lightbox-close:hover {
-background: #B0CB1F !important;
-color: #1a1f00 !important;
-transform: scale(1.1);
+    background: #B0CB1F !important;
+    color: #1a1f00 !important;
+    transform: scale(1.1);
 }
+
 /* ============================================
 H1 TEXT-SHADOW OVERRIDE - LIGHT THEME (zöld glow)
 SZÍN JAVÍTÁS
 ============================================ */
 body[data-theme="light"] h1 {
-color: #7a9200 !important;  /* Zöld szín a light módban */
-text-shadow:
-0 0 10px rgba(176, 203, 31, 0.6),
-0 0 30px rgba(140, 180, 10, 0.3),
-0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    color: #7a9200 !important;
+    /* Zöld szín a light módban */
+    text-shadow:
+        0 0 10px rgba(176, 203, 31, 0.6),
+        0 0 30px rgba(140, 180, 10, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
 }
+
 /* ============================================
 SCROLLBAR - LIGHT THEME (EGYSZERŰSÍTVE)
 ============================================ */
 body[data-theme="light"] ::-webkit-scrollbar-track {
-background: #e8f0c0;
+    background: #e8f0c0;
 }
+
 body[data-theme="light"] ::-webkit-scrollbar-thumb {
-background: rgba(140, 170, 10, 0.35);
+    background: rgba(140, 170, 10, 0.35);
 }
+
 body[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-background: rgba(140, 170, 10, 0.6);
+    background: rgba(140, 170, 10, 0.6);
 }
+
 /* ============================================
 SELECTION OVERRIDE - LIGHT THEME (zöld kijelölés)
 ============================================ */
 body[data-theme="light"] ::selection {
-background: rgba(176, 203, 31, 0.35);
-color: #fff;
+    background: rgba(176, 203, 31, 0.35);
+    color: #fff;
 }
+
 /* ============================================
 UPLOAD MODAL FORM - LIGHT THEME
 ============================================ */
 /* Required csillag */
 body[data-theme="light"] .form-label .required-star {
-color: #7a9200;
+    color: #7a9200;
 }
+
 /* Form input / textarea alapállapot */
 body[data-theme="light"] .form-input,
 body[data-theme="light"] .form-textarea {
-background: rgba(245, 252, 215, 0.95);
-border-color: rgba(140, 170, 10, 0.22);
-color: #1a1f00;
+    background: rgba(245, 252, 215, 0.95);
+    border-color: rgba(140, 170, 10, 0.22);
+    color: #1a1f00;
 }
+
 body[data-theme="light"] .form-input::placeholder,
 body[data-theme="light"] .form-textarea::placeholder {
-color: #9aaa50;
+    color: #9aaa50;
 }
+
 /* Fókusz: zöld border + glow */
 body[data-theme="light"] .form-input:focus,
 body[data-theme="light"] .form-textarea:focus {
-border-color: #B0CB1F;
-background: rgba(242, 252, 200, 1);
-box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.18);
+    border-color: #B0CB1F;
+    background: rgba(242, 252, 200, 1);
+    box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.18);
 }
+
 /* "Ft" suffix */
 body[data-theme="light"] .price-suffix {
-color: #7a9200;
-opacity: 0.85;
+    color: #7a9200;
+    opacity: 0.85;
 }
+
 /* Hirdetés feladása gomb */
 body[data-theme="light"] .submit-btn {
-background: linear-gradient(135deg, #B0CB1F, #8aA000);
-color: #1a1f00;
-box-shadow: 0 4px 20px rgba(176, 203, 31, 0.25);
+    background: linear-gradient(135deg, #B0CB1F, #8aA000);
+    color: #1a1f00;
+    box-shadow: 0 4px 20px rgba(176, 203, 31, 0.25);
 }
+
 body[data-theme="light"] .submit-btn:hover {
-background: linear-gradient(135deg, #c4df25, #9ab800);
-box-shadow: 0 6px 28px rgba(176, 203, 31, 0.45);
+    background: linear-gradient(135deg, #c4df25, #9ab800);
+    box-shadow: 0 6px 28px rgba(176, 203, 31, 0.45);
 }
+
 /* Képfeltöltő konténer */
 body[data-theme="light"] .image-upload-container {
-background: rgba(240, 252, 200, 0.5);
-border: 2px dashed rgba(140, 170, 10, 0.5) !important;
+    background: rgba(240, 252, 200, 0.5);
+    border: 2px dashed rgba(140, 170, 10, 0.5) !important;
 }
+
 body[data-theme="light"] .image-upload-container:hover {
-border-color: #B0CB1F !important;
-background: rgba(176, 203, 31, 0.08);
+    border-color: #B0CB1F !important;
+    background: rgba(176, 203, 31, 0.08);
 }
+
 body[data-theme="light"] .image-upload-label {
-color: rgba(26, 31, 0, 0.6);
+    color: rgba(26, 31, 0, 0.6);
 }
+
 body[data-theme="light"] .image-upload-icon {
-color: #7a9200;
+    color: #7a9200;
 }
+
 /* Kép preview border */
 body[data-theme="light"] .image-preview-item {
-border-color: rgba(140, 170, 10, 0.3);
+    border-color: rgba(140, 170, 10, 0.3);
 }
+
 /* Kép előnézet törlőgomb (×) - LIGHT MODE ZÖLD */
 body[data-theme="light"] .image-preview-remove {
     background: rgba(176, 203, 31, 0.2);
     border: 1px solid #B0CB1F;
     color: #1a1f00;
 }
+
 body[data-theme="light"] .image-preview-remove:hover {
     background: #B0CB1F;
     color: #1a1f00;
     box-shadow: 0 0 8px rgba(176, 203, 31, 0.5);
 }
+
 /* "Főkép" jelvény (primary-badge) - LIGHT MODE ZÖLD */
 body[data-theme="light"] .primary-badge {
     background: #7a9200 !important;
     color: #1a1f00 !important;
 }
+
 /* Upload modal kártya */
 body[data-theme="light"] .modal-card {
-background: rgba(244, 252, 220, 0.97);
-border-color: rgba(140, 170, 10, 0.40);
-box-shadow: 0 20px 60px rgba(0, 0, 0, 0.10), 0 0 40px rgba(176, 203, 31, 0.15);
+    background: rgba(244, 252, 220, 0.97);
+    border-color: rgba(140, 170, 10, 0.40);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.10), 0 0 40px rgba(176, 203, 31, 0.15);
 }
+
 /* ============================================
 UPLOAD MODAL LIGHT MODE - OVERLAY & CARD FIX
 ============================================ */
 body[data-theme="light"] .modal-overlay {
-background: rgba(220, 230, 180, 0.85) !important;
-backdrop-filter: blur(6px);
+    background: rgba(220, 230, 180, 0.85) !important;
+    backdrop-filter: blur(6px);
 }
+
 body[data-theme="light"] .modal-card {
-background: #f8fce6 !important;
-border: 1px solid #B0CB1F !important;
-box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 40px rgba(176, 203, 31, 0.2) !important;
-color: #1a1f00 !important;
+    background: #f8fce6 !important;
+    border: 1px solid #B0CB1F !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 40px rgba(176, 203, 31, 0.2) !important;
+    color: #1a1f00 !important;
 }
+
 /* Biztosítsd, hogy a form elemek is világosak legyenek a modal cardban */
 body[data-theme="light"] .modal-card .form-input,
 body[data-theme="light"] .modal-card .form-textarea {
-background: rgba(245, 252, 215, 0.95) !important;
-border-color: rgba(140, 170, 10, 0.3) !important;
-color: #1a1f00 !important;
+    background: rgba(245, 252, 215, 0.95) !important;
+    border-color: rgba(140, 170, 10, 0.3) !important;
+    color: #1a1f00 !important;
 }
+
 body[data-theme="light"] .modal-card .form-input::placeholder,
 body[data-theme="light"] .modal-card .form-textarea::placeholder {
-color: #9aaa50 !important;
+    color: #9aaa50 !important;
 }
+
 /* ============================================
    SEARCH BAR - LIGHT THEME
    ============================================ */
@@ -724,10 +849,12 @@ body[data-theme="light"] .edit-modal {
     opacity: 0;
     transition: opacity 0.3s ease;
 }
+
 body[data-theme="light"] .edit-modal.show {
     display: flex;
     opacity: 1;
 }
+
 body[data-theme="light"] .edit-modal-content {
     background: #f8fce6 !important;
     border: 2px solid #B0CB1F !important;
@@ -741,16 +868,19 @@ body[data-theme="light"] .edit-modal-content {
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
     opacity: 0;
 }
+
 body[data-theme="light"] .edit-modal.show .edit-modal-content {
     transform: translateY(0) scale(1);
     opacity: 1;
 }
+
 body[data-theme="light"] .edit-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
 }
+
 body[data-theme="light"] .edit-modal-title {
     color: #7a9200 !important;
     font-size: 1.4rem;
@@ -758,6 +888,7 @@ body[data-theme="light"] .edit-modal-title {
     letter-spacing: -0.02em;
     margin: 0;
 }
+
 body[data-theme="light"] .edit-modal-close {
     background: rgba(176, 203, 31, 0.15);
     border: 1px solid #B0CB1F;
@@ -772,15 +903,18 @@ body[data-theme="light"] .edit-modal-close {
     cursor: pointer;
     transition: all 0.2s ease;
 }
+
 body[data-theme="light"] .edit-modal-close:hover {
     background: #B0CB1F;
     color: #1a1f00;
     transform: scale(1.05);
     box-shadow: 0 0 12px rgba(176, 203, 31, 0.5);
 }
+
 body[data-theme="light"] .edit-form-group {
     margin-bottom: 1.2rem;
 }
+
 body[data-theme="light"] .edit-form-label {
     color: #6a7a20 !important;
     display: block;
@@ -790,6 +924,7 @@ body[data-theme="light"] .edit-form-label {
     letter-spacing: 0.08em;
     margin-bottom: 0.4rem;
 }
+
 body[data-theme="light"] .edit-form-input,
 body[data-theme="light"] .edit-form-textarea {
     background: rgba(245, 252, 215, 0.95) !important;
@@ -803,24 +938,29 @@ body[data-theme="light"] .edit-form-textarea {
     transition: all 0.25s ease;
     outline: none;
 }
+
 body[data-theme="light"] .edit-form-input:focus,
 body[data-theme="light"] .edit-form-textarea:focus {
     border-color: #B0CB1F !important;
     background: rgba(242, 252, 200, 1) !important;
     box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.18) !important;
 }
+
 body[data-theme="light"] .edit-form-textarea {
     resize: vertical;
     min-height: 100px;
 }
+
 body[data-theme="light"] .edit-price-wrapper {
     position: relative;
     display: flex;
     align-items: center;
 }
+
 body[data-theme="light"] .edit-price-wrapper .edit-form-input {
     padding-right: 3rem;
 }
+
 body[data-theme="light"] .edit-price-suffix {
     color: #7a9200 !important;
     position: absolute;
@@ -830,6 +970,7 @@ body[data-theme="light"] .edit-price-suffix {
     pointer-events: none;
     user-select: none;
 }
+
 body[data-theme="light"] .edit-modal .submit-btn {
     background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
     color: #1a1f00 !important;
@@ -845,11 +986,13 @@ body[data-theme="light"] .edit-modal .submit-btn {
     transition: all 0.25s ease;
     margin-top: 0.5rem;
 }
+
 body[data-theme="light"] .edit-modal .submit-btn:hover {
     background: linear-gradient(135deg, #c4df25, #9ab800) !important;
     box-shadow: 0 6px 28px rgba(176, 203, 31, 0.45) !important;
     transform: translateY(-2px);
 }
+
 /* ============================================
    FLOATING MESSAGES BUTTON - LIGHT THEME
    ============================================ */

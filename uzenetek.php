@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-// Kijelentkezés kezelése (most már működik)
+// Kijelentkezés kezelése
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
     session_destroy();
     header("Location: index.php");
@@ -33,11 +33,46 @@ try {
     $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // ── Send message ──────────────────────────────────────────────────────────
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
+    // ================================
+    // AJAX – Új üzenetek lekérése (polling)
+    // ================================
+    if (isset($_GET['ajax_get_messages']) && isset($_GET['with']) && isset($_GET['last_id'])) {
+        header('Content-Type: application/json');
+        $partnerId = (int)$_GET['with'];
+        $lastId    = $_GET['last_id'];
+
+        // Frissítjük a kapott üzenetek olvasottsági státuszát
+        $updateRead = $conn->prepare("
+            UPDATE uzenetek SET is_read = 1
+            WHERE sender_id = ? AND receiver_id = ? AND is_read = 0
+        ");
+        $updateRead->execute([$partnerId, $currentUserId]);
+
+        // Új üzenetek lekérése
+        $stmt = $conn->prepare("
+            SELECT id, sender_id, receiver_id, message, sent_at, is_read
+            FROM uzenetek
+            WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))
+              AND id > ?
+            ORDER BY sent_at ASC
+        ");
+        $stmt->execute([$currentUserId, $partnerId, $partnerId, $currentUserId, $lastId]);
+        $newMessages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode(['messages' => $newMessages]);
+        exit;
+    }
+
+    // ================================
+    // AJAX – Üzenet küldése
+    // ================================
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message_ajax'])) {
+        header('Content-Type: application/json');
         $receiverId = (int)($_POST['receiver_id'] ?? 0);
         $message    = trim($_POST['message'] ?? '');
 
+        $success = false;
+        $error   = '';
         if ($receiverId > 0 && $receiverId !== $currentUserId && $message !== '') {
             $chk = $conn->prepare("SELECT id FROM users WHERE id = ?");
             $chk->execute([$receiverId]);
@@ -50,13 +85,21 @@ try {
 
                 $ins = $conn->prepare("INSERT INTO uzenetek (id, sender_id, receiver_id, message) VALUES (?, ?, ?, ?)");
                 $ins->execute([$newMsgId, $currentUserId, $receiverId, $message]);
+                $success = true;
+            } else {
+                $error = 'Címzett nem található.';
             }
+        } else {
+            $error = 'Érvénytelen adatok.';
         }
-        header("Location: uzenetek.php?with=" . $receiverId);
-        exit();
+
+        echo json_encode(['success' => $success, 'error' => $error]);
+        exit;
     }
 
-    // ── Edit own message ──────────────────────────────────────────────────────
+    // ================================
+    // Hagyományos POST – szerkesztés / törlés / report
+    // ================================
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_message'])) {
         $msgId      = $_POST['message_id'] ?? '';
         $newText    = trim($_POST['new_message'] ?? '');
@@ -69,7 +112,6 @@ try {
         exit();
     }
 
-    // ── Delete own message ────────────────────────────────────────────────────
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_message'])) {
         $msgId = $_POST['message_id'] ?? '';
         if ($msgId) {
@@ -81,7 +123,6 @@ try {
         exit();
     }
 
-    // ── Report a message (only if current user is the receiver) ───────────────
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['report_message'])) {
         $msgId   = $_POST['message_id'] ?? '';
         $reason  = trim($_POST['report_reason'] ?? '');
@@ -103,7 +144,9 @@ try {
         exit();
     }
 
-    // ── Mark messages as read ─────────────────────────────────────────────────
+    // ================================
+    // Normál oldalbetöltés – adatok lekérése
+    // ================================
     $withUserId = isset($_GET['with']) ? (int)$_GET['with'] : 0;
     if ($withUserId > 0) {
         $markRead = $conn->prepare("
@@ -113,7 +156,6 @@ try {
         $markRead->execute([$withUserId, $currentUserId]);
     }
 
-    // ── Fetch conversation partners ───────────────────────────────────────────
     $partnersStmt = $conn->prepare("
         SELECT
             u.id,
@@ -139,7 +181,6 @@ try {
     ]);
     $partners = $partnersStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // ── Fetch messages with selected user ────────────────────────────────────
     $messages    = [];
     $withUser    = null;
     if ($withUserId > 0) {
@@ -165,12 +206,10 @@ try {
         }
     }
 
-    // ── Count total unread ────────────────────────────────────────────────────
     $unreadStmt = $conn->prepare("SELECT COUNT(*) FROM uzenetek WHERE receiver_id = ? AND is_read = 0");
     $unreadStmt->execute([$currentUserId]);
     $totalUnread = (int)$unreadStmt->fetchColumn();
 
-    // ── Check if current user is admin (for potential extra privileges) ──────
     $adminCheck = $conn->prepare("SELECT COUNT(*) FROM admins WHERE user_id = ?");
     $adminCheck->execute([$currentUserId]);
     $isAdmin = $adminCheck->fetchColumn() > 0;
@@ -189,7 +228,6 @@ try {
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* Base variables (dark mode defaults) */
         :root {
             --accent: #ff8c00;
             --accent-glow: rgba(255,140,0,0.3);
@@ -210,17 +248,6 @@ try {
             --avatar-color: #000;
         }
 
-        body {
-            min-height: 100vh;
-            background: #0a0a0a;
-            color: var(--text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            display: flex;
-            flex-direction: column;
-            user-select: none;
-        }
-
-        /* Light mode overrides */
         body[data-theme="light"] {
             --accent: #7a9200;
             --accent-glow: rgba(122,146,0,0.3);
@@ -240,6 +267,16 @@ try {
             --avatar-bg: linear-gradient(135deg, #B0CB1F, #8aA000);
             --avatar-color: #1a1f00;
             background: #f5f5f0;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #0a0a0a;
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
         }
 
         /* Top Bar */
@@ -287,7 +324,6 @@ try {
             margin-left: 1rem;
         }
 
-        /* Account menu */
         .account-menu {
             position: relative;
             display: inline-block;
@@ -455,7 +491,6 @@ try {
             overflow: hidden;
         }
 
-        /* Sidebar */
         .sidebar {
             border-right: 1px solid var(--border-glass);
             background: var(--bg-sidebar);
@@ -536,7 +571,6 @@ try {
             line-height: 1.6;
         }
 
-        /* Chat area */
         .chat-area {
             display: flex;
             flex-direction: column;
@@ -574,7 +608,6 @@ try {
             color: var(--partner-time);
         }
 
-        /* Messages list */
         .messages-list {
             flex: 1;
             min-height: 0;
@@ -585,7 +618,6 @@ try {
             gap: 0.7rem;
         }
 
-        /* Message row wrapper */
         .msg-row {
             display: flex;
             align-items: flex-end;
@@ -600,7 +632,6 @@ try {
             justify-content: flex-start;
         }
 
-        /* Message bubble */
         .msg-bubble {
             max-width: 70%;
             padding: 0.65rem 1rem;
@@ -631,7 +662,6 @@ try {
             opacity: 0.55;
         }
 
-        /* Menu button */
         .msg-menu-btn {
             background: transparent;
             border: none;
@@ -657,7 +687,6 @@ try {
             background: rgba(128,128,128,0.2);
         }
 
-        /* Dropdown menu */
         .msg-dropdown {
             position: absolute;
             top: calc(100% + 4px);
@@ -716,7 +745,6 @@ try {
             background: color-mix(in srgb, var(--accent) 20%, transparent);
         }
 
-        /* Edit modal */
         .edit-modal {
             display: none;
             position: fixed;
@@ -800,7 +828,6 @@ try {
             font-family: inherit;
         }
 
-        /* Delete confirm modal */
         .delete-modal {
             display: none;
             position: fixed;
@@ -872,7 +899,6 @@ try {
             font-family: inherit;
         }
 
-        /* Input area */
         .chat-input-area {
             padding: 1rem 1.5rem;
             border-top: 1px solid var(--border-glass);
@@ -917,7 +943,6 @@ try {
 
         .send-btn:hover { transform: scale(1.08); box-shadow: 0 0 16px var(--accent-glow); }
 
-        /* Empty state */
         .empty-chat {
             flex: 1;
             display: flex;
@@ -930,7 +955,75 @@ try {
         .empty-chat-icon { font-size: 3.5rem; }
         .empty-chat-text { font-size: 1rem; }
 
-        /* Mobile */
+        .report-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            z-index: 4000;
+        }
+        .report-modal.show {
+            display: flex;
+        }
+        .report-modal-content {
+            background: var(--bg-glass);
+            border: 1px solid var(--accent);
+            border-radius: 16px;
+            padding: 1.5rem;
+            max-width: 400px;
+            width: 90%;
+        }
+        .report-form-textarea {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            padding: 0.5rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .report-submit-btn {
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 40px;
+            padding: 0.6rem 1rem;
+            color: var(--avatar-color);
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .toast-notification {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(120%);
+            background: color-mix(in srgb, var(--accent) 15%, var(--bg-glass));
+            border: 1px solid var(--accent);
+            color: var(--text-primary);
+            padding: 0.85rem 1.6rem;
+            border-radius: 50px;
+            font-size: 0.92rem;
+            z-index: 9999;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 20px var(--accent-glow);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+            opacity: 0;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
         @media (max-width: 640px) {
             .messages-layout { grid-template-columns: 1fr; }
             .sidebar { display: <?php echo $withUserId > 0 ? 'none' : 'flex'; ?>; height: calc(100vh - 64px); }
@@ -938,11 +1031,15 @@ try {
             .msg-bubble { max-width: 85%; }
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--accent) 50%, transparent); }
+
+        .unselectable {
+            user-select: none;
+            -webkit-user-select: none;
+        }
     </style>
 </head>
 <body>
@@ -983,7 +1080,6 @@ try {
     </div>
 
     <div class="messages-layout">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">Beszélgetések</div>
             <?php if (empty($partners)): ?>
@@ -1019,7 +1115,6 @@ try {
             <?php endif; ?>
         </div>
 
-        <!-- Chat area -->
         <div class="chat-area">
             <?php if ($withUser): ?>
                 <div class="chat-header">
@@ -1043,10 +1138,9 @@ try {
                         <?php foreach ($messages as $msg): 
                             $isOwn = ($msg['sender_id'] == $currentUserId);
                         ?>
-                            <div class="msg-row <?php echo $isOwn ? 'sent' : 'received'; ?>">
+                            <div class="msg-row <?php echo $isOwn ? 'sent' : 'received'; ?>" data-msg-id="<?php echo htmlspecialchars($msg['id']); ?>">
                                 <?php if (!$isOwn): ?>
-                                    <!-- Fogadott üzenet: menü jobb oldalon -->
-                                    <div class="msg-bubble received" data-msg-id="<?php echo htmlspecialchars($msg['id']); ?>">
+                                    <div class="msg-bubble received">
                                         <?php echo nl2br(htmlspecialchars($msg['message'])); ?>
                                         <div class="msg-time"><?php echo date('H:i', strtotime($msg['sent_at'])); ?></div>
                                     </div>
@@ -1057,7 +1151,6 @@ try {
                                         </div>
                                     </div>
                                 <?php else: ?>
-                                    <!-- Küldött üzenet: menü BAL oldalon -->
                                     <div style="position:relative; align-self:center;">
                                         <button class="msg-menu-btn" onclick="toggleMsgMenu(this, event)">⋮</button>
                                         <div class="msg-dropdown">
@@ -1067,7 +1160,7 @@ try {
                                             <button class="msg-dropdown-item delete-msg" data-msg-id="<?php echo htmlspecialchars($msg['id']); ?>">🗑️ Törlés</button>
                                         </div>
                                     </div>
-                                    <div class="msg-bubble sent" data-msg-id="<?php echo htmlspecialchars($msg['id']); ?>">
+                                    <div class="msg-bubble sent">
                                         <?php echo nl2br(htmlspecialchars($msg['message'])); ?>
                                         <div class="msg-time">
                                             <?php echo date('H:i', strtotime($msg['sent_at'])); ?>
@@ -1080,14 +1173,11 @@ try {
                     <?php endif; ?>
                 </div>
 
-                <form class="chat-input-area" method="post">
-                    <input type="hidden" name="receiver_id" value="<?php echo $withUserId; ?>">
-                    <input type="hidden" name="send_message" value="1">
-                    <textarea class="msg-textarea" name="message" id="msgInput"
-                        placeholder="Írj üzenetet..." rows="1" required
-                        onkeydown="handleEnter(event)"></textarea>
-                    <button type="submit" class="send-btn" title="Küldés">➤</button>
-                </form>
+                <div class="chat-input-area">
+                    <input type="hidden" id="receiverId" value="<?php echo $withUserId; ?>">
+                    <textarea class="msg-textarea" id="msgInput" placeholder="Írj üzenetet..." rows="1"></textarea>
+                    <button type="button" class="send-btn" id="sendBtn">➤</button>
+                </div>
 
             <?php else: ?>
                 <div class="empty-chat">
@@ -1098,9 +1188,10 @@ try {
         </div>
     </div>
 
-    <!-- Report modal -->
-    <div class="report-modal" id="reportMsgModal" style="display: none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; z-index: 4000;">
-        <div class="report-modal-content" style="background: var(--bg-glass); border: 1px solid var(--accent); border-radius: 16px; padding: 1.5rem; max-width: 400px; width: 90%;">
+    <div class="toast-notification" id="toastNotification"></div>
+
+    <div class="report-modal" id="reportMsgModal">
+        <div class="report-modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <h3 style="color: var(--accent);">Üzenet bejelentése</h3>
                 <button class="close-report-modal" style="background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer;">✕</button>
@@ -1108,20 +1199,19 @@ try {
             <form method="post" id="reportMsgForm">
                 <input type="hidden" name="message_id" id="reportMsgId">
                 <input type="hidden" name="report_message" value="1">
-                <textarea name="report_reason" class="report-form-textarea" required placeholder="Kérjük, részletezd a problémát..." style="width:100%; background: var(--bg-input); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.5rem; color: var(--text-primary); margin-bottom: 1rem;"></textarea>
-                <button type="submit" class="report-submit-btn" style="background: var(--accent-gradient); border: none; border-radius: 40px; padding: 0.6rem 1rem; color: var(--avatar-color); font-weight: bold; width:100%; cursor: pointer;">Bejelentés küldése</button>
+                <textarea name="report_reason" class="report-form-textarea" required placeholder="Kérjük, részletezd a problémát..."></textarea>
+                <button type="submit" class="report-submit-btn">Bejelentés küldése</button>
             </form>
         </div>
     </div>
 
-    <!-- Edit message modal -->
     <div class="edit-modal" id="editMsgModal">
         <div class="edit-modal-content">
             <div class="edit-modal-header">
                 <span class="edit-modal-title">✏️ Üzenet szerkesztése</span>
                 <button class="edit-modal-close" id="editModalClose">✕</button>
             </div>
-            <form method="post" id="editMsgForm">
+            <form method="post" id="editMsgForm" action="uzenetek.php?with=<?php echo $withUserId; ?>">
                 <input type="hidden" name="message_id" id="editMsgId">
                 <input type="hidden" name="edit_message" value="1">
                 <textarea class="edit-textarea" name="new_message" id="editMsgTextarea" required></textarea>
@@ -1133,7 +1223,6 @@ try {
         </div>
     </div>
 
-    <!-- Delete confirmation modal -->
     <div class="delete-modal" id="deleteConfirmModal">
         <div class="delete-modal-content">
             <div class="delete-modal-header">
@@ -1152,29 +1241,173 @@ try {
     </div>
 
     <script>
-        // Auto-scroll
-        const msgList = document.getElementById('messagesList');
-        function scrollToBottom() {
-            if (msgList) msgList.scrollTop = msgList.scrollHeight;
-        }
-        scrollToBottom();
+        const currentUserId = <?php echo $currentUserId; ?>;
+        const partnerId = <?php echo $withUserId ?: 0; ?>;
+        let lastMessageId = '';
+        let pollInterval = null;
 
-        function handleEnter(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                e.target.closest('form').submit();
+        const messagesList = document.getElementById('messagesList');
+        const msgInput = document.getElementById('msgInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const toast = document.getElementById('toastNotification');
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function scrollToBottom() {
+            if (messagesList) messagesList.scrollTop = messagesList.scrollHeight;
+        }
+
+        function appendMessage(msg) {
+            const isOwn = (parseInt(msg.sender_id) === currentUserId);
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `msg-row ${isOwn ? 'sent' : 'received'}`;
+            msgDiv.setAttribute('data-msg-id', msg.id);
+            
+            const timeStr = new Date(msg.sent_at).toLocaleTimeString('hu-HU', {hour: '2-digit', minute:'2-digit'});
+            
+            if (!isOwn) {
+                msgDiv.innerHTML = `
+                    <div class="msg-bubble received">
+                        ${escapeHtml(msg.message).replace(/\n/g, '<br>')}
+                        <div class="msg-time">${timeStr}</div>
+                    </div>
+                    <div style="position:relative; align-self:center;">
+                        <button class="msg-menu-btn" onclick="toggleMsgMenu(this, event)">⋮</button>
+                        <div class="msg-dropdown">
+                            <button class="msg-dropdown-item report-msg" data-msg-id="${escapeHtml(msg.id)}">⚠️ Bejelentés</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                msgDiv.innerHTML = `
+                    <div style="position:relative; align-self:center;">
+                        <button class="msg-menu-btn" onclick="toggleMsgMenu(this, event)">⋮</button>
+                        <div class="msg-dropdown">
+                            <button class="msg-dropdown-item edit-msg" data-msg-id="${escapeHtml(msg.id)}" data-msg-text="${escapeHtml(msg.message)}">✏️ Szerkesztés</button>
+                            <button class="msg-dropdown-item delete-msg" data-msg-id="${escapeHtml(msg.id)}">🗑️ Törlés</button>
+                        </div>
+                    </div>
+                    <div class="msg-bubble sent">
+                        ${escapeHtml(msg.message).replace(/\n/g, '<br>')}
+                        <div class="msg-time">${timeStr} ${msg.is_read ? '✓✓' : '✓'}</div>
+                    </div>
+                `;
+            }
+            messagesList.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        async function pollNewMessages() {
+            if (!partnerId) return;
+            if (!lastMessageId) {
+                const existing = document.querySelectorAll('.msg-row');
+                let maxId = '';
+                existing.forEach(row => {
+                    const id = row.getAttribute('data-msg-id');
+                    if (id && id > maxId) maxId = id;
+                });
+                lastMessageId = maxId || '';
+            }
+            try {
+                const response = await fetch(`?ajax_get_messages=1&with=${partnerId}&last_id=${encodeURIComponent(lastMessageId)}`);
+                const data = await response.json();
+                if (data.messages && data.messages.length > 0) {
+                    for (const msg of data.messages) {
+                        if (!document.querySelector(`.msg-row[data-msg-id="${msg.id}"]`)) {
+                            appendMessage(msg);
+                        }
+                        if (msg.id > lastMessageId) lastMessageId = msg.id;
+                    }
+                }
+            } catch (err) {
+                console.error('Polling hiba:', err);
             }
         }
 
-        const ta = document.getElementById('msgInput');
-        if (ta) {
-            ta.addEventListener('input', function() {
+        async function sendMessage() {
+            const message = msgInput.value.trim();
+            if (!message) return;
+            const receiver = partnerId;
+            if (!receiver) return;
+
+            const formData = new URLSearchParams();
+            formData.append('send_message_ajax', '1');
+            formData.append('receiver_id', receiver);
+            formData.append('message', message);
+
+            try {
+                const response = await fetch('uzenetek.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    msgInput.value = '';
+                    msgInput.style.height = 'auto';
+                    const tempId = 'temp_' + Date.now();
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('hu-HU', {hour: '2-digit', minute:'2-digit'});
+                    const tempMsg = {
+                        id: tempId,
+                        sender_id: currentUserId,
+                        receiver_id: receiver,
+                        message: message,
+                        sent_at: now.toISOString(),
+                        is_read: 0
+                    };
+                    appendMessage(tempMsg);
+                    scrollToBottom();
+                } else {
+                    showToast(data.error || 'Hiba az üzenet küldésekor.');
+                }
+            } catch (err) {
+                showToast('Hálózati hiba.');
+                console.error(err);
+            }
+        }
+
+        if (sendBtn) {
+            sendBtn.addEventListener('click', sendMessage);
+        }
+        if (msgInput) {
+            msgInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            msgInput.addEventListener('input', function() {
                 this.style.height = 'auto';
                 this.style.height = Math.min(this.scrollHeight, 140) + 'px';
             });
         }
 
-        // Theme
+        if (partnerId) {
+            const existingMsgs = document.querySelectorAll('.msg-row');
+            let maxId = '';
+            existingMsgs.forEach(row => {
+                const id = row.getAttribute('data-msg-id');
+                if (id && id > maxId) maxId = id;
+            });
+            lastMessageId = maxId;
+            pollInterval = setInterval(pollNewMessages, 2000);
+        }
+
         const saved = localStorage.getItem('theme');
         const themeStylesheet = document.getElementById('themeStylesheet');
         const themeSwitch = document.getElementById('themeSwitchMsg');
@@ -1191,7 +1424,6 @@ try {
             });
         }
 
-        // Message menu
         function toggleMsgMenu(btn, event) {
             if (event) event.stopPropagation();
             document.querySelectorAll('.msg-dropdown.show').forEach(dd => {
@@ -1204,7 +1436,6 @@ try {
             document.querySelectorAll('.msg-dropdown.show').forEach(dd => dd.classList.remove('show'));
         });
 
-        // Delete message - modal
         const deleteModal = document.getElementById('deleteConfirmModal');
         const deleteCloseBtn = document.getElementById('deleteModalClose');
         const deleteCancelBtn = document.getElementById('deleteCancelBtn');
@@ -1221,32 +1452,6 @@ try {
             pendingDeleteMsgId = null;
         }
 
-        // Eseménykezelők delegálással (dinamikus gombok miatt)
-        document.addEventListener('click', function(e) {
-            // Törlés gomb
-            if (e.target.closest('.delete-msg')) {
-                e.preventDefault();
-                e.stopPropagation();
-                const btn = e.target.closest('.delete-msg');
-                openDeleteModal(btn.dataset.msgId);
-            }
-            // Szerkesztés gomb
-            if (e.target.closest('.edit-msg')) {
-                e.preventDefault();
-                e.stopPropagation();
-                const btn = e.target.closest('.edit-msg');
-                openEditModal(btn.dataset.msgId, btn.dataset.msgText);
-            }
-            // Bejelentés gomb
-            if (e.target.closest('.report-msg')) {
-                e.preventDefault();
-                e.stopPropagation();
-                const btn = e.target.closest('.report-msg');
-                reportMsgId.value = btn.dataset.msgId;
-                reportModal.style.display = 'flex';
-            }
-        });
-
         deleteCloseBtn.addEventListener('click', closeDeleteModal);
         deleteCancelBtn.addEventListener('click', closeDeleteModal);
         deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); });
@@ -1262,15 +1467,12 @@ try {
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && deleteModal.classList.contains('open')) {
-                closeDeleteModal();
-            }
+            if (e.key === 'Escape' && deleteModal.classList.contains('open')) closeDeleteModal();
         });
 
-        // Edit message modal
-        const editModal    = document.getElementById('editMsgModal');
-        const editMsgId    = document.getElementById('editMsgId');
-        const editMsgTA    = document.getElementById('editMsgTextarea');
+        const editModal = document.getElementById('editMsgModal');
+        const editMsgId = document.getElementById('editMsgId');
+        const editMsgTA = document.getElementById('editMsgTextarea');
 
         function openEditModal(msgId, msgText) {
             editMsgId.value = msgId;
@@ -1289,7 +1491,6 @@ try {
             if (e.key === 'Escape' && editModal.classList.contains('open')) closeEditModal();
         });
 
-        // Report message modal
         const reportModal = document.getElementById('reportMsgModal');
         const reportMsgId = document.getElementById('reportMsgId');
         const closeReportBtn = reportModal.querySelector('.close-report-modal');
@@ -1301,9 +1502,33 @@ try {
             if (e.key === 'Escape' && reportModal.style.display === 'flex') closeReportModal();
         });
 
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.delete-msg')) {
+                e.preventDefault();
+                e.stopPropagation();
+                const btn = e.target.closest('.delete-msg');
+                openDeleteModal(btn.dataset.msgId);
+            }
+            if (e.target.closest('.edit-msg')) {
+                e.preventDefault();
+                e.stopPropagation();
+                const btn = e.target.closest('.edit-msg');
+                openEditModal(btn.dataset.msgId, btn.dataset.msgText);
+            }
+            if (e.target.closest('.report-msg')) {
+                e.preventDefault();
+                e.stopPropagation();
+                const btn = e.target.closest('.report-msg');
+                reportMsgId.value = btn.dataset.msgId;
+                reportModal.style.display = 'flex';
+            }
+        });
+
         <?php if (isset($_SESSION['report_success'])): unset($_SESSION['report_success']); ?>
-            alert('Bejelentésedet rögzítettük. Köszönjük!');
+            showToast('✅ Bejelentésedet rögzítettük. Köszönjük!');
         <?php endif; ?>
+
+        scrollToBottom();
     </script>
 </body>
 </html>
