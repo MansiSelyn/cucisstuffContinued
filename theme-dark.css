@@ -1011,3 +1011,12 @@ body[data-theme="dark"] .seller-popup-msg-btn:hover {
 body[data-theme="dark"] .item-seller:hover {
     color: var(--orange-bright) !important;
 }
+
+/* ============================================
+   ADMIN BADGE - DARK THEME (ALAPÉRTELMEZETT)
+   ============================================ */
+body[data-theme="dark"] .admin-badge {
+    background: rgba(255, 215, 0, 0.2) !important;
+    color: #ffd700 !important;
+    border-color: rgba(255, 215, 0, 0.4) !important;
+}

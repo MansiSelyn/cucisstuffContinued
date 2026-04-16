@@ -1114,3 +1114,12 @@ body[data-theme="light"] .seller-popup-msg-btn:hover {
 body[data-theme="light"] .item-seller:hover {
     color: #7a9200 !important;
 }
+
+/* ============================================
+   ADMIN BADGE - SÖTÉTEBB LIGHT MÓDBAN
+   ============================================ */
+body[data-theme="light"] .admin-badge {
+    background: rgba(140, 110, 0, 0.25) !important;
+    color: #4d3e00 !important;
+    border-color: rgba(140, 110, 0, 0.5) !important;
+}
