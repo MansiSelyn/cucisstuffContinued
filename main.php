@@ -1395,25 +1395,6 @@ try {
             font-size: 0.9rem;
         }
 
-        .report-form-textarea {
-            width: 100%;
-            background: transparent !important;
-            border: none !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3) !important;
-            border-radius: 0 !important;
-            padding: 0.5rem 0 !important;
-            color: var(--text-primary);
-            font-size: 0.95rem;
-            resize: vertical;
-            min-height: 100px;
-            outline: none;
-        }
-
-        .report-form-textarea:focus {
-            border-bottom-color: var(--orange-bright) !important;
-            box-shadow: none !important;
-        }
-
         .report-submit-btn {
             width: 100%;
             padding: 0.75rem;
@@ -2961,7 +2942,7 @@ try {
                 <input type="hidden" name="item_id" id="reportItemId">
                 <input type="hidden" name="report_item" value="1">
                 <div class="report-form-group">
-                    <textarea name="report_reason" class="report-form-textarea" required placeholder="Kérjük, részletezd a problémát..."></textarea>
+                    <textarea name="report_reason" class="form-textarea" required placeholder="Kérjük, részletezd a problémát..."></textarea>
                 </div>
                 <button type="submit" class="report-submit-btn unselectable">
                     <span class="btn-icon">📢</span> Bejelentés küldése

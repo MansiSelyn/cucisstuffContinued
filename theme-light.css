@@ -434,15 +434,8 @@ body[data-theme="light"] .report-form-label {
     color: #1a1f00;
 }
 
-body[data-theme="light"] .report-form-textarea {
-    background: rgba(240, 252, 200, 0.80);
-    border-color: rgba(140, 170, 10, 0.28);
-    color: #1a1f00;
-}
-
-body[data-theme="light"] .report-form-textarea:focus {
-    border-color: #B0CB1F;
-}
+/* Report textarea now uses .form-textarea, so no specific override needed */
+/* Removed .report-form-textarea rules - using .form-textarea instead */
 
 body[data-theme="light"] .report-submit-btn {
     background: linear-gradient(135deg, #B0CB1F, #8aA000);
