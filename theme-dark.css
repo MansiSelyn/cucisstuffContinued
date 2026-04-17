@@ -835,6 +835,9 @@ body[data-theme="dark"] .edit-form-textarea {
     font-size: 0.9rem;
     transition: all 0.25s ease;
     outline: none;
+    resize: none;
+    overflow-y: auto;
+    min-height: 100px;
 }
 
 body[data-theme="dark"] .edit-form-input:focus,
@@ -842,11 +845,6 @@ body[data-theme="dark"] .edit-form-textarea:focus {
     border-color: var(--orange-bright) !important;
     background: rgba(0, 0, 0, 0.9) !important;
     box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.25) !important;
-}
-
-body[data-theme="dark"] .edit-form-textarea {
-    resize: vertical;
-    min-height: 100px;
 }
 
 body[data-theme="dark"] .edit-price-wrapper {

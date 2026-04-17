@@ -358,16 +358,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       transition: all 0.2s;
       outline: none;
   }
+  .edit-form-textarea {
+      resize: none;           /* ne lehessen átméretezni */
+      overflow-y: auto;       /* görgethető legyen */
+      min-height: 120px;
+      max-height: 300px;
+  }
   .edit-form-input:focus,
   .edit-form-textarea:focus {
       border-color: var(--orange-bright);
       background: rgba(0, 0, 0, 0.7);
       box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.15);
-  }
-  .edit-form-textarea {
-      resize: vertical;
-      min-height: 120px;
-      border-radius: 20px;
   }
   /* Ár mező egyedi stílus */
   .edit-price-wrapper {
