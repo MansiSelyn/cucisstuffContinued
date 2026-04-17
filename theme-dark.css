@@ -523,6 +523,21 @@ body[data-theme="dark"] .modal-close:hover {
 }
 
 /* ============================================
+   ACCOUNT.PHP - EDIT FORM (no background/border)
+   ============================================ */
+body[data-theme="dark"] #editForm {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+body[data-theme="dark"] #editForm .form-group {
+    background: transparent;
+}
+
+/* ============================================
    PRODUCT MODAL - DARK THEME
    ============================================ */
 body[data-theme="dark"] .product-modal-overlay {
