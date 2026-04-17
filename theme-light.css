@@ -470,6 +470,19 @@ body[data-theme="light"] .report-modal-close:hover {
 }
 
 /* ============================================
+   REPORT MODAL - ADDITIONAL OVERRIDES (textarea non-resizable & form no border/background)
+   ============================================ */
+body[data-theme="light"] .report-form-textarea {
+    resize: none; /* Ne lehessen átméretezni a textareát */
+}
+
+body[data-theme="light"] #reportForm {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* ============================================
 PRODUCT MODAL - LIGHT THEME
 ============================================ */
 body[data-theme="light"] .product-modal-overlay {

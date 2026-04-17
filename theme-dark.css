@@ -691,6 +691,19 @@ body[data-theme="dark"] .report-submit-btn:hover {
 }
 
 /* ============================================
+   REPORT MODAL - ADDITIONAL OVERRIDES (textarea non-resizable & form no border/background)
+   ============================================ */
+body[data-theme="dark"] .report-form-textarea {
+    resize: none; /* Ne lehessen átméretezni a textareát */
+}
+
+body[data-theme="dark"] #reportForm {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* ============================================
    LIGHTBOX - DARK THEME
    ============================================ */
 body[data-theme="dark"] .lightbox-overlay {

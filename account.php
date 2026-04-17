@@ -5,6 +5,14 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     exit();
 }
 
+// Kijelentkezés kezelése (ugyanúgy, mint main.php-ban)
+if (isset($_POST['logout'])) {
+    $_SESSION = array();
+    session_destroy();
+    header("Location: index.php");
+    exit();
+}
+
 // Adatbázis kapcsolat
 $servername = "localhost";
 $username = "root";
@@ -15,6 +23,11 @@ try {
     $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $userId = $_SESSION['user_id'];
+
+    // Admin ellenőrzés (ugyanaz, mint main.php-ban)
+    $adminCheck = $conn->prepare("SELECT COUNT(*) FROM admins WHERE user_id = ?");
+    $adminCheck->execute([$userId]);
+    $isAdmin = $adminCheck->fetchColumn() > 0;
 
     // =============================================
     // AJAX: GET ITEM DETAILS (JSON) - a product modalhoz
@@ -105,7 +118,6 @@ try {
             try {
                 $upd = $conn->prepare("UPDATE items SET title=:title, description=:desc, price=:price WHERE id=:id");
                 $upd->execute([':title' => $title, ':desc' => $desc, ':price' => floatval($price), ':id' => $itemId]);
-                // Sikeres módosítás után átirányítás, hogy a változások látszódjanak
                 header("Location: account.php?edit=success");
                 exit();
             } catch (Exception $e) {
@@ -197,55 +209,466 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
 <title>Fiókom</title>
 <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css">
 <style>
-  /* Alap stílusok a téma változókkal */
+  /* ========== ALAP STÍLUSOK (account.php eredeti) ========== */
   body {
-    min-height: 100vh; margin: 0; padding: 2rem; box-sizing: border-box;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;                 /* eltávolítottuk a paddingot, mert a top-bar fixed */
+    box-sizing: border-box;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--body-bg); color: var(--text-primary);
+    background: var(--body-bg);
+    color: var(--text-primary);
     transition: background 0.3s, color 0.3s;
   }
-  .container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
-  .header { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; backdrop-filter: blur(10px); }
-  .header h1 { margin: 0; color: var(--orange-bright); font-size: 1.6rem; user-select: none; }
-  .back-btn { padding: 0.5rem 1rem; background: var(--orange-subtle); border: 1px solid var(--orange-bright); border-radius: 8px; color: var(--orange-bright); text-decoration: none; font-weight: 600; transition: 0.3s; user-select: none; }
-  .back-btn:hover { background: var(--orange-bright); color: #000; }
-  
-  .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
-  .info-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.2rem; backdrop-filter: blur(10px); user-select: none; }
-  .info-card label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.3rem; user-select: none; }
-  .info-card .val { font-size: 1.1rem; font-weight: 500; color: var(--text-primary); word-break: break-all; user-select: none; }
-  
-  .edit-btn { padding: 0.7rem 1.2rem; background: linear-gradient(135deg, var(--orange-bright), var(--orange-mid)); color: #000; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: auto; user-select: none; }
-  .edit-btn:hover { transform: translateY(-2px); box-shadow: 0 0 20px var(--orange-glow); }
+  .container {
+    max-width: 1100px;
+    margin: 70px auto 0 auto;  /* hely a fixed top-bar alatt */
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 0 1rem;
+  }
+  /* ========== TOP BAR ÉS FIÓKMENÜ (átvéve main.php-ből) ========== */
+  .top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--glass-border);
+    pointer-events: auto;
+  }
+  .top-bar-left {
+    display: flex;
+    gap: 0.5rem;
+    pointer-events: auto;
+  }
+  .top-bar-right {
+    display: flex;
+    gap: 0.5rem;
+    pointer-events: auto;
+  }
+  /* Vissza gomb */
+  .back-btn {
+    padding: 0.5rem 1rem;
+    background: var(--orange-subtle);
+    border: 1px solid var(--orange-bright);
+    border-radius: 8px;
+    color: var(--orange-bright);
+    text-decoration: none;
+    font-weight: 600;
+    transition: 0.3s;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .back-btn:hover {
+    background: var(--orange-bright);
+    color: #000;
+  }
+  /* Admin gomb */
+  .admin-btn {
+    pointer-events: auto;
+    padding: 0.5rem 1.1rem;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 50px;
+    background: rgba(255, 215, 0, 0.12);
+    backdrop-filter: blur(10px);
+    color: #ffd700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    user-select: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .admin-btn:hover {
+    background: rgba(255, 215, 0, 0.25);
+    border-color: #ffd700;
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.35);
+    transform: translateY(-1px);
+    color: #ffd700;
+  }
+  /* Fiók menü (details/summary) */
+  .account-menu {
+    position: relative;
+    display: inline-block;
+    pointer-events: auto;
+  }
+  .account-summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--orange-glow);
+    border-radius: 50px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    color: var(--orange-bright);
+    font-size: 0.9rem;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    user-select: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+  .account-summary:hover {
+    background: rgba(255, 140, 0, 0.1);
+    border-color: var(--orange-bright);
+  }
+  .account-summary::-webkit-details-marker {
+    display: none;
+  }
+  .account-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    width: 250px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 0.75rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 140, 0, 0.2);
+    z-index: 1001;
+    animation: dropdownFade 0.2s ease;
+  }
+  @keyframes dropdownFade {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .user-info {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    user-select: none;
+  }
+  .user-info strong {
+    display: block;
+    word-wrap: break-word;
+    color: var(--orange-bright);
+  }
+  .dropdown-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--orange-bright), transparent);
+    margin: 0.5rem 0;
+  }
+  .account-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+  .account-link span {
+    display: block;
+    width: 100%;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+  .account-link span:hover {
+    background: rgba(255, 140, 0, 0.15);
+    color: var(--orange-bright);
+    transform: translateX(5px);
+  }
+  .logout-button {
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+  .logout-button span {
+    display: block;
+    width: 100%;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+  .logout-button span:hover {
+    background: rgba(255, 140, 0, 0.15);
+    color: var(--orange-bright);
+    transform: translateX(5px);
+  }
+  .theme-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    user-select: none;
+  }
+  .theme-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    opacity: 0.8;
+  }
+  .theme-switch {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  }
+  .theme-switch-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: background 0.3s, border-color 0.3s;
+    cursor: pointer;
+  }
+  .theme-switch input:checked + .theme-switch-track {
+    background: rgba(176, 203, 31, 0.25);
+    border-color: #B0CB1F;
+  }
+  .theme-switch-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transition: transform 0.3s, background 0.3s;
+    pointer-events: none;
+  }
+  .theme-switch input:checked ~ .theme-switch-thumb {
+    transform: translateX(18px);
+    background: #B0CB1F;
+  }
 
-  .items-section { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 1.2rem; max-height: 65vh; overflow-y: auto; backdrop-filter: blur(10px); }
-  .items-section h2 { color: var(--orange-bright); margin: 0 0 1rem 0; font-size: 1.3rem; user-select: none; }
-  .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
-  .mini-card { background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; transition: 0.3s; cursor: pointer; user-select: none; }
-  .mini-card:hover { border-color: var(--orange-bright); transform: translateY(-3px); }
-  .mini-card img { width: 100%; height: 140px; object-fit: cover; background: var(--placeholder-bg); pointer-events: none; }
-  .mini-card .info { padding: 0.7rem; }
-  .mini-card .title { margin: 0; font-size: 0.9rem; color: var(--orange-bright); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; }
-  .mini-card .price { margin: 0.3rem 0 0; font-size: 0.85rem; color: var(--text-primary); opacity: 0.8; user-select: none; }
+  /* ========== AZ EREDETI ACCOUNT.PHP STÍLUSOK (info-grid, items-section, modálok) ========== */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  .info-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 1.2rem;
+    backdrop-filter: blur(10px);
+    user-select: none;
+  }
+  .info-card label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 0.3rem;
+    user-select: none;
+  }
+  .info-card .val {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    word-break: break-all;
+    user-select: none;
+  }
+  .edit-btn {
+    padding: 0.7rem 1.2rem;
+    background: linear-gradient(135deg, var(--orange-bright), var(--orange-mid));
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: auto;
+    user-select: none;
+  }
+  .edit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px var(--orange-glow);
+  }
+  .items-section {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.2rem;
+    max-height: 65vh;
+    overflow-y: auto;
+    backdrop-filter: blur(10px);
+  }
+  .items-section h2 {
+    color: var(--orange-bright);
+    margin: 0 0 1rem 0;
+    font-size: 1.3rem;
+    user-select: none;
+  }
+  .items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  .mini-card {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: 0.3s;
+    cursor: pointer;
+    user-select: none;
+  }
+  .mini-card:hover {
+    border-color: var(--orange-bright);
+    transform: translateY(-3px);
+  }
+  .mini-card img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    background: var(--placeholder-bg);
+    pointer-events: none;
+  }
+  .mini-card .info {
+    padding: 0.7rem;
+  }
+  .mini-card .title {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--orange-bright);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: none;
+  }
+  .mini-card .price {
+    margin: 0.3rem 0 0;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    opacity: 0.8;
+    user-select: none;
+  }
 
-  /* Fiók módosító modal */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 2000; }
-  .modal-overlay.active { display: flex; }
-  .modal-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 2rem; width: 90%; max-width: 420px; box-shadow: var(--shadow-deep); position: relative; }
-  .modal-close { position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; }
-  .modal-close:hover { color: var(--orange-bright); }
-  .modal-title { color: var(--orange-bright); margin: 0 0 1.5rem 0; font-size: 1.4rem; }
-  .form-group { margin-bottom: 1rem; }
-  .form-group label { display: block; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--text-muted); }
-  .form-group input { width: 100%; padding: 0.75rem; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.95rem; box-sizing: border-box; }
-  .form-group input:focus { outline: none; border-color: var(--orange-bright); box-shadow: 0 0 0 3px var(--orange-subtle); }
-  .submit-btn { width: 100%; padding: 0.8rem; background: var(--orange-bright); color: #000; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 0.5rem; transition: 0.3s; }
-  .submit-btn:hover { opacity: 0.9; }
-  .status-msg { padding: 0.75rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.9rem; display: none; }
-  .status-msg.error { background: rgba(255, 50, 50, 0.15); border: 1px solid #ff4d4d; color: #ff8080; }
-  .status-msg.success { background: rgba(0, 200, 100, 0.15); border: 1px solid #00c851; color: #5dffa0; }
+  /* ========== Fiók módosító modal (eredeti) ========== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+  .modal-overlay.active {
+    display: flex;
+  }
+  .modal-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: var(--shadow-deep);
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+  .modal-close:hover {
+    color: var(--orange-bright);
+  }
+  .modal-title {
+    color: var(--orange-bright);
+    margin: 0 0 1.5rem 0;
+    font-size: 1.4rem;
+  }
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--input-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    box-sizing: border-box;
+  }
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--orange-bright);
+    box-shadow: 0 0 0 3px var(--orange-subtle);
+  }
+  .submit-btn {
+    width: 100%;
+    padding: 0.8rem;
+    background: var(--orange-bright);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: 0.3s;
+  }
+  .submit-btn:hover {
+    opacity: 0.9;
+  }
+  .status-msg {
+    padding: 0.75rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    display: none;
+  }
+  .status-msg.error {
+    background: rgba(255, 50, 50, 0.15);
+    border: 1px solid #ff4d4d;
+    color: #ff8080;
+  }
+  .status-msg.success {
+    background: rgba(0, 200, 100, 0.15);
+    border: 1px solid #00c851;
+    color: #5dffa0;
+  }
 
-  /* ===================== ÚJ EDIT MODAL STÍLUS – TELJESEN ÁTRENDEZVE ===================== */
+  /* ========== EDIT MODAL (termék szerkesztő) – account.php saját ========== */
   .edit-modal {
       position: fixed;
       top: 0;
@@ -281,7 +704,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       transform: translateY(0) scale(1);
       opacity: 1;
   }
-  /* Fejléc új dizájn */
   .edit-modal-header {
       display: flex;
       align-items: center;
@@ -323,7 +745,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       background: rgba(255, 140, 0, 0.25);
       transform: scale(1.05);
   }
-  /* Űrlap test – új elrendezés */
   .edit-modal-body {
       padding: 1.8rem 1.8rem 2rem;
   }
@@ -341,10 +762,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       color: var(--orange-bright);
       margin-bottom: 0.6rem;
   }
-  .edit-form-label i {
-      font-style: normal;
-      font-size: 1rem;
-  }
   .edit-form-input,
   .edit-form-textarea {
       width: 100%;
@@ -359,8 +776,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       outline: none;
   }
   .edit-form-textarea {
-      resize: none;           /* ne lehessen átméretezni */
-      overflow-y: auto;       /* görgethető legyen */
+      resize: none;
+      overflow-y: auto;
       min-height: 120px;
       max-height: 300px;
   }
@@ -370,7 +787,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       background: rgba(0, 0, 0, 0.7);
       box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.15);
   }
-  /* Ár mező egyedi stílus */
   .edit-price-wrapper {
       position: relative;
       display: flex;
@@ -389,7 +805,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       background: transparent;
       backdrop-filter: blur(4px);
   }
-  /* Gombok új dizájn */
   .edit-modal-actions {
       display: flex;
       gap: 1rem;
@@ -428,7 +843,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(255, 140, 0, 0.4);
   }
-  /* Sikeres üzenet az edit modalban */
   .edit-success-banner {
       margin: 0 1.8rem 1rem 1.8rem;
       background: rgba(0, 200, 100, 0.12);
@@ -443,38 +857,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       justify-content: center;
       gap: 0.5rem;
   }
-  /* A formnak ne legyen border vagy background */
   #editItemForm {
       background: none !important;
       border: none !important;
       box-shadow: none !important;
   }
-  /* Light mode finomhangolás */
-  body[data-theme="light"] .edit-modal-content {
-      background: rgba(248, 252, 230, 0.98);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
-  }
-  body[data-theme="light"] .edit-modal-header {
-      background: rgba(122, 146, 0, 0.08);
-      border-bottom-color: rgba(122, 146, 0, 0.25);
-  }
-  body[data-theme="light"] .edit-form-input,
-  body[data-theme="light"] .edit-form-textarea {
-      background: rgba(255, 255, 255, 0.6);
-      border-color: rgba(122, 146, 0, 0.3);
-      color: #1a1f00;
-  }
-  body[data-theme="light"] .edit-form-input:focus,
-  body[data-theme="light"] .edit-form-textarea:focus {
-      background: white;
-      border-color: #7a9200;
-  }
-  body[data-theme="light"] .btn-edit-save {
-      background: linear-gradient(105deg, #B0CB1F, #8aA000);
-      color: #1a1f00;
-  }
-
-  /* ===================== PRODUCT MODAL (változatlan) ===================== */
+  /* ========== PRODUCT MODAL (account.php saját) ========== */
   .product-modal-overlay {
       position: fixed;
       inset: 0;
@@ -921,12 +1309,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
 </style>
 </head>
 <body data-theme="dark">
-<div class="container">
-  <div class="header">
-    <h1 class="unselectable">Fiókom</h1>
-    <a href="main.php" class="back-btn unselectable">← Vissza</a>
-  </div>
+<!-- ========== FELSŐ SÁV (TOP BAR) ========== -->
+<div class="top-bar">
+    <div class="top-bar-left">
+        <a href="main.php" class="back-btn unselectable">← Vissza</a>
+        <?php if ($isAdmin): ?>
+            <a href="admin.php" class="admin-btn unselectable">
+                <span class="shield-icon">🛡️</span>
+                <span class="button-text">Admin</span>
+            </a>
+        <?php endif; ?>
+    </div>
+    <div class="top-bar-right">
+        <details class="account-menu">
+            <summary class="account-summary unselectable">
+                <span>⚙️</span>
+                <span class="button-text">FIÓK</span>
+            </summary>
+            <div class="account-dropdown">
+                <div class="user-info unselectable">
+                    <strong><?php echo htmlspecialchars($user['username']); ?></strong>
+                </div>
+                <!-- Fiókom link (jelenlegi oldalra mutat, de maradhat) -->
+                <a href="account.php" class="account-link"><span>👤 Fiókom</span></a>
+                <div class="dropdown-divider"></div>
+                <div class="theme-toggle-row">
+                    <span class="theme-toggle-label">☀️ Világos mód</span>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="themeSwitchMain">
+                        <span class="theme-switch-track"></span>
+                        <span class="theme-switch-thumb"></span>
+                    </label>
+                </div>
+                <div class="dropdown-divider"></div>
+                <form method="post" style="width:100%;margin:0;padding:0;">
+                    <button type="submit" name="logout" class="logout-button">
+                        <span class="unselectable">Kijelentkezés</span>
+                    </button>
+                </form>
+            </div>
+        </details>
+    </div>
+</div>
 
+<!-- ========== FŐ TARTALOM (account.php eredeti) ========== -->
+<div class="container">
   <div class="info-grid">
     <div class="info-card">
       <label class="unselectable">Felhasználónév</label>
@@ -970,7 +1397,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   </div>
 </div>
 
-<!-- Fiók módosító modal -->
+<!-- Fiók módosító modal (eredeti) -->
 <div class="modal-overlay" id="editModal">
   <div class="modal-card">
     <button class="modal-close unselectable" onclick="closeModal()">✕</button>
@@ -995,7 +1422,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   </div>
 </div>
 
-<!-- Termék szerkesztő modal – TELJESEN ÁTRENDEZETT STÍLUS -->
+<!-- Termék szerkesztő modal (account.php saját) -->
 <div class="edit-modal" id="editItemModal">
     <div class="edit-modal-content">
         <div class="edit-modal-header">
@@ -1077,13 +1504,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
 </div>
 
 <script>
-// Téma betöltése localStorage-ból
+// Téma betöltése localStorage-ból (az account.php-ban is)
 const themeLink = document.getElementById('themeStylesheet');
 const savedTheme = localStorage.getItem('theme') || 'dark';
 themeLink.href = savedTheme === 'light' ? 'theme-light.css' : 'theme-dark.css';
 document.body.setAttribute('data-theme', savedTheme);
 
-// Fiók módosítás modal
+// Témaváltó kapcsoló kezelése (a fiókmenüben lévő checkbox)
+const themeSwitch = document.getElementById('themeSwitchMain');
+if (themeSwitch) {
+    themeSwitch.checked = (savedTheme === 'light');
+    themeSwitch.addEventListener('change', function() {
+        const newTheme = this.checked ? 'light' : 'dark';
+        themeLink.href = newTheme === 'light' ? 'theme-light.css' : 'theme-dark.css';
+        localStorage.setItem('theme', newTheme);
+        document.body.setAttribute('data-theme', newTheme);
+    });
+}
+
+// Fiók módosítás modal (eredeti script)
 const modal = document.getElementById('editModal');
 const statusBox = document.getElementById('modalStatus');
 const form = document.getElementById('editForm');
@@ -1130,7 +1569,7 @@ form.addEventListener('submit', function(e) {
   });
 });
 
-// ===================== TERMÉK MODAL ÉS SZERKESZTÉS =====================
+// ===================== TERMÉK MODAL ÉS SZERKESZTÉS (account.php saját) =====================
 let currentProductImages = [];
 let currentImageIndex = 0;
 let currentProductId = null;
