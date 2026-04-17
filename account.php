@@ -87,6 +87,35 @@ try {
         exit;
     }
 
+    // =============================================
+    // TERMÉK MÓDOSÍTÁS KEZELÉSE (POST)
+    // =============================================
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_item'])) {
+        $itemId  = $_POST['item_id'] ?? '';
+        $title   = trim($_POST['edit_title'] ?? '');
+        $desc    = trim($_POST['edit_description'] ?? '');
+        $price   = trim($_POST['edit_price'] ?? '');
+
+        // Jogosultság ellenőrzés: csak a tulajdonos módosíthatja
+        $ownerCheck = $conn->prepare("SELECT user_id FROM items WHERE id = ?");
+        $ownerCheck->execute([$itemId]);
+        $ownerRow = $ownerCheck->fetch(PDO::FETCH_ASSOC);
+
+        if ($itemId && $ownerRow && $ownerRow['user_id'] == $userId && $title !== '' && $desc !== '' && is_numeric($price) && floatval($price) >= 0) {
+            try {
+                $upd = $conn->prepare("UPDATE items SET title=:title, description=:desc, price=:price WHERE id=:id");
+                $upd->execute([':title' => $title, ':desc' => $desc, ':price' => floatval($price), ':id' => $itemId]);
+                // Sikeres módosítás után átirányítás, hogy a változások látszódjanak
+                header("Location: account.php?edit=success");
+                exit();
+            } catch (Exception $e) {
+                $error = "Hiba a módosítás során: " . $e->getMessage();
+            }
+        } else {
+            $error = "Érvénytelen adatok vagy nincs jogosultság!";
+        }
+    }
+
     // Felhasználó adatainak lekérése
     $stmt = $conn->prepare("SELECT username, email FROM users WHERE id = ?");
     $stmt->execute([$userId]);
@@ -102,6 +131,9 @@ try {
     ");
     $itemStmt->execute([$userId]);
     $userItems = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Üzenet a sikeres módosításról (opcionális)
+    $editSuccess = isset($_GET['edit']) && $_GET['edit'] === 'success';
 
 } catch (PDOException $e) {
     die("Adatbázis hiba: " . $e->getMessage());
@@ -196,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   .mini-card .title { margin: 0; font-size: 0.9rem; color: var(--orange-bright); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; }
   .mini-card .price { margin: 0.3rem 0 0; font-size: 0.85rem; color: var(--text-primary); opacity: 0.8; user-select: none; }
 
-  /* Modal */
+  /* Fiók módosító modal */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 2000; }
   .modal-overlay.active { display: flex; }
   .modal-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 2rem; width: 90%; max-width: 420px; box-shadow: var(--shadow-deep); position: relative; }
@@ -213,9 +245,235 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   .status-msg.error { background: rgba(255, 50, 50, 0.15); border: 1px solid #ff4d4d; color: #ff8080; }
   .status-msg.success { background: rgba(0, 200, 100, 0.15); border: 1px solid #00c851; color: #5dffa0; }
 
-  /* =====================
-     PRODUCT MODAL - TELJES KÉPERNYŐS KÁRTYA, KÉP ARÁNYOS MÉRETEZÉSSEL
-     ===================== */
+  /* ===================== ÚJ EDIT MODAL STÍLUS – TELJESEN ÁTRENDEZVE ===================== */
+  .edit-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 6000;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+  }
+  .edit-modal.show {
+      display: flex;
+      opacity: 1;
+  }
+  .edit-modal-content {
+      width: 100%;
+      max-width: 560px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px);
+      border-radius: 32px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 140, 0, 0.2);
+      transform: translateY(30px) scale(0.96);
+      transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.25s ease;
+      opacity: 0;
+      overflow: hidden;
+  }
+  .edit-modal.show .edit-modal-content {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+  }
+  /* Fejléc új dizájn */
+  .edit-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.8rem;
+      background: rgba(255, 140, 0, 0.08);
+      border-bottom: 1px solid rgba(255, 140, 0, 0.2);
+  }
+  .edit-modal-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--orange-bright);
+      letter-spacing: -0.3px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+  }
+  .edit-modal-title::before {
+      content: "✏️";
+      font-size: 1.2rem;
+      filter: drop-shadow(0 0 4px rgba(255,140,0,0.4));
+  }
+  .edit-modal-close {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      border-radius: 40px;
+      width: 36px;
+      height: 36px;
+      font-size: 1.2rem;
+      color: var(--orange-bright);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+  }
+  .edit-modal-close:hover {
+      background: rgba(255, 140, 0, 0.25);
+      transform: scale(1.05);
+  }
+  /* Űrlap test – új elrendezés */
+  .edit-modal-body {
+      padding: 1.8rem 1.8rem 2rem;
+  }
+  .edit-form-group {
+      margin-bottom: 1.5rem;
+  }
+  .edit-form-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--orange-bright);
+      margin-bottom: 0.6rem;
+  }
+  .edit-form-label i {
+      font-style: normal;
+      font-size: 1rem;
+  }
+  .edit-form-input,
+  .edit-form-textarea {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 140, 0, 0.25);
+      border-radius: 20px;
+      padding: 0.85rem 1.2rem;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      outline: none;
+  }
+  .edit-form-input:focus,
+  .edit-form-textarea:focus {
+      border-color: var(--orange-bright);
+      background: rgba(0, 0, 0, 0.7);
+      box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.15);
+  }
+  .edit-form-textarea {
+      resize: vertical;
+      min-height: 120px;
+      border-radius: 20px;
+  }
+  /* Ár mező egyedi stílus */
+  .edit-price-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+  }
+  .edit-price-wrapper .edit-form-input {
+      padding-right: 3rem;
+  }
+  .edit-price-suffix {
+      position: absolute;
+      right: 1.2rem;
+      color: var(--orange-bright);
+      font-weight: 600;
+      font-size: 0.9rem;
+      pointer-events: none;
+      background: transparent;
+      backdrop-filter: blur(4px);
+  }
+  /* Gombok új dizájn */
+  .edit-modal-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+  }
+  .btn-edit-cancel,
+  .btn-edit-save {
+      flex: 1;
+      padding: 0.9rem 1rem;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 0.5px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      font-family: inherit;
+  }
+  .btn-edit-cancel {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 140, 0, 0.2);
+  }
+  .btn-edit-cancel:hover {
+      background: rgba(255, 140, 0, 0.1);
+      color: var(--orange-bright);
+      border-color: var(--orange-bright);
+  }
+  .btn-edit-save {
+      background: linear-gradient(105deg, #ff9a1f, #ff5500);
+      color: #0a0500;
+      box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
+  }
+  .btn-edit-save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(255, 140, 0, 0.4);
+  }
+  /* Sikeres üzenet az edit modalban */
+  .edit-success-banner {
+      margin: 0 1.8rem 1rem 1.8rem;
+      background: rgba(0, 200, 100, 0.12);
+      border: 1px solid #00c851;
+      border-radius: 40px;
+      padding: 0.6rem 1rem;
+      text-align: center;
+      color: #5dffa0;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+  }
+  /* A formnak ne legyen border vagy background */
+  #editItemForm {
+      background: none !important;
+      border: none !important;
+      box-shadow: none !important;
+  }
+  /* Light mode finomhangolás */
+  body[data-theme="light"] .edit-modal-content {
+      background: rgba(248, 252, 230, 0.98);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+  }
+  body[data-theme="light"] .edit-modal-header {
+      background: rgba(122, 146, 0, 0.08);
+      border-bottom-color: rgba(122, 146, 0, 0.25);
+  }
+  body[data-theme="light"] .edit-form-input,
+  body[data-theme="light"] .edit-form-textarea {
+      background: rgba(255, 255, 255, 0.6);
+      border-color: rgba(122, 146, 0, 0.3);
+      color: #1a1f00;
+  }
+  body[data-theme="light"] .edit-form-input:focus,
+  body[data-theme="light"] .edit-form-textarea:focus {
+      background: white;
+      border-color: #7a9200;
+  }
+  body[data-theme="light"] .btn-edit-save {
+      background: linear-gradient(105deg, #B0CB1F, #8aA000);
+      color: #1a1f00;
+  }
+
+  /* ===================== PRODUCT MODAL (változatlan) ===================== */
   .product-modal-overlay {
       position: fixed;
       inset: 0;
@@ -233,8 +491,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       display: flex;
       opacity: 1;
   }
-  
-  /* Kártya: fix méret, a képernyő 90%-a, nem a kép méretéhez igazodik */
   .product-modal-card {
       width: 90vw;
       height: 90vh;
@@ -256,8 +512,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   .product-modal-overlay.active .product-modal-card {
       transform: scale(1);
   }
-  
-  /* Fejléc (menu + close) - jobb felső sarokban */
   .product-modal-header {
       position: absolute;
       top: 1rem;
@@ -268,7 +522,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       gap: 0.75rem;
       z-index: 100;
   }
-  
   .product-modal-close {
       background: rgba(20, 20, 20, 0.9);
       border: 1px solid var(--orange-bright);
@@ -353,8 +606,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       background: rgba(255, 0, 0, 0.2);
       color: #ff0000;
   }
-  
-  /* Galéria konténer - teljes magasság kitöltése */
   .product-gallery {
       position: relative;
       height: 100%;
@@ -371,7 +622,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       flex: 1;
       border-radius: 16px;
       overflow: hidden;
-      border: 1px solid var(--glass-border);
       background: rgba(0, 0, 0, 0.5);
       display: flex;
       align-items: center;
@@ -386,6 +636,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       object-fit: contain;
       cursor: pointer;
       transition: opacity 0.2s ease;
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
   }
   .product-no-image-placeholder {
       text-align: center;
@@ -429,8 +681,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   .gallery-nav.hidden {
       display: none;
   }
-  
-  /* Thumbnails - felül, görgethető */
   .product-thumbnails {
       display: flex;
       gap: 0.75rem;
@@ -463,8 +713,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       height: 100%;
       object-fit: cover;
   }
-  
-  /* Termékadatok oszlop */
   .product-details {
       display: flex;
       flex-direction: column;
@@ -538,8 +786,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(0, 200, 0, 0.4);
   }
-  
-  /* Lightbox */
   .lightbox-overlay {
       position: fixed;
       inset: 0;
@@ -592,8 +838,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       color: black;
       transform: scale(1.05);
   }
-  
-  /* Reszponzív viselkedés */
   @media (max-width: 900px) {
       .product-modal-card {
           grid-template-columns: 1fr;
@@ -669,7 +913,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
           font-size: 1.4rem;
       }
   }
-  
   .unselectable {
       user-select: none;
       -webkit-user-select: none;
@@ -706,7 +949,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         <?php foreach ($userItems as $item): ?>
           <div class="mini-card" data-item-id="<?= htmlspecialchars($item['id']) ?>">
             <?php
-              // Kép lekérése a termékhez (elsődleges kép)
               $imgStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? AND is_primary = 1 LIMIT 1");
               $imgStmt->execute([$item['id']]);
               $primaryImage = $imgStmt->fetch(PDO::FETCH_ASSOC);
@@ -727,7 +969,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   </div>
 </div>
 
-<!-- Módosító Modal -->
+<!-- Fiók módosító modal -->
 <div class="modal-overlay" id="editModal">
   <div class="modal-card">
     <button class="modal-close unselectable" onclick="closeModal()">✕</button>
@@ -752,10 +994,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   </div>
 </div>
 
-<!-- ===================== TERMÉK MODAL ===================== -->
+<!-- Termék szerkesztő modal – TELJESEN ÁTRENDEZETT STÍLUS -->
+<div class="edit-modal" id="editItemModal">
+    <div class="edit-modal-content">
+        <div class="edit-modal-header">
+            <div class="edit-modal-title unselectable">Hirdetés szerkesztése</div>
+            <button class="edit-modal-close unselectable" onclick="closeEditItemModal()">✕</button>
+        </div>
+        <?php if ($editSuccess): ?>
+            <div class="edit-success-banner unselectable">
+                ✓ Módosítás sikeresen mentve!
+            </div>
+        <?php endif; ?>
+        <div class="edit-modal-body">
+            <form method="post" id="editItemForm">
+                <input type="hidden" name="item_id" id="editItemId">
+                <input type="hidden" name="edit_item" value="1">
+                <div class="edit-form-group">
+                    <label class="edit-form-label unselectable"><i>📌</i> Cím</label>
+                    <input class="edit-form-input" type="text" id="edit_title" name="edit_title" maxlength="255" autocomplete="off" required>
+                </div>
+                <div class="edit-form-group">
+                    <label class="edit-form-label unselectable"><i>📄</i> Leírás</label>
+                    <textarea class="edit-form-textarea" id="edit_description" name="edit_description" rows="5" required></textarea>
+                </div>
+                <div class="edit-form-group">
+                    <label class="edit-form-label unselectable"><i>💰</i> Ár</label>
+                    <div class="edit-price-wrapper">
+                        <input class="edit-form-input" type="number" id="edit_price" name="edit_price" min="0" step="1" required>
+                        <span class="edit-price-suffix unselectable">Ft</span>
+                    </div>
+                </div>
+                <div class="edit-modal-actions">
+                    <button type="button" class="btn-edit-cancel unselectable" onclick="closeEditItemModal()">Mégse</button>
+                    <button type="submit" class="btn-edit-save unselectable">Mentés</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Termék modal (részletek megjelenítése) -->
 <div class="product-modal-overlay" id="productModal">
     <div class="product-modal-card">
-        <!-- Fejléc (menu + close) - jobb felső sarokban -->
         <div class="product-modal-header">
             <div class="product-menu" id="productMenuContainer" style="display: none;">
                 <div class="product-menu-button unselectable" onclick="toggleProductMenu(this)">⋮</div>
@@ -766,28 +1047,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             </div>
             <button class="product-modal-close unselectable" id="closeProductModalBtn">✕</button>
         </div>
-
         <div class="product-gallery">
             <div class="product-thumbnails" id="productThumbnails"></div>
             <div class="product-main-image-container">
                 <img src="" alt="Termék képe" class="product-main-image" id="productMainImage" style="display: none;">
-                <div class="product-no-image-placeholder unselectable" id="productNoImagePlaceholder" style="display: none;">
-                    📷 Nincs kép
-                </div>
+                <div class="product-no-image-placeholder unselectable" id="productNoImagePlaceholder" style="display: none;">📷 Nincs kép</div>
                 <button class="gallery-nav prev unselectable" id="galleryPrev">❮</button>
                 <button class="gallery-nav next unselectable" id="galleryNext">❯</button>
             </div>
         </div>
-
         <div class="product-details">
             <h2 class="product-title unselectable" id="productTitle"></h2>
             <div class="product-price unselectable" id="productPrice"></div>
             <div class="product-seller unselectable" id="productSeller"></div>
             <div class="product-date unselectable" id="productDate"></div>
             <div class="product-description selectable" id="productDescription"></div>
-            <button class="product-buy-btn unselectable" id="productBuyBtn">
-                🛒 Vásárlás
-            </button>
+            <button class="product-buy-btn unselectable" id="productBuyBtn">🛒 Vásárlás</button>
         </div>
     </div>
 </div>
@@ -807,7 +1082,7 @@ const savedTheme = localStorage.getItem('theme') || 'dark';
 themeLink.href = savedTheme === 'light' ? 'theme-light.css' : 'theme-dark.css';
 document.body.setAttribute('data-theme', savedTheme);
 
-// Modal kezelés (fiók módosítás)
+// Fiók módosítás modal
 const modal = document.getElementById('editModal');
 const statusBox = document.getElementById('modalStatus');
 const form = document.getElementById('editForm');
@@ -823,15 +1098,12 @@ function closeModal() {
 }
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
-// AJAX fiók módosítás
 form.addEventListener('submit', function(e) {
   e.preventDefault();
   statusBox.style.display = 'none';
   submitBtn.disabled = true;
   submitBtn.textContent = 'Feldolgozás...';
-
   const formData = new FormData(form);
-
   fetch('account.php', {
     method: 'POST',
     body: formData,
@@ -842,11 +1114,8 @@ form.addEventListener('submit', function(e) {
     statusBox.textContent = data.message;
     statusBox.style.display = 'block';
     statusBox.classList.add(data.success ? 'success' : 'error');
-
     if (data.success) {
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
+      setTimeout(() => { window.location.reload(); }, 800);
     }
   })
   .catch(err => {
@@ -860,7 +1129,7 @@ form.addEventListener('submit', function(e) {
   });
 });
 
-// ===================== TERMÉK MODAL LOGIKA =====================
+// ===================== TERMÉK MODAL ÉS SZERKESZTÉS =====================
 let currentProductImages = [];
 let currentImageIndex = 0;
 let currentProductId = null;
@@ -874,15 +1143,39 @@ const lightboxOverlay = document.getElementById('lightboxOverlay');
 const lightboxImage = document.getElementById('lightboxImage');
 const lightboxClose = document.getElementById('lightboxClose');
 
+// Edit modal elemek
+const editItemModal = document.getElementById('editItemModal');
+const editItemId = document.getElementById('editItemId');
+const editTitle = document.getElementById('edit_title');
+const editDesc = document.getElementById('edit_description');
+const editPrice = document.getElementById('edit_price');
+
+function openEditItemModal(itemId, title, description, price) {
+    editItemId.value = itemId;
+    editTitle.value = title;
+    editDesc.value = description;
+    editPrice.value = parseFloat(price) || price;
+    editItemModal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+function closeEditItemModal() {
+    editItemModal.classList.remove('show');
+    document.body.style.overflow = '';
+}
+editItemModal.addEventListener('click', function(e) {
+    if (e.target === editItemModal) closeEditItemModal();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && editItemModal.classList.contains('show')) closeEditItemModal();
+});
+
 function setMainImage(index) {
     if (index >= 0 && index < currentProductImages.length && currentProductImages[index]) {
         productMainImage.style.display = 'block';
         productNoImagePlaceholder.style.display = 'none';
         productMainImage.src = currentProductImages[index];
         currentImageIndex = index;
-        productMainImage.onload = function() {
-            adjustImageContainerHeight();
-        };
+        productMainImage.onload = function() { adjustImageContainerHeight(); };
         productMainImage.onerror = function() {
             productMainImage.style.display = 'none';
             productNoImagePlaceholder.style.display = 'block';
@@ -902,11 +1195,9 @@ function adjustImageContainerHeight() {
     const imageContainer = document.querySelector('.product-main-image-container');
     const gallery = document.querySelector('.product-gallery');
     if (imageContainer && gallery) {
-        // A konténer rugalmas marad (flex: 1), de biztosítjuk, hogy ne lógjon ki
         imageContainer.style.height = 'auto';
-        const containerRect = imageContainer.getBoundingClientRect();
         const maxHeight = gallery.clientHeight - (document.querySelector('.product-thumbnails')?.offsetHeight || 80) - 20;
-        if (containerRect.height > maxHeight) {
+        if (imageContainer.clientHeight > maxHeight) {
             imageContainer.style.height = maxHeight + 'px';
         }
     }
@@ -915,17 +1206,13 @@ function adjustImageContainerHeight() {
 function openProductModal() {
     productModal.classList.add('active');
     document.body.style.overflow = 'hidden';
-    setTimeout(() => {
-        adjustImageContainerHeight();
-    }, 100);
+    setTimeout(() => adjustImageContainerHeight(), 100);
 }
-
 function closeProductModal() {
     if (lightboxOverlay.classList.contains('active')) closeLightbox();
     productModal.classList.remove('active');
     document.body.style.overflow = '';
 }
-
 function closeLightbox() {
     lightboxOverlay.classList.remove('active');
 }
@@ -938,7 +1225,6 @@ function fetchItemDetails(itemId) {
                 console.error(item.error);
                 return;
             }
-
             currentProductId = item.id;
             currentProductUserId = item.user_id;
             currentProductImages = item.images;
@@ -953,7 +1239,6 @@ function fetchItemDetails(itemId) {
 
             const thumbnailsContainer = document.getElementById('productThumbnails');
             thumbnailsContainer.innerHTML = '';
-
             if (item.images && item.images.length > 0) {
                 item.images.forEach((img, index) => {
                     const thumbnail = document.createElement('div');
@@ -981,23 +1266,18 @@ function fetchItemDetails(itemId) {
             const isOwner = (parseInt(item.user_id) === <?php echo (int)$_SESSION['user_id']; ?>);
 
             menuContainer.style.display = 'block';
-
-            // Szerkesztés gomb - csak a tulajdonosnak
             if (isOwner) {
                 editBtn.style.display = 'block';
                 editBtn.onclick = () => {
                     closeProductModal();
-                    alert('Saját termék szerkesztése a főoldalon a ⋮ menüből lehetséges.');
+                    openEditItemModal(item.id, item.title, item.description, item.price);
                 };
                 deleteBtn.style.display = 'block';
                 deleteBtn.onclick = () => {
                     if (confirm('Biztosan törlöd ezt a terméket?')) {
                         const form = document.createElement('form');
                         form.method = 'POST';
-                        form.innerHTML = `
-                            <input type="hidden" name="item_id" value="${item.id}">
-                            <input type="hidden" name="delete_item" value="1">
-                        `;
+                        form.innerHTML = `<input type="hidden" name="item_id" value="${item.id}"><input type="hidden" name="delete_item" value="1">`;
                         document.body.appendChild(form);
                         form.submit();
                     }
@@ -1006,7 +1286,6 @@ function fetchItemDetails(itemId) {
                 editBtn.style.display = 'none';
                 deleteBtn.style.display = 'none';
             }
-
             openProductModal();
         })
         .catch(err => console.error('Error fetching item details:', err));
@@ -1022,9 +1301,7 @@ function toggleProductMenu(button) {
 
 // Eseménykezelők
 closeProductModalBtn.addEventListener('click', closeProductModal);
-productModal.addEventListener('click', (e) => {
-    if (e.target === productModal) closeProductModal();
-});
+productModal.addEventListener('click', (e) => { if (e.target === productModal) closeProductModal(); });
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && productModal.classList.contains('active')) closeProductModal();
 });
@@ -1046,20 +1323,15 @@ productMainImage.addEventListener('click', (e) => {
     }
 });
 lightboxClose.addEventListener('click', closeLightbox);
-lightboxOverlay.addEventListener('click', (e) => {
-    if (e.target === lightboxOverlay) closeLightbox();
-});
+lightboxOverlay.addEventListener('click', (e) => { if (e.target === lightboxOverlay) closeLightbox(); });
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && lightboxOverlay.classList.contains('active')) closeLightbox();
 });
 window.addEventListener('resize', () => {
     if (productModal.classList.contains('active')) adjustImageContainerHeight();
 });
-document.getElementById('productBuyBtn').addEventListener('click', () => {
-    alert('Vásárlás funkció még nem elérhető!');
-});
+document.getElementById('productBuyBtn').addEventListener('click', () => alert('Vásárlás funkció még nem elérhető!'));
 
-// Helper: HTML escape
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, function(m) {
@@ -1070,13 +1342,11 @@ function escapeHtml(str) {
     });
 }
 
-// Kattintás a termékekre a .mini-card-on
+// Kattintás a termékekre
 document.querySelectorAll('.mini-card').forEach(card => {
     card.addEventListener('click', function(e) {
         const itemId = this.dataset.itemId;
-        if (itemId) {
-            fetchItemDetails(itemId);
-        }
+        if (itemId) fetchItemDetails(itemId);
     });
 });
 </script>
