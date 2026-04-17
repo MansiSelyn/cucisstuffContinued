@@ -661,7 +661,7 @@ body[data-theme="dark"] .product-menu-item.delete:hover {
 }
 
 /* ============================================
-   REPORT MODAL - DARK THEME
+   REPORT MODAL - DARK THEME (JAVÍTOTT: textarea resize: none)
    ============================================ */
 body[data-theme="dark"] .report-modal-content {
     background: rgba(10, 10, 10, 0.95);
@@ -672,13 +672,14 @@ body[data-theme="dark"] .report-modal-title {
     color: var(--orange-bright);
 }
 
-body[data-theme="dark"] .report-form-textarea {
+body[data-theme="dark"] .report-modal .form-textarea {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 140, 0, 0.3);
     color: var(--text-primary);
+    resize: none; /* Ne lehessen átméretezni a textareát */
 }
 
-body[data-theme="dark"] .report-form-textarea:focus {
+body[data-theme="dark"] .report-modal .form-textarea:focus {
     border-color: var(--orange-bright);
 }
 
@@ -691,12 +692,8 @@ body[data-theme="dark"] .report-submit-btn:hover {
 }
 
 /* ============================================
-   REPORT MODAL - ADDITIONAL OVERRIDES (textarea non-resizable & form no border/background)
+   REPORT MODAL - ADDITIONAL OVERRIDES (form no border/background)
    ============================================ */
-body[data-theme="dark"] .report-form-textarea {
-    resize: none; /* Ne lehessen átméretezni a textareát */
-}
-
 body[data-theme="dark"] #reportForm {
     background: none !important;
     border: none !important;
