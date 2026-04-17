@@ -73,6 +73,8 @@ try {
 
         $success = false;
         $error   = '';
+        $newMsgId = null;
+        $newRow   = null;
         if ($receiverId > 0 && $receiverId !== $currentUserId && $message !== '') {
             $chk = $conn->prepare("SELECT id FROM users WHERE id = ?");
             $chk->execute([$receiverId]);
@@ -85,6 +87,10 @@ try {
 
                 $ins = $conn->prepare("INSERT INTO uzenetek (id, sender_id, receiver_id, message) VALUES (?, ?, ?, ?)");
                 $ins->execute([$newMsgId, $currentUserId, $receiverId, $message]);
+                // Visszaadjuk a valós ID-t és sent_at-et, hogy a kliens ne duplikáljon
+                $fetchNew = $conn->prepare("SELECT sent_at FROM uzenetek WHERE id = ?");
+                $fetchNew->execute([$newMsgId]);
+                $newRow = $fetchNew->fetch(PDO::FETCH_ASSOC);
                 $success = true;
             } else {
                 $error = 'Címzett nem található.';
@@ -93,7 +99,12 @@ try {
             $error = 'Érvénytelen adatok.';
         }
 
-        echo json_encode(['success' => $success, 'error' => $error]);
+        echo json_encode([
+            'success' => $success,
+            'error'   => $error,
+            'msg_id'  => $success ? $newMsgId : null,
+            'sent_at' => $success ? $newRow['sent_at'] : null,
+        ]);
         exit;
     }
 
@@ -1342,11 +1353,35 @@ try {
             }
         }
 
+        let isSending = false;
+
         async function sendMessage() {
+            if (isSending) return;
             const message = msgInput.value.trim();
             if (!message) return;
             const receiver = partnerId;
             if (!receiver) return;
+
+            isSending = true;
+            msgInput.disabled = true;
+            if (sendBtn) sendBtn.disabled = true;
+
+            // Optimista elem azonnal megjelenik
+            const tempId = 'temp_' + Date.now();
+            const now = new Date();
+            const sentAt = now.toISOString().slice(0, 19).replace('T', ' ');
+            const tempMsg = {
+                id: tempId,
+                sender_id: currentUserId,
+                receiver_id: receiver,
+                message: message,
+                sent_at: sentAt,
+                is_read: 0
+            };
+            appendMessage(tempMsg);
+            scrollToBottom();
+            msgInput.value = '';
+            msgInput.style.height = 'auto';
 
             const formData = new URLSearchParams();
             formData.append('send_message_ajax', '1');
@@ -1360,30 +1395,37 @@ try {
                     body: formData
                 });
                 const data = await response.json();
-                if (data.success) {
-                    msgInput.value = '';
-                    msgInput.style.height = 'auto';
-                    // Optimista frissítés: ideiglenes üzenet hozzáadása (majd a polling frissíti a valós ID-ra)
-                    const tempId = 'temp_' + Date.now();
-                    const now = new Date();
-                    const sentAt = now.toISOString().slice(0, 19).replace('T', ' ');
-                    const tempMsg = {
-                        id: tempId,
-                        sender_id: currentUserId,
-                        receiver_id: receiver,
-                        message: message,
-                        sent_at: sentAt,
-                        is_read: 0
-                    };
-                    appendMessage(tempMsg);
-                    if (sentAt > lastTimestamp) lastTimestamp = sentAt;
-                    scrollToBottom();
-                } else {
+                if (data.success && data.msg_id) {
+                    // Cseréljük a temp elemet a valós ID-ra és sent_at-re
+                    const tempRow = document.querySelector(`.msg-row[data-msg-id="${tempId}"]`);
+                    if (tempRow) {
+                        tempRow.setAttribute('data-msg-id', data.msg_id);
+                        const bubble = tempRow.querySelector('.msg-bubble');
+                        if (bubble) bubble.setAttribute('data-sent-at', data.sent_at);
+                        // edit/delete gombokban is frissítjük az ID-t
+                        tempRow.querySelectorAll('[data-msg-id]').forEach(el => {
+                            el.setAttribute('data-msg-id', data.msg_id);
+                        });
+                    }
+                    if (data.sent_at > lastTimestamp) lastTimestamp = data.sent_at;
+                } else if (!data.success) {
+                    // Ha sikertelen, töröljük az optimista elemet
+                    const tempRow = document.querySelector(`.msg-row[data-msg-id="${tempId}"]`);
+                    if (tempRow) tempRow.remove();
                     showToast(data.error || 'Hiba az üzenet küldésekor.');
+                    msgInput.value = message; // visszaállítjuk a szöveget
                 }
             } catch (err) {
+                const tempRow = document.querySelector(`.msg-row[data-msg-id="${tempId}"]`);
+                if (tempRow) tempRow.remove();
                 showToast('Hálózati hiba.');
+                msgInput.value = message;
                 console.error(err);
+            } finally {
+                isSending = false;
+                msgInput.disabled = false;
+                if (sendBtn) sendBtn.disabled = false;
+                msgInput.focus();
             }
         }
 
@@ -1406,7 +1448,15 @@ try {
         if (partnerId) {
             lastTimestamp = getMaxTimestampFromDOM();
             if (!lastTimestamp) lastTimestamp = '1970-01-01 00:00:00';
-            pollInterval = setInterval(pollNewMessages, 2000);
+
+            // Aktív chaten 500ms, háttérablakban 3000ms
+            function startPolling() {
+                if (pollInterval) clearInterval(pollInterval);
+                const interval = document.hidden ? 3000 : 500;
+                pollInterval = setInterval(pollNewMessages, interval);
+            }
+            startPolling();
+            document.addEventListener('visibilitychange', startPolling);
         }
 
         const saved = localStorage.getItem('theme');
