@@ -168,39 +168,6 @@ body[data-theme="dark"] {
     color: #f5f0e8 !important;
 }
 
-body[data-theme="dark"] .account-summary {
-    border-color: rgba(255, 140, 0, 0.38);
-    background: rgba(0, 0, 0, 0.5);
-    color: var(--orange-bright);
-}
-
-body[data-theme="dark"] .account-summary:hover {
-    background: rgba(255, 140, 0, 0.1);
-    border-color: var(--orange-bright);
-}
-
-body[data-theme="dark"] .account-dropdown {
-    background: rgba(0, 0, 0, 0.8);
-    border-color: rgba(255, 140, 0, 0.25);
-}
-
-body[data-theme="dark"] .user-info {
-    color: var(--text-primary);
-}
-
-body[data-theme="dark"] .user-info strong {
-    color: var(--orange-bright);
-}
-
-body[data-theme="dark"] .dropdown-divider {
-    background: linear-gradient(90deg, transparent, var(--orange-bright), transparent);
-}
-
-body[data-theme="dark"] .logout-button span:hover {
-    background: rgba(255, 140, 0, 0.15);
-    color: var(--orange-bright);
-}
-
 body[data-theme="dark"] .upload-btn {
     background: rgba(255, 140, 0, 0.12);
     border-color: rgba(255, 140, 0, 0.3);
@@ -307,47 +274,35 @@ body[data-theme="dark"] .pagination-btn:hover {
 }
 
 /* ============================================
-   DARK MODE – TELJESEN ÁTLÁTSZÓ MODÁL LÉKEREKÍTETT NARANCS BORDERREL
+   DARK MODE – TELJESEN ÁTLÁTSZÓ MODÁL NARANCS BORDERREL
    ============================================ */
 
-/* Modal overlay - semi-transparent background */
 body[data-theme="dark"] .modal-overlay {
     background: rgba(0, 0, 0, 0.6) !important;
 }
 
-/* Modal card - transparent with orange rounded border */
 body[data-theme="dark"] .modal-card {
     background: transparent !important;
     backdrop-filter: none !important;
     border: 2px solid var(--orange-bright) !important;
     border-radius: 32px !important;
     box-shadow: 0 0 40px rgba(255, 140, 0, 0.35) !important;
-    padding: 2rem !important;
-    max-width: 500px !important;
-    width: 100% !important;
-    transition: all 0.3s ease;
 }
 
-/* Hover effect - stronger glow */
 body[data-theme="dark"] .modal-card:hover {
     box-shadow: 0 0 60px rgba(255, 140, 0, 0.55) !important;
     border-color: #ffaa33 !important;
 }
 
-/* Form container - transparent */
 body[data-theme="dark"] #uploadForm {
     background: transparent !important;
     box-shadow: none !important;
     border: none !important;
-    padding: 0 !important;
 }
 
-/* Image upload container - transparent with dashed border */
 body[data-theme="dark"] .image-upload-container {
     background: transparent !important;
     border: 2px dashed rgba(255, 140, 0, 0.4) !important;
-    border-radius: 20px !important;
-    transition: all 0.3s ease;
 }
 
 body[data-theme="dark"] .image-upload-container:hover {
@@ -355,31 +310,15 @@ body[data-theme="dark"] .image-upload-container:hover {
     background: rgba(255, 140, 0, 0.05) !important;
 }
 
-/* Form groups */
-body[data-theme="dark"] .form-group {
-    background: transparent !important;
-}
-
-/* Labels */
 body[data-theme="dark"] .form-label {
     color: rgba(255, 255, 255, 0.85) !important;
-    background: transparent !important;
-    font-weight: 500;
 }
 
-body[data-theme="dark"] .form-label .required-star {
-    color: var(--orange-bright);
-}
-
-/* Input fields - styled for readability */
 body[data-theme="dark"] .form-input,
 body[data-theme="dark"] .form-textarea {
     background: rgba(0, 0, 0, 0.75) !important;
     border: 1px solid rgba(255, 140, 0, 0.4) !important;
-    border-radius: 16px !important;
     color: var(--text-primary) !important;
-    backdrop-filter: blur(4px);
-    transition: all 0.2s ease;
 }
 
 body[data-theme="dark"] .form-input:focus,
@@ -387,154 +326,50 @@ body[data-theme="dark"] .form-textarea:focus {
     border-color: var(--orange-bright) !important;
     background: rgba(0, 0, 0, 0.9) !important;
     box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.25) !important;
-    outline: none;
-}
-
-/* Price wrapper */
-body[data-theme="dark"] .price-wrapper {
-    background: transparent !important;
 }
 
 body[data-theme="dark"] .price-suffix {
     color: var(--orange-bright) !important;
-    background: transparent !important;
-    font-weight: 600;
 }
 
-/* Error messages */
-body[data-theme="dark"] .field-error {
-    background: transparent !important;
-    color: #ff6b6b !important;
-    font-size: 0.8rem;
-    margin-top: 0.3rem;
-}
-
-/* Success/error banners */
-body[data-theme="dark"] .success-banner,
-body[data-theme="dark"] .error-banner {
-    background: rgba(0, 0, 0, 0.7) !important;
-    backdrop-filter: blur(8px) !important;
-    border: 1px solid rgba(255, 140, 0, 0.3) !important;
-    border-radius: 16px !important;
-}
-
-body[data-theme="dark"] .success-banner {
-    color: #5dffa0 !important;
-}
-
-body[data-theme="dark"] .error-banner {
-    color: #ff8080 !important;
-}
-
-/* Submit button */
 body[data-theme="dark"] .submit-btn {
     background: linear-gradient(135deg, rgba(255, 140, 0, 0.9), rgba(255, 85, 0, 0.9)) !important;
-    border: none !important;
-    border-radius: 40px !important;
-    box-shadow: 0 4px 20px rgba(255, 140, 0, 0.3) !important;
-    font-weight: bold;
-    letter-spacing: 1px;
-    transition: all 0.3s ease;
 }
 
 body[data-theme="dark"] .submit-btn:hover {
     background: linear-gradient(135deg, #ff8c00, #ff4400) !important;
     box-shadow: 0 6px 28px rgba(255, 140, 0, 0.5) !important;
-    transform: translateY(-2px);
 }
 
-/* Modal title and subtitle */
 body[data-theme="dark"] .modal-title,
 body[data-theme="dark"] .modal-subtitle {
-    background: transparent !important;
     color: var(--orange-bright) !important;
-    text-shadow: 0 0 10px rgba(255, 140, 0, 0.3);
 }
 
-body[data-theme="dark"] .modal-title {
-    font-size: 1.8rem;
-    font-weight: bold;
-}
-
-body[data-theme="dark"] .modal-subtitle {
-    font-size: 0.9rem;
-    opacity: 0.8;
-    margin-bottom: 1.5rem;
-}
-
-/* Image preview items */
 body[data-theme="dark"] .image-preview-item {
     background: rgba(0, 0, 0, 0.6) !important;
     border: 1px solid rgba(255, 140, 0, 0.4) !important;
-    border-radius: 12px !important;
-    overflow: hidden;
 }
 
 body[data-theme="dark"] .image-preview-remove {
     background: rgba(0, 0, 0, 0.7) !important;
     border: 1px solid var(--orange-bright) !important;
-    border-radius: 50% !important;
-}
-
-body[data-theme="dark"] .image-preview-remove:hover {
-    background: rgba(255, 0, 0, 0.7) !important;
 }
 
 body[data-theme="dark"] .primary-badge {
     background: var(--orange-bright) !important;
     color: black !important;
-    border-radius: 8px !important;
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
 }
 
-/* Image upload label */
-body[data-theme="dark"] .image-upload-label {
-    background: transparent !important;
-    color: rgba(255, 255, 255, 0.7) !important;
-}
-
-body[data-theme="dark"] .image-upload-icon {
-    color: var(--orange-bright) !important;
-    font-size: 2rem;
-}
-
-body[data-theme="dark"] .image-upload-hint small {
-    color: rgba(255, 255, 255, 0.5) !important;
-}
-
-/* Modal close button */
 body[data-theme="dark"] .modal-close {
     background: rgba(0, 0, 0, 0.5) !important;
-    backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 140, 0, 0.4) !important;
-    border-radius: 50% !important;
     color: var(--orange-bright) !important;
-    width: 36px;
-    height: 36px;
-    font-size: 1.2rem;
-    transition: all 0.2s ease;
 }
 
 body[data-theme="dark"] .modal-close:hover {
     background: rgba(255, 140, 0, 0.2) !important;
     color: #ffaa33 !important;
-    transform: scale(1.05);
-}
-
-/* ============================================
-   ACCOUNT.PHP - EDIT FORM (no background/border)
-   ============================================ */
-body[data-theme="dark"] #editForm {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-body[data-theme="dark"] #editForm .form-group {
-    background: transparent;
 }
 
 /* ============================================
@@ -564,53 +399,27 @@ body[data-theme="dark"] .product-gallery {
     background: rgba(0, 0, 0, 0.3) !important;
 }
 
-body[data-theme="dark"] .product-main-image-container {
-    background: rgba(0, 0, 0, 0.5) !important;
-    border-color: rgba(255, 140, 0, 0.2) !important;
-}
-
 body[data-theme="dark"] .product-details {
     background: rgba(10, 10, 10, 0.8) !important;
     border-color: rgba(255, 140, 0, 0.2) !important;
 }
 
-body[data-theme="dark"] .product-title {
-    color: var(--orange-bright) !important;
-}
-
+body[data-theme="dark"] .product-title,
 body[data-theme="dark"] .product-price {
     color: var(--orange-bright) !important;
-    text-shadow: 0 0 30px var(--orange-glow) !important;
-}
-
-body[data-theme="dark"] .product-seller {
-    color: rgba(255, 255, 255, 0.7) !important;
 }
 
 body[data-theme="dark"] .product-seller strong {
     color: var(--orange-bright) !important;
 }
 
-body[data-theme="dark"] .product-date {
-    color: rgba(255, 255, 255, 0.4) !important;
-}
-
 body[data-theme="dark"] .product-description {
     background: rgba(0, 0, 0, 0.5) !important;
     color: rgba(255, 255, 255, 0.9) !important;
-    border-color: rgba(255, 140, 0, 0.2) !important;
 }
 
 body[data-theme="dark"] .product-buy-btn {
     background: linear-gradient(135deg, #00c851, #007e33) !important;
-}
-
-body[data-theme="dark"] .product-buy-btn:hover {
-    box-shadow: 0 10px 30px rgba(0, 200, 0, 0.4) !important;
-}
-
-body[data-theme="dark"] .product-thumbnail {
-    border-color: transparent;
 }
 
 body[data-theme="dark"] .product-thumbnail.active {
@@ -621,7 +430,6 @@ body[data-theme="dark"] .product-thumbnail.active {
 body[data-theme="dark"] .gallery-nav {
     background: rgba(0, 0, 0, 0.7) !important;
     border-color: var(--orange-bright) !important;
-    color: white !important;
 }
 
 body[data-theme="dark"] .gallery-nav:hover {
@@ -643,7 +451,6 @@ body[data-theme="dark"] .product-menu-button:hover {
 body[data-theme="dark"] .product-menu-content {
     background: rgba(10, 10, 10, 0.95) !important;
     border-color: var(--orange-bright) !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 140, 0, 0.2) !important;
 }
 
 body[data-theme="dark"] .product-menu-item {
@@ -655,13 +462,8 @@ body[data-theme="dark"] .product-menu-item:hover {
     color: var(--orange-bright) !important;
 }
 
-body[data-theme="dark"] .product-menu-item.delete:hover {
-    background: rgba(255, 0, 0, 0.2) !important;
-    color: #ff0000 !important;
-}
-
 /* ============================================
-   REPORT MODAL - DARK THEME (JAVÍTOTT: textarea resize: none)
+   REPORT MODAL - DARK THEME
    ============================================ */
 body[data-theme="dark"] .report-modal-content {
     background: rgba(10, 10, 10, 0.95);
@@ -672,87 +474,8 @@ body[data-theme="dark"] .report-modal-title {
     color: var(--orange-bright);
 }
 
-body[data-theme="dark"] .report-modal .form-textarea {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 140, 0, 0.3);
-    color: var(--text-primary);
-    resize: none; /* Ne lehessen átméretezni a textareát */
-}
-
-body[data-theme="dark"] .report-modal .form-textarea:focus {
-    border-color: var(--orange-bright);
-}
-
 body[data-theme="dark"] .report-submit-btn {
     background: linear-gradient(135deg, var(--orange-bright), #ff5500);
-}
-
-body[data-theme="dark"] .report-submit-btn:hover {
-    box-shadow: 0 5px 20px rgba(255, 140, 0, 0.4);
-}
-
-/* ============================================
-   REPORT MODAL - ADDITIONAL OVERRIDES (form no border/background)
-   ============================================ */
-body[data-theme="dark"] #reportForm {
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
-}
-
-/* ============================================
-   LIGHTBOX - DARK THEME
-   ============================================ */
-body[data-theme="dark"] .lightbox-overlay {
-    background: rgba(0, 0, 0, 0.95) !important;
-}
-
-body[data-theme="dark"] .lightbox-image {
-    border-color: var(--orange-bright) !important;
-}
-
-body[data-theme="dark"] .lightbox-close {
-    background: rgba(20, 20, 20, 0.9) !important;
-    border-color: var(--orange-bright) !important;
-    color: var(--orange-bright) !important;
-}
-
-body[data-theme="dark"] .lightbox-close:hover {
-    background: var(--orange-bright) !important;
-    color: black !important;
-}
-
-/* ============================================
-   H1 TEXT-SHADOW - DARK THEME
-   ============================================ */
-body[data-theme="dark"] h1 {
-    text-shadow:
-        0 0 10px rgba(255, 140, 0, 0.6),
-        0 0 30px rgba(255, 80, 0, 0.3),
-        0 2px 4px rgba(0, 0, 0, 0.8) !important;
-}
-
-/* ============================================
-   SCROLLBAR - DARK THEME
-   ============================================ */
-body[data-theme="dark"] ::-webkit-scrollbar-track {
-    background: #0a0a0a;
-}
-
-body[data-theme="dark"] ::-webkit-scrollbar-thumb {
-    background: rgba(255, 120, 0, 0.3);
-}
-
-body[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 140, 0, 0.5);
-}
-
-/* ============================================
-   SELECTION - DARK THEME
-   ============================================ */
-body[data-theme="dark"] ::selection {
-    background: rgba(255, 120, 0, 0.35);
-    color: #fff;
 }
 
 /* ============================================
@@ -761,22 +484,6 @@ body[data-theme="dark"] ::selection {
 body[data-theme="dark"] .edit-modal {
     background: rgba(0, 0, 0, 0.85) !important;
     backdrop-filter: blur(8px);
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 5500;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-body[data-theme="dark"] .edit-modal.show {
-    display: flex;
-    opacity: 1;
 }
 
 body[data-theme="dark"] .edit-modal-content {
@@ -784,85 +491,28 @@ body[data-theme="dark"] .edit-modal-content {
     border: 2px solid var(--orange-bright) !important;
     border-radius: 28px !important;
     box-shadow: 0 0 40px rgba(255, 140, 0, 0.35) !important;
-    width: 100%;
-    max-width: 500px;
-    padding: 2rem 1.8rem 1.8rem;
-    transform: translateY(20px) scale(0.98);
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
-    opacity: 0;
-}
-
-body[data-theme="dark"] .edit-modal.show .edit-modal-content {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-}
-
-body[data-theme="dark"] .edit-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
 }
 
 body[data-theme="dark"] .edit-modal-title {
     color: var(--orange-bright) !important;
-    font-size: 1.4rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0;
 }
 
 body[data-theme="dark"] .edit-modal-close {
     background: rgba(255, 140, 0, 0.15);
     border: 1px solid var(--orange-bright);
     color: var(--orange-bright);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
 }
 
 body[data-theme="dark"] .edit-modal-close:hover {
     background: var(--orange-bright);
     color: #000;
-    transform: scale(1.05);
-    box-shadow: 0 0 12px rgba(255, 140, 0, 0.5);
-}
-
-body[data-theme="dark"] .edit-form-group {
-    margin-bottom: 1.2rem;
-}
-
-body[data-theme="dark"] .edit-form-label {
-    color: rgba(255, 255, 255, 0.7) !important;
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 0.4rem;
 }
 
 body[data-theme="dark"] .edit-form-input,
 body[data-theme="dark"] .edit-form-textarea {
     background: rgba(0, 0, 0, 0.8) !important;
     border: 1px solid rgba(255, 140, 0, 0.4) !important;
-    border-radius: 12px;
     color: var(--text-primary) !important;
-    width: 100%;
-    padding: 0.75rem 1rem;
-    font-family: inherit;
-    font-size: 0.9rem;
-    transition: all 0.25s ease;
-    outline: none;
-    resize: none;
-    overflow-y: auto;
-    min-height: 100px;
 }
 
 body[data-theme="dark"] .edit-form-input:focus,
@@ -872,46 +522,16 @@ body[data-theme="dark"] .edit-form-textarea:focus {
     box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.25) !important;
 }
 
-body[data-theme="dark"] .edit-price-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-body[data-theme="dark"] .edit-price-wrapper .edit-form-input {
-    padding-right: 3rem;
-}
-
 body[data-theme="dark"] .edit-price-suffix {
     color: var(--orange-bright) !important;
-    position: absolute;
-    right: 1rem;
-    font-weight: 600;
-    font-size: 0.9rem;
-    pointer-events: none;
-    user-select: none;
 }
 
 body[data-theme="dark"] .edit-modal .submit-btn {
     background: linear-gradient(135deg, rgba(255, 140, 0, 0.9), rgba(255, 85, 0, 0.9)) !important;
-    box-shadow: 0 4px 20px rgba(255, 140, 0, 0.3) !important;
-    width: 100%;
-    padding: 0.85rem;
-    border: none;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    letter-spacing: 0.03em;
-    transition: all 0.25s ease;
-    margin-top: 0.5rem;
-    color: #0a0500;
 }
 
 body[data-theme="dark"] .edit-modal .submit-btn:hover {
     background: linear-gradient(135deg, #ff8c00, #ff4400) !important;
-    box-shadow: 0 6px 28px rgba(255, 140, 0, 0.5) !important;
-    transform: translateY(-2px);
 }
 
 /* ============================================
@@ -919,22 +539,16 @@ body[data-theme="dark"] .edit-modal .submit-btn:hover {
    ============================================ */
 body[data-theme="dark"] .floating-messages-btn {
     background: linear-gradient(135deg, #ff9a1f, #e07800) !important;
-    box-shadow: 0 6px 24px rgba(255, 140, 0, 0.45) !important;
     color: #000 !important;
-}
-
-body[data-theme="dark"] .floating-messages-btn:hover {
-    box-shadow: 0 10px 36px rgba(255, 140, 0, 0.65) !important;
 }
 
 body[data-theme="dark"] .floating-messages-badge {
     background: #cc1111 !important;
     border-color: #000 !important;
-    color: #fff !important;
 }
 
 /* ============================================
-   SELLER POPUP FULLSCREEN - DARK THEME
+   SELLER POPUP - DARK THEME
    ============================================ */
 body[data-theme="dark"] .seller-popup-overlay {
     background: rgba(0, 0, 0, 0.98) !important;
@@ -966,16 +580,11 @@ body[data-theme="dark"] .seller-popup-close:hover {
 
 body[data-theme="dark"] .seller-popup-avatar {
     background: linear-gradient(135deg, #ff9a1f, #e07800) !important;
-    box-shadow: 0 0 40px rgba(255, 140, 0, 0.3) !important;
     color: #000 !important;
 }
 
 body[data-theme="dark"] .seller-popup-name {
     color: var(--orange-bright) !important;
-}
-
-body[data-theme="dark"] .seller-popup-meta {
-    color: rgba(255, 255, 255, 0.38) !important;
 }
 
 body[data-theme="dark"] .seller-stat {
@@ -985,14 +594,6 @@ body[data-theme="dark"] .seller-stat {
 
 body[data-theme="dark"] .seller-stat-value {
     color: var(--orange-bright) !important;
-}
-
-body[data-theme="dark"] .seller-stat-label {
-    color: rgba(255, 255, 255, 0.38) !important;
-}
-
-body[data-theme="dark"] .seller-popup-items-title {
-    color: rgba(255, 255, 255, 0.28) !important;
 }
 
 body[data-theme="dark"] .seller-item-thumb {
@@ -1005,19 +606,6 @@ body[data-theme="dark"] .seller-item-thumb:hover {
     box-shadow: 0 8px 24px rgba(255, 140, 0, 0.2) !important;
 }
 
-body[data-theme="dark"] .seller-item-thumb-placeholder {
-    background: rgba(255, 140, 0, 0.07) !important;
-    color: rgba(255, 140, 0, 0.3) !important;
-}
-
-body[data-theme="dark"] .seller-item-info {
-    background: rgba(0, 0, 0, 0.45) !important;
-}
-
-body[data-theme="dark"] .seller-item-title {
-    color: rgba(245, 240, 232, 0.82) !important;
-}
-
 body[data-theme="dark"] .seller-item-price {
     color: var(--orange-bright) !important;
 }
@@ -1027,16 +615,127 @@ body[data-theme="dark"] .seller-popup-msg-btn {
     color: #000 !important;
 }
 
-body[data-theme="dark"] .seller-popup-msg-btn:hover {
-    box-shadow: 0 10px 30px rgba(255, 140, 0, 0.4) !important;
+/* ============================================
+   ACCOUNT DROPDOWN - DARK MODE (EGYSÉGES DIZÁJN)
+   ============================================ */
+body[data-theme="dark"] .account-dropdown-panel {
+    background: rgba(8, 8, 8, 0.95) !important;
+    border: 1px solid rgba(255, 140, 0, 0.25) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 140, 0, 0.15) !important;
+    backdrop-filter: blur(16px) !important;
 }
 
-body[data-theme="dark"] .item-seller:hover {
+body[data-theme="dark"] .user-info strong {
+    color: #ffb347 !important;
+}
+
+body[data-theme="dark"] .dropdown-divider {
+    background: linear-gradient(90deg, transparent, rgba(255, 140, 0, 0.4), transparent) !important;
+}
+
+/* Fiókom link */
+body[data-theme="dark"] .account-link span {
+    color: #e0d6c0 !important;
+    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+body[data-theme="dark"] .account-link span:hover {
+    background: rgba(255, 140, 0, 0.15) !important;
+    border-color: rgba(255, 140, 0, 0.4) !important;
+    color: #ffb347 !important;
+    transform: translateX(4px) !important;
+    padding-left: 1.6rem !important;
+    border-left: 2px solid var(--orange-bright) !important;
+    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Kijelentkezés gomb */
+body[data-theme="dark"] .logout-button span {
+    color: #e0d6c0 !important;
+    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+body[data-theme="dark"] .logout-button span:hover {
+    background: rgba(200, 60, 60, 0.12) !important;
+    border-color: rgba(200, 60, 60, 0.4) !important;
+    color: #ff8888 !important;
+    transform: translateX(4px) !important;
+    padding-left: 1.6rem !important;
+    border-left: 2px solid #ff5555 !important;
+    box-shadow: 0 4px 12px rgba(200, 60, 60, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Téma kapcsoló hover */
+body[data-theme="dark"] .theme-toggle-row:hover {
+    background: rgba(255, 140, 0, 0.08) !important;
+}
+
+/* Account menu gomb dark módban */
+body[data-theme="dark"] .account-menu-btn {
+    background: rgba(0, 0, 0, 0.5) !important;
+    border-color: rgba(255, 140, 0, 0.4) !important;
     color: var(--orange-bright) !important;
 }
 
+body[data-theme="dark"] .account-menu-btn:hover {
+    background: rgba(255, 140, 0, 0.15) !important;
+    border-color: var(--orange-bright) !important;
+    color: #ffb347 !important;
+}
+
 /* ============================================
-   ADMIN BADGE - DARK THEME (ALAPÉRTELMEZETT)
+   ACCOUNT.PHP DARK MODE FIXES
+   ============================================ */
+body[data-theme="dark"] .top-bar {
+    background: rgba(0, 0, 0, 0.7) !important;
+}
+
+body[data-theme="dark"] .back-btn {
+    background: rgba(255, 140, 0, 0.12);
+    border-color: rgba(255, 140, 0, 0.3);
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .back-btn:hover {
+    background: rgba(255, 140, 0, 0.25);
+    border-color: var(--orange-bright);
+    color: #000;
+}
+
+body[data-theme="dark"] .mini-card {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 140, 0, 0.2);
+}
+
+body[data-theme="dark"] .mini-card:hover {
+    border-color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .mini-card .title {
+    color: var(--orange-bright);
+}
+
+body[data-theme="dark"] .info-card {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 140, 0, 0.2);
+}
+
+body[data-theme="dark"] .edit-btn {
+    background: linear-gradient(135deg, var(--orange-bright), var(--orange-mid));
+    color: #000;
+}
+
+body[data-theme="dark"] .items-section {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 140, 0, 0.2);
+}
+
+body[data-theme="dark"] .items-section h2 {
+    color: var(--orange-bright);
+}
+
+/* ============================================
+   EGYÉB STÍLUSOK
    ============================================ */
 body[data-theme="dark"] .admin-badge {
     background: rgba(255, 215, 0, 0.2) !important;
@@ -1044,153 +743,27 @@ body[data-theme="dark"] .admin-badge {
     border-color: rgba(255, 215, 0, 0.4) !important;
 }
 
-/* ============================================
-   ACCOUNT DROPDOWN ITEMS – DARK MODE REDESIGN
-   (Fiókom link + Kijelentkezés gomb)
-   ============================================ */
-
-body[data-theme="dark"] .account-dropdown {
-    background: rgba(8, 8, 8, 0.95) !important;
-    border-color: rgba(255, 140, 0, 0.25) !important;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 140, 0, 0.15) !important;
-    backdrop-filter: blur(16px) !important;
-    padding: 0.9rem 0.75rem !important;
-}
-
-body[data-theme="dark"] .user-info {
-    padding: 0.75rem 1rem 0.6rem !important;
-    border-bottom: 1px solid rgba(255, 140, 0, 0.2) !important;
-}
-
-body[data-theme="dark"] .user-info strong {
-    color: #ffb347 !important;
-    font-weight: 700;
-}
-
-/* Fiókom link – alapállapot */
-body[data-theme="dark"] .account-link {
-    text-decoration: none;
-    display: block;
-}
-
-body[data-theme="dark"] .account-link span {
-    display: flex !important;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.9rem 1.2rem !important;
-    margin: 0.2rem 0;
-    border-radius: 14px !important;
-    color: #e0d6c0 !important;
-    font-weight: 500;
-    background: transparent;
-    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-    border: 1px solid transparent;
-    transform: none !important;
-}
-
-/* Fiókom link hover – narancsos kiemelés */
-body[data-theme="dark"] .account-link span:hover {
-    background: rgba(255, 140, 0, 0.15) !important;
-    border-color: rgba(255, 140, 0, 0.4) !important;
-    color: #ffb347 !important;
-    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
-    transform: translateX(4px) !important;
-    padding-left: 1.6rem !important;
-}
-
-/* Kijelentkezés gomb – alapállapot */
-body[data-theme="dark"] .logout-button {
-    width: 100%;
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-}
-
-body[data-theme="dark"] .logout-button span {
-    display: flex !important;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.9rem 1.2rem !important;
-    margin: 0.2rem 0;
-    border-radius: 14px !important;
-    color: #e0d6c0 !important;
-    font-weight: 500;
-    background: transparent;
-    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-    border: 1px solid transparent;
-    transform: none !important;
-}
-
-/* Kijelentkezés hover – pirosas árnyalat (figyelmeztető) */
-body[data-theme="dark"] .logout-button span:hover {
-    background: rgba(200, 60, 60, 0.12) !important;
-    border-color: rgba(200, 60, 60, 0.4) !important;
-    color: #ff8888 !important;
-    box-shadow: 0 4px 12px rgba(200, 60, 60, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
-    transform: translateX(4px) !important;
-    padding-left: 1.6rem !important;
-}
-
-/* Elválasztó vonal a dropdownban */
-body[data-theme="dark"] .dropdown-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 140, 0, 0.4), transparent) !important;
-    margin: 0.4rem 0.5rem !important;
-}
-
-/* Téma kapcsoló sor – hover hatás */
-body[data-theme="dark"] .theme-toggle-row {
-    padding: 0.6rem 1.2rem !important;
-    border-radius: 12px;
-    transition: background 0.2s;
-}
-body[data-theme="dark"] .theme-toggle-row:hover {
-    background: rgba(255, 140, 0, 0.08) !important;
-}
-
-/* ============================================
-   ACCOUNT MENU BUTTON – DARK MODE (kattintásos menühöz)
-   ============================================ */
-body[data-theme="dark"] .account-menu-btn {
-    background: rgba(0, 0, 0, 0.5) !important;
-    border-color: rgba(255, 140, 0, 0.4) !important;
+body[data-theme="dark"] .item-seller:hover {
     color: var(--orange-bright) !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
-}
-body[data-theme="dark"] .account-menu-btn:hover {
-    background: rgba(255, 140, 0, 0.15) !important;
-    border-color: var(--orange-bright) !important;
-    color: #ffb347 !important;
 }
 
-body[data-theme="dark"] .dropdown-username {
-    color: #e0d6c0 !important;
+body[data-theme="dark"] h1 {
+    text-shadow: 0 0 10px rgba(255, 140, 0, 0.6), 0 0 30px rgba(255, 80, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.8) !important;
 }
 
-/* Részletes hover stílusok a fiókmenü elemeihez (Fiókom és Kijelentkezés) */
-body[data-theme="dark"] .dropdown-item,
-body[data-theme="dark"] .logout-form-btn {
-    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-    position: relative;
-    overflow: hidden;
+body[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: #0a0a0a;
 }
 
-body[data-theme="dark"] .dropdown-item:hover,
-body[data-theme="dark"] .logout-form-btn:hover {
-    background: linear-gradient(120deg, rgba(255, 140, 0, 0.2), rgba(255, 80, 0, 0.1));
-    color: #ffb347 !important;
-    transform: translateX(6px) scale(1.02);
-    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    text-shadow: 0 0 4px rgba(255, 140, 0, 0.5);
-    border-left: 2px solid var(--orange-bright);
-    padding-left: calc(0.8rem + 2px);
+body[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: rgba(255, 120, 0, 0.3);
 }
 
-/* Kijelentkezés gomb dark módban – pirosas hover */
-body[data-theme="dark"] .logout-form-btn:hover {
-    background: linear-gradient(120deg, rgba(200, 60, 60, 0.2), rgba(160, 30, 30, 0.1));
-    color: #ff8888 !important;
-    box-shadow: 0 4px 12px rgba(255, 60, 60, 0.2);
-    border-left-color: #ff5555;
+body[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 140, 0, 0.5);
+}
+
+body[data-theme="dark"] ::selection {
+    background: rgba(255, 120, 0, 0.35);
+    color: #fff;
 }

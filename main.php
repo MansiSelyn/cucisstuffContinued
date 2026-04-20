@@ -840,62 +840,78 @@ try {
             pointer-events: auto;
         }
 
-        .account-summary {
-            list-style: none;
-            cursor: pointer;
+        /* A gomb (kattintásra nyíló) */
+        .account-menu-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
             padding: 0.5rem 1rem;
-            border: 1px solid var(--orange-glow);
             border-radius: 50px;
+            border: 1px solid var(--orange-glow);
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(10px);
             color: var(--orange-bright);
             font-size: 0.9rem;
+            font-family: inherit;
             white-space: nowrap;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
+            cursor: pointer;
             user-select: none;
-            box-shadow: var(--shadow-deep);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: background 0.2s, border-color 0.2s;
         }
 
-        .account-summary:hover {
+        .account-menu-btn:hover {
             background: rgba(255, 140, 0, 0.1);
             border-color: var(--orange-bright);
         }
 
-        .account-summary::-webkit-details-marker {
-            display: none;
-        }
-
+        /* A legördülő panel – alapból rejtve, .show osztállyal jelenik meg */
         .account-dropdown {
             position: absolute;
             right: 0;
             top: calc(100% + 0.5rem);
             width: 250px;
+            z-index: 1001;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-4px);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+
+        .account-dropdown.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .account-dropdown-panel {
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(24px);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
             padding: 0.75rem;
             box-shadow: var(--shadow-deep), var(--shadow-orange);
-            z-index: 1001;
-            animation: dropdownFade 0.2s ease;
         }
 
-        @keyframes dropdownFade {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .user-info {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            padding: 0.75rem 1rem;
+            user-select: none;
         }
 
-        /* Account link (Fiókom) */
+        .user-info strong {
+            display: block;
+            word-wrap: break-word;
+            color: var(--orange-bright);
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--orange-bright), transparent);
+            margin: 0.5rem 0;
+        }
+
         .account-link {
             display: block;
             width: 100%;
@@ -917,6 +933,94 @@ try {
             background: rgba(255, 140, 0, 0.15);
             color: var(--orange-bright);
             transform: translateX(5px);
+        }
+
+        .logout-button {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 0;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .logout-button span {
+            display: block;
+            width: 100%;
+            font-size: 0.9rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .logout-button span:hover {
+            background: rgba(255, 140, 0, 0.15);
+            color: var(--orange-bright);
+            transform: translateX(5px);
+        }
+
+        .theme-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            user-select: none;
+        }
+
+        .theme-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            opacity: 0.8;
+        }
+
+        .theme-switch {
+            position: relative;
+            width: 42px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .theme-switch-track {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: background 0.3s, border-color 0.3s;
+            cursor: pointer;
+        }
+
+        .theme-switch input:checked+.theme-switch-track {
+            background: rgba(176, 203, 31, 0.25);
+            border-color: #B0CB1F;
+        }
+
+        .theme-switch-thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transition: transform 0.3s, background 0.3s;
+            pointer-events: none;
+        }
+
+        .theme-switch input:checked~.theme-switch-thumb {
+            transform: translateX(18px);
+            background: #B0CB1F;
         }
 
         /* =====================
@@ -1465,50 +1569,6 @@ try {
             pointer-events: none;
         }
 
-        .logout-button {
-            width: 100%;
-            background: transparent;
-            border: none;
-            padding: 0;
-            color: var(--text-primary);
-            cursor: pointer;
-        }
-
-        .logout-button span {
-            display: block;
-            width: 100%;
-            font-size: 0.9rem;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            user-select: none;
-        }
-
-        .logout-button span:hover {
-            background: rgba(255, 140, 0, 0.15);
-            color: var(--orange-bright);
-            transform: translateX(5px);
-        }
-
-        .user-info {
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            padding: 0.75rem 1rem;
-            user-select: none;
-        }
-
-        .user-info strong {
-            display: block;
-            word-wrap: break-word;
-            color: var(--orange-bright);
-        }
-
-        .dropdown-divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--orange-bright), transparent);
-            margin: 0.5rem 0;
-        }
-
         .unselectable {
             user-select: none;
             -webkit-user-select: none;
@@ -1518,69 +1578,6 @@ try {
         textarea {
             user-select: text;
             -webkit-user-select: text;
-        }
-
-        .theme-toggle-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.6rem 1rem;
-            font-size: 0.85rem;
-            color: var(--text-primary);
-            user-select: none;
-        }
-
-        .theme-toggle-label {
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-            opacity: 0.8;
-        }
-
-        .theme-switch {
-            position: relative;
-            width: 42px;
-            height: 24px;
-            flex-shrink: 0;
-        }
-
-        .theme-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-            position: absolute;
-        }
-
-        .theme-switch-track {
-            position: absolute;
-            inset: 0;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            transition: background 0.3s, border-color 0.3s;
-            cursor: pointer;
-        }
-
-        .theme-switch input:checked+.theme-switch-track {
-            background: rgba(176, 203, 31, 0.25);
-            border-color: #B0CB1F;
-        }
-
-        .theme-switch-thumb {
-            position: absolute;
-            top: 3px;
-            left: 3px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.5);
-            transition: transform 0.3s, background 0.3s;
-            pointer-events: none;
-        }
-
-        .theme-switch input:checked~.theme-switch-thumb {
-            transform: translateX(18px);
-            background: #B0CB1F;
         }
 
         /* =====================
@@ -2795,34 +2792,36 @@ try {
                 <span class="plus-icon">＋</span>
                 <span class="button-text">Hirdetés feladása</span>
             </button>
-            <details class="account-menu">
-                <summary class="account-summary unselectable">
+            <div class="account-menu">
+                <button type="button" class="account-menu-btn unselectable" id="accountMenuBtn">
                     <span>⚙️</span>
                     <span class="button-text">FIÓK</span>
-                </summary>
-                <div class="account-dropdown">
-                    <div class="user-info unselectable">
-                        <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>
+                </button>
+                <div class="account-dropdown" id="accountDropdown">
+                    <div class="account-dropdown-panel">
+                        <div class="user-info unselectable">
+                            <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="account.php" class="account-link"><span>👤 Fiókom</span></a>
+                        <div class="dropdown-divider"></div>
+                        <div class="theme-toggle-row">
+                            <span class="theme-toggle-label">☀️ Világos mód</span>
+                            <label class="theme-switch">
+                                <input type="checkbox" id="themeSwitchMain">
+                                <span class="theme-switch-track"></span>
+                                <span class="theme-switch-thumb"></span>
+                            </label>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <form method="post" style="width:100%;margin:0;padding:0;">
+                            <button type="submit" name="logout" class="logout-button">
+                                <span class="unselectable">Kijelentkezés</span>
+                            </button>
+                        </form>
                     </div>
-                    <!-- 👇 FIÓKOM LINK -->
-                    <a href="account.php" class="account-link"><span>👤 Fiókom</span></a>
-                    <div class="dropdown-divider"></div>
-                    <div class="theme-toggle-row">
-                        <span class="theme-toggle-label">☀️ Világos mód</span>
-                        <label class="theme-switch">
-                            <input type="checkbox" id="themeSwitchMain">
-                            <span class="theme-switch-track"></span>
-                            <span class="theme-switch-thumb"></span>
-                        </label>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <form method="post" style="width:100%;margin:0;padding:0;">
-                        <button type="submit" name="logout" class="logout-button">
-                            <span class="unselectable">Kijelentkezés</span>
-                        </button>
-                    </form>
                 </div>
-            </details>
+            </div>
         </div>
     </div>
 
@@ -3866,6 +3865,26 @@ try {
             const sid = this.getAttribute('data-seller-id');
             if (sid) openSellerPopup(sid);
         });
+
+        // =====================
+        // FIÓK DROPDOWN KATTINTÁSRA
+        // =====================
+        const accountMenuBtn = document.getElementById('accountMenuBtn');
+        const accountDropdown = document.getElementById('accountDropdown');
+
+        function closeDropdown() {
+            accountDropdown.classList.remove('show');
+        }
+        function toggleDropdown(e) {
+            e.stopPropagation();
+            accountDropdown.classList.toggle('show');
+        }
+
+        if (accountMenuBtn && accountDropdown) {
+            accountMenuBtn.addEventListener('click', toggleDropdown);
+            accountDropdown.addEventListener('click', (e) => e.stopPropagation());
+            document.addEventListener('click', closeDropdown);
+        }
     </script>
 </body>
 
