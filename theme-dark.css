@@ -1043,3 +1043,154 @@ body[data-theme="dark"] .admin-badge {
     color: #ffd700 !important;
     border-color: rgba(255, 215, 0, 0.4) !important;
 }
+
+/* ============================================
+   ACCOUNT DROPDOWN ITEMS – DARK MODE REDESIGN
+   (Fiókom link + Kijelentkezés gomb)
+   ============================================ */
+
+body[data-theme="dark"] .account-dropdown {
+    background: rgba(8, 8, 8, 0.95) !important;
+    border-color: rgba(255, 140, 0, 0.25) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 140, 0, 0.15) !important;
+    backdrop-filter: blur(16px) !important;
+    padding: 0.9rem 0.75rem !important;
+}
+
+body[data-theme="dark"] .user-info {
+    padding: 0.75rem 1rem 0.6rem !important;
+    border-bottom: 1px solid rgba(255, 140, 0, 0.2) !important;
+}
+
+body[data-theme="dark"] .user-info strong {
+    color: #ffb347 !important;
+    font-weight: 700;
+}
+
+/* Fiókom link – alapállapot */
+body[data-theme="dark"] .account-link {
+    text-decoration: none;
+    display: block;
+}
+
+body[data-theme="dark"] .account-link span {
+    display: flex !important;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 1.2rem !important;
+    margin: 0.2rem 0;
+    border-radius: 14px !important;
+    color: #e0d6c0 !important;
+    font-weight: 500;
+    background: transparent;
+    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    border: 1px solid transparent;
+    transform: none !important;
+}
+
+/* Fiókom link hover – narancsos kiemelés */
+body[data-theme="dark"] .account-link span:hover {
+    background: rgba(255, 140, 0, 0.15) !important;
+    border-color: rgba(255, 140, 0, 0.4) !important;
+    color: #ffb347 !important;
+    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    transform: translateX(4px) !important;
+    padding-left: 1.6rem !important;
+}
+
+/* Kijelentkezés gomb – alapállapot */
+body[data-theme="dark"] .logout-button {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+body[data-theme="dark"] .logout-button span {
+    display: flex !important;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 1.2rem !important;
+    margin: 0.2rem 0;
+    border-radius: 14px !important;
+    color: #e0d6c0 !important;
+    font-weight: 500;
+    background: transparent;
+    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    border: 1px solid transparent;
+    transform: none !important;
+}
+
+/* Kijelentkezés hover – pirosas árnyalat (figyelmeztető) */
+body[data-theme="dark"] .logout-button span:hover {
+    background: rgba(200, 60, 60, 0.12) !important;
+    border-color: rgba(200, 60, 60, 0.4) !important;
+    color: #ff8888 !important;
+    box-shadow: 0 4px 12px rgba(200, 60, 60, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    transform: translateX(4px) !important;
+    padding-left: 1.6rem !important;
+}
+
+/* Elválasztó vonal a dropdownban */
+body[data-theme="dark"] .dropdown-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 140, 0, 0.4), transparent) !important;
+    margin: 0.4rem 0.5rem !important;
+}
+
+/* Téma kapcsoló sor – hover hatás */
+body[data-theme="dark"] .theme-toggle-row {
+    padding: 0.6rem 1.2rem !important;
+    border-radius: 12px;
+    transition: background 0.2s;
+}
+body[data-theme="dark"] .theme-toggle-row:hover {
+    background: rgba(255, 140, 0, 0.08) !important;
+}
+
+/* ============================================
+   ACCOUNT MENU BUTTON – DARK MODE (kattintásos menühöz)
+   ============================================ */
+body[data-theme="dark"] .account-menu-btn {
+    background: rgba(0, 0, 0, 0.5) !important;
+    border-color: rgba(255, 140, 0, 0.4) !important;
+    color: var(--orange-bright) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+body[data-theme="dark"] .account-menu-btn:hover {
+    background: rgba(255, 140, 0, 0.15) !important;
+    border-color: var(--orange-bright) !important;
+    color: #ffb347 !important;
+}
+
+body[data-theme="dark"] .dropdown-username {
+    color: #e0d6c0 !important;
+}
+
+/* Részletes hover stílusok a fiókmenü elemeihez (Fiókom és Kijelentkezés) */
+body[data-theme="dark"] .dropdown-item,
+body[data-theme="dark"] .logout-form-btn {
+    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    position: relative;
+    overflow: hidden;
+}
+
+body[data-theme="dark"] .dropdown-item:hover,
+body[data-theme="dark"] .logout-form-btn:hover {
+    background: linear-gradient(120deg, rgba(255, 140, 0, 0.2), rgba(255, 80, 0, 0.1));
+    color: #ffb347 !important;
+    transform: translateX(6px) scale(1.02);
+    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    text-shadow: 0 0 4px rgba(255, 140, 0, 0.5);
+    border-left: 2px solid var(--orange-bright);
+    padding-left: calc(0.8rem + 2px);
+}
+
+/* Kijelentkezés gomb dark módban – pirosas hover */
+body[data-theme="dark"] .logout-form-btn:hover {
+    background: linear-gradient(120deg, rgba(200, 60, 60, 0.2), rgba(160, 30, 30, 0.1));
+    color: #ff8888 !important;
+    box-shadow: 0 4px 12px rgba(255, 60, 60, 0.2);
+    border-left-color: #ff5555;
+}

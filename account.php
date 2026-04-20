@@ -301,125 +301,126 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
     transform: translateY(-1px);
     color: #ffd700;
   }
-  /* Fiók menü (details/summary) */
+  /* ── ACCOUNT DROPDOWN (account.php) ── */
   .account-menu {
     position: relative;
     display: inline-block;
-    pointer-events: auto;
   }
-  .account-summary {
-    list-style: none;
-    cursor: pointer;
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--orange-glow);
-    border-radius: 50px;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10px);
-    color: var(--orange-bright);
-    font-size: 0.9rem;
-    white-space: nowrap;
-    transition: all 0.3s ease;
+  /* A gomb */
+  .account-menu-btn {
     display: flex;
     align-items: center;
     gap: 0.3rem;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    border: 1px solid var(--orange-glow);
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    color: var(--orange-bright);
+    font-size: 0.9rem;
+    font-family: inherit;
+    white-space: nowrap;
+    cursor: pointer;
     user-select: none;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: background 0.2s, border-color 0.2s;
   }
-  .account-summary:hover {
+  .account-menu-btn:hover {
     background: rgba(255, 140, 0, 0.1);
     border-color: var(--orange-bright);
   }
-  .account-summary::-webkit-details-marker {
-    display: none;
-  }
+  /* A panel – alapból rejtve, .show osztállyal jelenik meg */
   .account-dropdown {
     position: absolute;
     right: 0;
-    top: calc(100% + 0.5rem);
-    width: 250px;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(24px);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 0.75rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 140, 0, 0.2);
+    top: 100%;
+    padding-top: 0.4rem;
+    width: 230px;
     z-index: 1001;
-    animation: dropdownFade 0.2s ease;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
   }
-  @keyframes dropdownFade {
-    from { opacity: 0; transform: translateY(-10px); }
-    to   { opacity: 1; transform: translateY(0); }
+  .account-dropdown.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
   }
-  .user-info {
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    padding: 0.75rem 1rem;
+  /* A tényleges vizuális doboz */
+  .account-dropdown-panel {
+    border-radius: 14px;
+    padding: 0.5rem;
+    overflow: hidden;
+  }
+  /* Felhasználónév sor */
+  .dropdown-username {
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.6rem 0.8rem 0.5rem;
+    word-break: break-all;
     user-select: none;
   }
-  .user-info strong {
-    display: block;
-    word-wrap: break-word;
-    color: var(--orange-bright);
-  }
+  /* Elválasztó */
   .dropdown-divider {
     height: 1px;
-    background: linear-gradient(90deg, transparent, var(--orange-bright), transparent);
-    margin: 0.5rem 0;
+    margin: 0.3rem 0.4rem;
   }
-  .account-link {
-    display: block;
-    text-decoration: none;
-    color: inherit;
-  }
-  .account-link span {
-    display: block;
+  /* Minden kattintható sor egységesen */
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     width: 100%;
-    font-size: 0.9rem;
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 0.8rem;
     border-radius: 8px;
-    transition: all 0.2s ease;
-    user-select: none;
-  }
-  .account-link span:hover {
-    background: rgba(255, 140, 0, 0.15);
-    color: var(--orange-bright);
-    transform: translateX(5px);
-  }
-  .logout-button {
-    width: 100%;
+    font-size: 0.88rem;
+    font-family: inherit;
+    text-decoration: none;
     background: transparent;
     border: none;
-    padding: 0;
-    color: var(--text-primary);
     cursor: pointer;
-  }
-  .logout-button span {
-    display: block;
-    width: 100%;
-    font-size: 0.9rem;
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
     user-select: none;
+    transition: background 0.15s, color 0.15s;
+    box-sizing: border-box;
+    text-align: left;
   }
-  .logout-button span:hover {
-    background: rgba(255, 140, 0, 0.15);
-    color: var(--orange-bright);
-    transform: translateX(5px);
+  /* Kijelentkezés form wrapper */
+  .logout-form {
+    width: 100%;
+    margin: 0;
+    padding: 0;
   }
-  .theme-toggle-row {
+  .logout-form-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.65rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, color 0.15s;
+    box-sizing: border-box;
+    text-align: left;
+  }
+  /* Témaváltó sor */
+  .dropdown-theme-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.6rem 1rem;
+    padding: 0.6rem 0.8rem;
     font-size: 0.85rem;
-    color: var(--text-primary);
     user-select: none;
   }
-  .theme-toggle-label {
+  .dropdown-theme-label {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.4rem;
     opacity: 0.8;
   }
   .theme-switch {
@@ -438,13 +439,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
     position: absolute;
     inset: 0;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
     transition: background 0.3s, border-color 0.3s;
     cursor: pointer;
   }
   .theme-switch input:checked + .theme-switch-track {
-    background: rgba(176, 203, 31, 0.25);
+    background: rgba(176,203,31,0.25);
     border-color: #B0CB1F;
   }
   .theme-switch-thumb {
@@ -454,13 +455,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255,255,255,0.5);
     transition: transform 0.3s, background 0.3s;
     pointer-events: none;
   }
   .theme-switch input:checked ~ .theme-switch-thumb {
     transform: translateX(18px);
     background: #B0CB1F;
+  }
+
+  /* ========== LIGHT MÓD FELÜLÍRÁSOK (világos háttér a dropdownhoz) ========== */
+  body[data-theme="light"] .account-menu-btn {
+    background: rgba(240, 252, 200, 0.85);
+    border-color: rgba(122, 146, 0, 0.5);
+    color: #7a9200;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  body[data-theme="light"] .account-menu-btn:hover {
+    background: rgba(210, 240, 100, 0.95);
+    border-color: #B0CB1F;
+    color: #4a6000;
+  }
+  body[data-theme="light"] .account-dropdown .account-dropdown-panel {
+    background: rgba(248, 252, 235, 0.98);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(122, 146, 0, 0.3);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08), 0 0 30px rgba(176, 203, 31, 0.1);
+  }
+  body[data-theme="light"] .dropdown-username {
+    color: #1a1f00;
+  }
+  body[data-theme="light"] .dropdown-item,
+  body[data-theme="light"] .logout-form-btn {
+    color: #2a3a00;
+  }
+  body[data-theme="light"] .dropdown-item:hover,
+  body[data-theme="light"] .logout-form-btn:hover {
+    background: rgba(176, 203, 31, 0.18);
+    color: #4a6000;
+  }
+  body[data-theme="light"] .dropdown-divider {
+    background: linear-gradient(90deg, transparent, #B0CB1F, transparent);
+  }
+  body[data-theme="light"] .dropdown-theme-row {
+    color: #1a1f00;
   }
 
   /* ========== AZ EREDETI ACCOUNT.PHP STÍLUSOK (info-grid, items-section, modálok) ========== */
@@ -1321,34 +1359,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         <?php endif; ?>
     </div>
     <div class="top-bar-right">
-        <details class="account-menu">
-            <summary class="account-summary unselectable">
+        <div class="account-menu">
+            <button type="button" class="account-menu-btn unselectable" id="accountMenuBtn">
                 <span>⚙️</span>
                 <span class="button-text">FIÓK</span>
-            </summary>
-            <div class="account-dropdown">
-                <div class="user-info unselectable">
-                    <strong><?php echo htmlspecialchars($user['username']); ?></strong>
+            </button>
+            <div class="account-dropdown" id="accountDropdown">
+                <div class="account-dropdown-panel">
+                    <div class="dropdown-username unselectable">
+                        <?php echo htmlspecialchars($user['username']); ?>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="account.php" class="dropdown-item unselectable">👤 Fiókom</a>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-theme-row">
+                        <span class="dropdown-theme-label unselectable">☀️ Világos mód</span>
+                        <label class="theme-switch">
+                            <input type="checkbox" id="themeSwitchMain">
+                            <span class="theme-switch-track"></span>
+                            <span class="theme-switch-thumb"></span>
+                        </label>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <form method="post" class="logout-form">
+                        <button type="submit" name="logout" class="logout-form-btn dropdown-item logout unselectable">
+                            🚪 Kijelentkezés
+                        </button>
+                    </form>
                 </div>
-                <!-- Fiókom link (jelenlegi oldalra mutat, de maradhat) -->
-                <a href="account.php" class="account-link"><span>👤 Fiókom</span></a>
-                <div class="dropdown-divider"></div>
-                <div class="theme-toggle-row">
-                    <span class="theme-toggle-label">☀️ Világos mód</span>
-                    <label class="theme-switch">
-                        <input type="checkbox" id="themeSwitchMain">
-                        <span class="theme-switch-track"></span>
-                        <span class="theme-switch-thumb"></span>
-                    </label>
-                </div>
-                <div class="dropdown-divider"></div>
-                <form method="post" style="width:100%;margin:0;padding:0;">
-                    <button type="submit" name="logout" class="logout-button">
-                        <span class="unselectable">Kijelentkezés</span>
-                    </button>
-                </form>
             </div>
-        </details>
+        </div>
     </div>
 </div>
 
@@ -1520,6 +1560,26 @@ if (themeSwitch) {
         localStorage.setItem('theme', newTheme);
         document.body.setAttribute('data-theme', newTheme);
     });
+}
+
+// ==================== FIÓK DROPDOWN KATTINTÁSRA (nem hover) ====================
+const accountMenuBtn = document.getElementById('accountMenuBtn');
+const accountDropdown = document.getElementById('accountDropdown');
+
+function closeDropdown() {
+    accountDropdown.classList.remove('show');
+}
+function toggleDropdown(e) {
+    e.stopPropagation();
+    accountDropdown.classList.toggle('show');
+}
+
+if (accountMenuBtn && accountDropdown) {
+    accountMenuBtn.addEventListener('click', toggleDropdown);
+    // Ha a felhasználó a dropdownon belülre kattint, ne zárjuk be
+    accountDropdown.addEventListener('click', (e) => e.stopPropagation());
+    // Kattintás máshova -> bezár
+    document.addEventListener('click', closeDropdown);
 }
 
 // Fiók módosítás modal (eredeti script)
