@@ -39,7 +39,7 @@ try {
     if (isset($_GET['ajax_get_messages']) && isset($_GET['with']) && isset($_GET['last_timestamp'])) {
         header('Content-Type: application/json');
         $partnerId = (int)$_GET['with'];
-        $lastTimestamp = $_GET['last_timestamp']; // pl. "2025-03-15 14:25:30"
+        $lastTimestamp = $_GET['last_timestamp'];
 
         // A fogadott üzenetek olvasottá jelölése
         $updateRead = $conn->prepare("
@@ -224,6 +224,39 @@ try {
     $adminCheck = $conn->prepare("SELECT COUNT(*) FROM admins WHERE user_id = ?");
     $adminCheck->execute([$currentUserId]);
     $isAdmin = $adminCheck->fetchColumn() > 0;
+
+    // Seller popup adatok lekérése AJAX kérésre (get_seller)
+    if (isset($_GET['get_seller']) && !empty($_GET['get_seller'])) {
+        header('Content-Type: application/json');
+        $sellerId = (int)$_GET['get_seller'];
+        $sellerStmt = $conn->prepare("
+            SELECT u.id, u.username, u.created_at,
+                   COUNT(DISTINCT i.id) AS item_count,
+                   (SELECT COUNT(*) FROM admins WHERE user_id = u.id) AS is_admin
+            FROM users u
+            LEFT JOIN items i ON i.user_id = u.id
+            WHERE u.id = ?
+            GROUP BY u.id, u.username, u.created_at
+        ");
+        $sellerStmt->execute([$sellerId]);
+        $seller = $sellerStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$seller) {
+            echo json_encode(['error' => 'Felhasználó nem található']);
+            exit;
+        }
+        $latestStmt = $conn->prepare("
+            SELECT i.id, i.title, i.price,
+                   (SELECT image_path FROM item_images WHERE item_id = i.id AND is_primary = 1 LIMIT 1) as thumb
+            FROM items i
+            WHERE i.user_id = ?
+            ORDER BY i.created_at DESC
+            LIMIT 4
+        ");
+        $latestStmt->execute([$sellerId]);
+        $seller['latest_items'] = $latestStmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($seller);
+        exit;
+    }
 
 } catch (PDOException $e) {
     die("DB hiba: " . $e->getMessage());
@@ -610,6 +643,16 @@ try {
         .chat-partner-name {
             font-weight: 700;
             font-size: 1.05rem;
+        }
+        
+        .chat-partner-name.clickable {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .chat-partner-name.clickable:hover {
+            color: var(--accent);
+            text-decoration: underline;
         }
 
         .chat-partner-member {
@@ -1033,6 +1076,261 @@ try {
             opacity: 1;
         }
 
+        /* ===================== SELLER PROFILE POPUP — FULLSCREEN ===================== */
+        .seller-popup-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 6000;
+            background: rgba(0, 0, 0, 0.98);
+            backdrop-filter: blur(16px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .seller-popup-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .seller-popup-card {
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 5, 5, 0.99);
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.98);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .seller-popup-overlay.active .seller-popup-card {
+            transform: scale(1);
+        }
+
+        .seller-popup-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(5, 5, 5, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .seller-popup-close {
+            background: rgba(255, 140, 0, 0.1);
+            border: 1px solid var(--border-glass);
+            color: var(--accent);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .seller-popup-close:hover {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .seller-popup-topbar-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent);
+            flex: 1;
+        }
+
+        .seller-popup-body {
+            flex: 1;
+            max-width: 560px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .seller-popup-avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #ff5500);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #000;
+            margin: 0 auto 1.2rem;
+            box-shadow: 0 0 40px rgba(255, 140, 0, 0.3);
+        }
+
+        .seller-popup-name {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.35rem;
+        }
+
+        .seller-popup-meta {
+            text-align: center;
+            font-size: 0.88rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 2rem;
+        }
+
+        .seller-popup-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .seller-stat {
+            flex: 1;
+            background: rgba(255, 140, 0, 0.07);
+            border: 1px solid rgba(255, 140, 0, 0.15);
+            border-radius: 16px;
+            padding: 1.1rem;
+            text-align: center;
+        }
+
+        .seller-stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .seller-stat-label {
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 3px;
+        }
+
+        .seller-popup-items-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 0.9rem;
+        }
+
+        .seller-popup-items-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
+            margin-bottom: 2rem;
+        }
+
+        .seller-item-thumb {
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 140, 0, 0.12);
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .seller-item-thumb:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(255, 140, 0, 0.2);
+        }
+
+        .seller-item-thumb img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .seller-item-thumb-placeholder {
+            width: 100%;
+            height: 110px;
+            background: rgba(255, 140, 0, 0.07);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 140, 0, 0.35);
+            font-size: 1.8rem;
+        }
+
+        .seller-item-info {
+            padding: 0.6rem 0.75rem;
+        }
+
+        .seller-item-title {
+            font-size: 0.82rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .seller-item-price {
+            font-size: 0.8rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-top: 3px;
+        }
+
+        .seller-popup-msg-btn {
+            width: 100%;
+            padding: 1.1rem;
+            background: linear-gradient(135deg, var(--accent), #ff5500);
+            border: none;
+            border-radius: 16px;
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            text-decoration: none;
+            margin-top: auto;
+        }
+
+        .seller-popup-msg-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 140, 0, 0.4);
+        }
+
+        .seller-popup-loading {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 1rem;
+        }
+
+        .admin-badge {
+            font-size: 0.7rem;
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            border-radius: 50px;
+            padding: 1px 8px;
+            vertical-align: middle;
+        }
+
         @media (max-width: 640px) {
             .messages-layout { grid-template-columns: 1fr; }
             .sidebar { display: <?php echo $withUserId > 0 ? 'none' : 'flex'; ?>; height: calc(100vh - 64px); }
@@ -1098,28 +1396,47 @@ try {
                 </div>
             <?php else: ?>
                 <?php foreach ($partners as $p): ?>
-                    <a href="uzenetek.php?with=<?php echo $p['id']; ?>"
-                       class="partner-item <?php echo ($withUserId == $p['id']) ? 'active' : ''; ?>">
-                        <div class="partner-avatar">
-                            <?php echo strtoupper(substr($p['username'], 0, 1)); ?>
-                        </div>
-                        <div class="partner-info">
-                            <div class="partner-name"><?php echo htmlspecialchars($p['username']); ?></div>
-                            <div class="partner-time">
-                                <?php
-                                    $ts = strtotime($p['last_message_at']);
-                                    $diff = time() - $ts;
-                                    if ($diff < 60) echo 'Az imént';
-                                    elseif ($diff < 3600) echo round($diff/60) . ' perce';
-                                    elseif ($diff < 86400) echo round($diff/3600) . ' órája';
-                                    else echo date('Y.m.d', $ts);
-                                ?>
+                    <?php if ($withUserId == $p['id']): ?>
+                        <div class="partner-item active">
+                            <div class="partner-avatar"><?php echo strtoupper(substr($p['username'], 0, 1)); ?></div>
+                            <div class="partner-info">
+                                <div class="partner-name"><?php echo htmlspecialchars($p['username']); ?></div>
+                                <div class="partner-time">
+                                    <?php
+                                        $ts = strtotime($p['last_message_at']);
+                                        $diff = time() - $ts;
+                                        if ($diff < 60) echo 'Az imént';
+                                        elseif ($diff < 3600) echo round($diff/60) . ' perce';
+                                        elseif ($diff < 86400) echo round($diff/3600) . ' órája';
+                                        else echo date('Y.m.d', $ts);
+                                    ?>
+                                </div>
                             </div>
+                            <?php if ($p['unread_count'] > 0): ?>
+                                <div class="unread-badge"><?php echo $p['unread_count']; ?></div>
+                            <?php endif; ?>
                         </div>
-                        <?php if ($p['unread_count'] > 0): ?>
-                            <div class="unread-badge"><?php echo $p['unread_count']; ?></div>
-                        <?php endif; ?>
-                    </a>
+                    <?php else: ?>
+                        <a href="uzenetek.php?with=<?php echo $p['id']; ?>" class="partner-item">
+                            <div class="partner-avatar"><?php echo strtoupper(substr($p['username'], 0, 1)); ?></div>
+                            <div class="partner-info">
+                                <div class="partner-name"><?php echo htmlspecialchars($p['username']); ?></div>
+                                <div class="partner-time">
+                                    <?php
+                                        $ts = strtotime($p['last_message_at']);
+                                        $diff = time() - $ts;
+                                        if ($diff < 60) echo 'Az imént';
+                                        elseif ($diff < 3600) echo round($diff/60) . ' perce';
+                                        elseif ($diff < 86400) echo round($diff/3600) . ' órája';
+                                        else echo date('Y.m.d', $ts);
+                                    ?>
+                                </div>
+                            </div>
+                            <?php if ($p['unread_count'] > 0): ?>
+                                <div class="unread-badge"><?php echo $p['unread_count']; ?></div>
+                            <?php endif; ?>
+                        </a>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
@@ -1131,7 +1448,9 @@ try {
                         <?php echo strtoupper(substr($withUser['username'], 0, 1)); ?>
                     </div>
                     <div>
-                        <div class="chat-partner-name"><?php echo htmlspecialchars($withUser['username']); ?></div>
+                        <div class="chat-partner-name clickable" onclick="openSellerPopup(<?php echo $withUserId; ?>)">
+                            <?php echo htmlspecialchars($withUser['username']); ?>
+                        </div>
                         <div class="chat-partner-member">
                             Tag azóta: <?php echo date('Y.m.d', strtotime($withUser['created_at'])); ?>
                         </div>
@@ -1245,6 +1564,19 @@ try {
             <div class="delete-modal-actions">
                 <button type="button" class="delete-cancel-btn" id="deleteCancelBtn">Mégse</button>
                 <button type="button" class="delete-confirm-btn" id="deleteConfirmBtn">Törlés</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seller Profile Popup Overlay -->
+    <div class="seller-popup-overlay" id="sellerPopupOverlay">
+        <div class="seller-popup-card" id="sellerPopupCard">
+            <div class="seller-popup-topbar">
+                <button class="seller-popup-close unselectable" id="sellerPopupClose">✕</button>
+                <div class="seller-popup-topbar-title unselectable">👤 Eladó profilja</div>
+            </div>
+            <div class="seller-popup-body" id="sellerPopupContent">
+                <div class="seller-popup-loading unselectable">⏳ Betöltés...</div>
             </div>
         </div>
     </div>
@@ -1449,7 +1781,6 @@ try {
             lastTimestamp = getMaxTimestampFromDOM();
             if (!lastTimestamp) lastTimestamp = '1970-01-01 00:00:00';
 
-            // Aktív chaten 500ms, háttérablakban 3000ms
             function startPolling() {
                 if (pollInterval) clearInterval(pollInterval);
                 const interval = document.hidden ? 3000 : 500;
@@ -1578,6 +1909,93 @@ try {
         <?php if (isset($_SESSION['report_success'])): unset($_SESSION['report_success']); ?>
             showToast('✅ Bejelentésedet rögzítettük. Köszönjük!');
         <?php endif; ?>
+
+        // Seller popup
+        const sellerOverlay = document.getElementById('sellerPopupOverlay');
+        const sellerContent = document.getElementById('sellerPopupContent');
+        const sellerCloseBtn = document.getElementById('sellerPopupClose');
+
+        function openSellerPopup(sellerId) {
+            sellerContent.innerHTML = '<div class="seller-popup-loading unselectable">⏳ Betöltés...</div>';
+            sellerOverlay.style.display = 'flex';
+            sellerOverlay.offsetHeight;
+            sellerOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            fetch(`?get_seller=${encodeURIComponent(sellerId)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        sellerContent.innerHTML = `<p style="color:red;text-align:center;padding:2rem;" class="unselectable">${escapeHtml(data.error)}</p>`;
+                        return;
+                    }
+
+                    const currentUserId = <?php echo $currentUserId; ?>;
+                    const memberSince = data.created_at ? data.created_at.substring(0, 10) : '—';
+                    const adminBadge = parseInt(data.is_admin) ? ' <span class="admin-badge unselectable">Admin</span>' : '';
+                    const initial = data.username ? data.username.charAt(0).toUpperCase() : '?';
+
+                    // Update topbar title
+                    document.querySelector('.seller-popup-topbar-title').textContent = '👤 ' + data.username;
+
+                    let itemsHtml = '';
+                    if (data.latest_items && data.latest_items.length > 0) {
+                        itemsHtml = `<div class="seller-popup-items-title unselectable">Legutóbbi hirdetések</div>
+                        <div class="seller-popup-items-grid">`;
+                        data.latest_items.forEach(item => {
+                            const imgHtml = item.thumb ?
+                                `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="seller-item-thumb-placeholder unselectable" style="display:none;">📷</div>` :
+                                `<div class="seller-item-thumb-placeholder unselectable">📷</div>`;
+                            itemsHtml += `
+                                <div class="seller-item-thumb" onclick="closeSellerPopup(); window.location.href='uzenetek.php?with=${escapeHtml(item.id)}';">
+                                    ${imgHtml}
+                                    <div class="seller-item-info">
+                                        <div class="seller-item-title unselectable">${escapeHtml(item.title)}</div>
+                                        <div class="seller-item-price unselectable">${Number(item.price).toLocaleString('hu-HU')} Ft</div>
+                                    </div>
+                                </div>`;
+                        });
+                        itemsHtml += '</div>';
+                    }
+
+                    const msgBtn = (parseInt(sellerId) !== currentUserId) ?
+                        `<a href="uzenetek.php?with=${encodeURIComponent(sellerId)}" class="seller-popup-msg-btn unselectable">💬 Üzenet küldése</a>` :
+                        `<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem 0;" class="unselectable">Ez a saját profilod</div>`;
+
+                    sellerContent.innerHTML = `
+                        <div class="seller-popup-avatar unselectable">${initial}</div>
+                        <div class="seller-popup-name unselectable">${escapeHtml(data.username)}${adminBadge}</div>
+                        <div class="seller-popup-meta unselectable">Tag azóta: ${memberSince}</div>
+                        <div class="seller-popup-stats">
+                            <div class="seller-stat unselectable">
+                                <div class="seller-stat-value unselectable">${data.item_count}</div>
+                                <div class="seller-stat-label unselectable">Hirdetés</div>
+                            </div>
+                        </div>
+                        ${itemsHtml}
+                        ${msgBtn}
+                    `;
+                })
+                .catch(() => {
+                    sellerContent.innerHTML = '<p style="color:red;text-align:center;padding:2rem;" class="unselectable">Hálózati hiba történt.</p>';
+                });
+        }
+
+        function closeSellerPopup() {
+            sellerOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+            setTimeout(() => {
+                sellerOverlay.style.display = 'none';
+            }, 300);
+        }
+
+        sellerCloseBtn.addEventListener('click', closeSellerPopup);
+        sellerOverlay.addEventListener('click', e => {
+            if (e.target === sellerOverlay) closeSellerPopup();
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && sellerOverlay.classList.contains('active')) closeSellerPopup();
+        });
 
         scrollToBottom();
     </script>

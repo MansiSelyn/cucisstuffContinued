@@ -529,7 +529,7 @@ body[data-theme="light"] .product-menu-item:hover {
 }
 
 /* ============================================
-   EDIT MODAL - LIGHT THEME (FIXED)
+   EDIT MODAL - LIGHT THEME
    ============================================ */
 body[data-theme="light"] .edit-modal {
     background: rgba(220, 230, 180, 0.85) !important;
@@ -543,14 +543,8 @@ body[data-theme="light"] .edit-modal-content {
     color: #1a1f00 !important;
 }
 
-body[data-theme="light"] .edit-modal-header {
-    background: transparent !important;
-    border-bottom: 1px solid rgba(140, 170, 10, 0.25) !important;
-}
-
 body[data-theme="light"] .edit-modal-title {
     color: #7a9200 !important;
-    text-shadow: 0 0 8px rgba(176, 203, 31, 0.6) !important;
 }
 
 body[data-theme="light"] .edit-modal-close {
@@ -562,10 +556,6 @@ body[data-theme="light"] .edit-modal-close {
 body[data-theme="light"] .edit-modal-close:hover {
     background: #B0CB1F;
     color: #1a1f00;
-}
-
-body[data-theme="light"] .edit-form-label {
-    color: #7a9200 !important;
 }
 
 body[data-theme="light"] .edit-form-input,
@@ -730,7 +720,7 @@ body[data-theme="light"] .items-section h2 {
 }
 
 /* ============================================
-   ACCOUNT DROPDOWN - LIGHT MODE
+   ACCOUNT DROPDOWN - LIGHT MODE (EGYSÉGES DIZÁJN)
    ============================================ */
 body[data-theme="light"] .account-dropdown-panel {
     background: rgba(248, 252, 235, 0.98) !important;
@@ -747,6 +737,7 @@ body[data-theme="light"] .dropdown-divider {
     background: linear-gradient(90deg, transparent, rgba(122, 146, 0, 0.3), transparent) !important;
 }
 
+/* Fiókom link */
 body[data-theme="light"] .account-link span {
     color: #2a3a00 !important;
     transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
@@ -762,6 +753,7 @@ body[data-theme="light"] .account-link span:hover {
     box-shadow: 0 4px 12px rgba(176, 203, 31, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
 }
 
+/* Kijelentkezés gomb */
 body[data-theme="light"] .logout-button span {
     color: #2a3a00 !important;
     transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
@@ -777,6 +769,7 @@ body[data-theme="light"] .logout-button span:hover {
     box-shadow: 0 4px 12px rgba(200, 60, 60, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
 }
 
+/* Téma kapcsoló sor – itt állítjuk be a "Világos mód" felirat sötét színét */
 body[data-theme="light"] .theme-toggle-row {
     color: #1a1f00 !important;
 }
@@ -789,6 +782,7 @@ body[data-theme="light"] .theme-toggle-row:hover {
     background: rgba(176, 203, 31, 0.08) !important;
 }
 
+/* Account menu gomb light módban */
 body[data-theme="light"] .account-menu-btn {
     background: rgba(240, 252, 200, 0.85) !important;
     border-color: rgba(122, 146, 0, 0.5) !important;
@@ -849,11 +843,14 @@ body[data-theme="light"] ::selection {
 /* ============================================
    HIÁNYZÓ LIGHT MODE FIXEK (main.php + account.php)
    ============================================ */
+
+/* 1. Termékmodál képkonténer – átlátszó háttér, zöld keret */
 body[data-theme="light"] .product-main-image-container {
     background: transparent !important;
     border: 1px solid #B0CB1F !important;
 }
 
+/* 2. Lightbox teljes light támogatás */
 body[data-theme="light"] .lightbox-overlay {
     background: rgba(240, 245, 220, 0.97) !important;
 }
@@ -870,22 +867,26 @@ body[data-theme="light"] .lightbox-close:hover {
     color: #1a1f00 !important;
 }
 
+/* 3. Ár glow zöldre */
 body[data-theme="light"] .product-price {
     text-shadow: 0 0 30px rgba(176, 203, 31, 0.5) !important;
     box-shadow: none !important;
 }
 
+/* 4. Product modal card – account.php + main.php egységes light stílus */
 body[data-theme="light"] .product-modal-card {
     background: rgba(240, 248, 210, 0.98) !important;
     border: 1px solid rgba(140, 170, 10, 0.3) !important;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08), 0 0 40px rgba(176, 203, 31, 0.15) !important;
 }
 
+/* 5. Termékmodál fő képkonténer light */
 body[data-theme="light"] .product-main-image-container {
     background: rgba(255, 255, 255, 0.6) !important;
     border: 1px solid rgba(140, 170, 10, 0.25) !important;
 }
 
+/* 6. Termékmodál dátum és eladó szöveg light */
 body[data-theme="light"] .product-date {
     color: rgba(26, 31, 0, 0.5) !important;
 }
@@ -894,15 +895,18 @@ body[data-theme="light"] .product-seller {
     color: rgba(26, 31, 0, 0.7) !important;
 }
 
+/* 7. Termékmodál leírás scrollbar light */
 body[data-theme="light"] .product-description {
     border-color: rgba(140, 170, 10, 0.2) !important;
 }
 
+/* 8. Account.php edit modal light fixes */
 body[data-theme="light"] .edit-modal-header {
-    background: transparent !important;
+    background: rgba(176, 203, 31, 0.12) !important;
     border-bottom-color: rgba(140, 170, 10, 0.25) !important;
 }
 
+/* 9. Account.php fiók-módosító modal light */
 body[data-theme="light"] .modal-card {
     background: rgba(248, 252, 230, 0.98) !important;
     border: 1px solid rgba(140, 170, 10, 0.35) !important;
