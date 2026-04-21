@@ -435,7 +435,7 @@ try {
             right: 0;
             top: calc(100% + 0.5rem);
             width: 250px;
-            background: #000; /* teljesen fekete dark módban */
+            background: #000;
             backdrop-filter: blur(24px);
             border: 1px solid var(--border-glass);
             border-radius: 16px;
@@ -447,13 +447,19 @@ try {
 
         /* Light mode account dropdown */
         body[data-theme="light"] .account-dropdown {
-            background: #f0f5e0 !important; /* világos zöldes háttér */
+            background: #f0f5e0 !important;
             border-color: rgba(122,146,0,0.4) !important;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1), 0 0 20px rgba(176,203,31,0.2) !important;
         }
 
+        body[data-theme="light"] .account-summary {
+            background: rgba(240, 252, 200, 0.85) !important;
+            border-color: rgba(122,146,0,0.5) !important;
+            color: #7a9200 !important;
+        }
+
         body[data-theme="light"] .account-summary:hover {
-            background: rgba(176, 203, 31, 0.15) !important;
+            background: rgba(176, 203, 31, 0.2) !important;
             border-color: #B0CB1F !important;
         }
 
@@ -465,9 +471,17 @@ try {
             background: linear-gradient(90deg, transparent, #B0CB1F, transparent) !important;
         }
 
+        body[data-theme="light"] .logout-button span {
+            color: #2a3a00 !important;
+        }
+
         body[data-theme="light"] .logout-button span:hover {
-            background: rgba(176, 203, 31, 0.1) !important;
+            background: rgba(176, 203, 31, 0.15) !important;
             color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .theme-toggle-row {
+            color: #1a1f00 !important;
         }
 
         @keyframes dropdownFade {
