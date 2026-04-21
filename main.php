@@ -1392,16 +1392,18 @@ try {
             outline: none;
         }
 
+        /* Fix textarea: no resize, fixed height, scrollable */
+        .edit-form-textarea {
+            resize: none;
+            height: 120px;
+            overflow-y: auto;
+        }
+
         .edit-form-input:focus,
         .edit-form-textarea:focus {
             border-color: var(--orange-bright);
             box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.15);
             background: var(--input-focus-bg);
-        }
-
-        .edit-form-textarea {
-            resize: vertical;
-            min-height: 100px;
         }
 
         .edit-price-wrapper {

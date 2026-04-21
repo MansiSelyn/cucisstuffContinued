@@ -209,6 +209,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
 <title>Fiókom</title>
 <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css">
 <style>
+  /* ========== GLOBÁLIS RESET – EZ HIÁNYZOTT ========== */
+  *,
+  *::before,
+  *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+  }
+
   /* ========== ALAP STÍLUSOK (account.php eredeti) ========== */
   body {
     min-height: 100vh;
