@@ -60,8 +60,9 @@ body::after {
         0 0 60px rgba(255, 100, 0, 0.06);
 }
 
-/* Form */
-form {
+/* Form (csak index.php login/register form) */
+#loginForm,
+#registerForm {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     box-shadow:
@@ -71,16 +72,19 @@ form {
         0 1px 0 rgba(255, 255, 255, 0.05) inset;
 }
 
-form::before {
+#loginForm::before,
+#registerForm::before {
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), rgba(255, 200, 100, 0.14), transparent);
 }
 
-form::after {
+#loginForm::after,
+#registerForm::after {
     background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 140, 0, 0.07) 0%, transparent 60%);
 }
 
-/* Input */
-input {
+/* Input (csak index.php login/register form) */
+#loginForm input,
+#registerForm input {
     background: var(--input-bg);
     color: var(--text-primary);
     border: 1px solid rgba(255, 140, 0, 0.15);
@@ -90,7 +94,8 @@ input {
         0 -1px 0 rgba(0, 0, 0, 0.5) inset;
 }
 
-input:focus {
+#loginForm input:focus,
+#registerForm input:focus {
     border-color: rgba(255, 140, 0, 0.5);
     background: var(--input-focus-bg);
     box-shadow:
@@ -101,12 +106,14 @@ input:focus {
     color: #fff;
 }
 
-input::placeholder {
+#loginForm input::placeholder,
+#registerForm input::placeholder {
     color: var(--placeholder-color);
 }
 
-/* Submit button */
-button[type="submit"] {
+/* Submit button (csak index.php login/register form) */
+#loginForm button[type="submit"],
+#registerForm button[type="submit"] {
     background: linear-gradient(180deg, #ffab35 0%, #e07800 50%, #b35500 100%);
     color: #0a0500;
     box-shadow:
@@ -116,7 +123,8 @@ button[type="submit"] {
         0 1px 0 rgba(255, 230, 150, 0.4) inset;
 }
 
-button[type="submit"]:hover {
+#loginForm button[type="submit"]:hover,
+#registerForm button[type="submit"]:hover {
     background: linear-gradient(180deg, #ffbe55 0%, #f08800 50%, #c06000 100%);
     box-shadow:
         0 10px 0 #6b3000,
@@ -125,14 +133,16 @@ button[type="submit"]:hover {
         0 0 0 1px rgba(255, 200, 100, 0.35) inset;
 }
 
-button[type="submit"]:active {
+#loginForm button[type="submit"]:active,
+#registerForm button[type="submit"]:active {
     box-shadow:
         0 2px 0 #6b3000,
         0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* Ghost button */
-button[type="button"] {
+/* Ghost button (csak index.php login/register form) */
+#loginForm button[type="button"],
+#registerForm button[type="button"] {
     background: transparent;
     color: var(--orange-bright);
     border: 1px solid rgba(255, 140, 0, 0.3);
@@ -140,7 +150,8 @@ button[type="button"] {
     text-shadow: 0 0 8px rgba(255, 140, 0, 0.4);
 }
 
-button[type="button"]:hover {
+#loginForm button[type="button"]:hover,
+#registerForm button[type="button"]:hover {
     background: rgba(255, 120, 0, 0.08);
     border-color: rgba(255, 140, 0, 0.6);
     color: #fff;
@@ -649,20 +660,20 @@ body[data-theme="dark"] .account-link span:hover {
     box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
-/* Kijelentkezés gomb */
+/* Kijelentkezés gomb - dark mód (narancs, a light mód mintájára) */
 body[data-theme="dark"] .logout-button span {
-    color: #e0d6c0 !important;
+    color: #ffb347 !important;
     transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
 }
 
 body[data-theme="dark"] .logout-button span:hover {
-    background: rgba(200, 60, 60, 0.12) !important;
-    border-color: rgba(200, 60, 60, 0.4) !important;
-    color: #ff8888 !important;
+    background: rgba(255, 140, 0, 0.08) !important;
+    border-color: rgba(255, 140, 0, 0.4) !important;
+    color: #ffaa33 !important;
     transform: translateX(4px) !important;
     padding-left: 1.6rem !important;
-    border-left: 2px solid #ff5555 !important;
-    box-shadow: 0 4px 12px rgba(200, 60, 60, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    border-left: 2px solid #ffaa33 !important;
+    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
 /* Téma kapcsoló hover */

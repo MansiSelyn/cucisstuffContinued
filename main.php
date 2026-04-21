@@ -954,12 +954,6 @@ try {
             user-select: none;
         }
 
-        .logout-button span:hover {
-            background: rgba(255, 140, 0, 0.15);
-            color: var(--orange-bright);
-            transform: translateX(5px);
-        }
-
         .theme-toggle-row {
             display: flex;
             align-items: center;

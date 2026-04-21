@@ -905,36 +905,221 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       position: fixed;
       inset: 0;
       z-index: 4000;
-      background: rgba(0, 0, 0, 0.95);
+      background: rgba(0, 0, 0, 0.98);
       backdrop-filter: blur(10px);
       display: none;
       align-items: center;
       justify-content: center;
       opacity: 0;
       transition: opacity 0.3s ease;
-      padding: 1rem;
+      padding: 0;
   }
   .product-modal-overlay.active {
       display: flex;
       opacity: 1;
   }
+  /* Light mode overrides – product modal (account.php) */
+  body[data-theme="light"] .product-modal-overlay {
+      background: rgba(220, 230, 180, 0.98);
+  }
+  body[data-theme="light"] .product-modal-card {
+      background: rgba(240, 248, 210, 0.98);
+  }
+  body[data-theme="light"] .product-gallery {
+      background: rgba(240, 248, 210, 0.8);
+  }
+  body[data-theme="light"] .product-main-image-container {
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(140, 170, 10, 0.25);
+  }
+  body[data-theme="light"] .product-details {
+      background: rgba(240, 248, 210, 0.95);
+      border-color: rgba(140, 170, 10, 0.2);
+  }
+  body[data-theme="light"] .product-title,
+  body[data-theme="light"] .product-price {
+      color: #7a9200;
+  }
+  body[data-theme="light"] .product-seller {
+      color: rgba(26, 31, 0, 0.7);
+  }
+  body[data-theme="light"] .product-seller strong {
+      color: #1a1f00;
+  }
+  body[data-theme="light"] .product-date {
+      color: rgba(26, 31, 0, 0.5);
+  }
+  body[data-theme="light"] .product-description {
+      background: rgba(255, 255, 255, 0.8);
+      color: #1a1f00;
+      border-color: rgba(140, 170, 10, 0.2);
+  }
+  body[data-theme="light"] .product-buy-btn {
+      background: linear-gradient(135deg, #B0CB1F, #8aA000);
+      color: #1a1f00;
+  }
+  body[data-theme="light"] .product-thumbnail.active {
+      border-color: #B0CB1F;
+      box-shadow: 0 0 15px rgba(176, 203, 31, 0.3);
+  }
+  body[data-theme="light"] .product-thumbnail:hover {
+      border-color: #B0CB1F;
+  }
+  body[data-theme="light"] .gallery-nav {
+      background: rgba(240, 248, 210, 0.9);
+      border-color: #B0CB1F;
+      color: #7a9200;
+  }
+  body[data-theme="light"] .gallery-nav:hover {
+      background: #B0CB1F;
+      color: #1a1f00;
+  }
+  body[data-theme="light"] .product-modal-close {
+      background: rgba(176, 203, 31, 0.2);
+      border-color: #B0CB1F;
+      color: #7a9200;
+  }
+  body[data-theme="light"] .product-modal-close:hover {
+      background: #B0CB1F;
+      color: #1a1f00;
+  }
+  body[data-theme="light"] .product-menu-button {
+      background: rgba(240, 248, 210, 0.9);
+      border-color: #B0CB1F;
+      color: #7a9200;
+  }
+  body[data-theme="light"] .product-menu-button:hover {
+      background: #B0CB1F;
+      color: #1a1f00;
+  }
+  body[data-theme="light"] .product-menu-content {
+      background: rgba(244, 252, 220, 0.98);
+      border-color: rgba(140, 170, 10, 0.3);
+  }
+  body[data-theme="light"] .product-menu-item {
+      color: #1a1f00;
+  }
+  body[data-theme="light"] .product-menu-item:hover {
+      background: rgba(176, 203, 31, 0.2);
+      color: #7a9200;
+  }
+  /* Light mode – fiók módosító modal */
+  body[data-theme="light"] .modal-card {
+      background: rgba(248, 252, 230, 0.98);
+      border: 1px solid rgba(140, 170, 10, 0.35);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 40px rgba(176, 203, 31, 0.15);
+      color: #1a1f00;
+  }
+  body[data-theme="light"] .modal-title {
+      color: #7a9200;
+  }
+  body[data-theme="light"] .modal-close {
+      color: #7a9200;
+  }
+  body[data-theme="light"] .modal-close:hover {
+      color: #1a1f00;
+      background: rgba(176, 203, 31, 0.2);
+  }
+  body[data-theme="light"] .form-group label {
+      color: #6a7a20;
+  }
+  body[data-theme="light"] .form-group input {
+      background: rgba(245, 252, 215, 0.95);
+      border-color: rgba(140, 170, 10, 0.3);
+      color: #1a1f00;
+  }
+  body[data-theme="light"] .form-group input:focus {
+      border-color: #B0CB1F;
+      box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.18);
+  }
+  body[data-theme="light"] .submit-btn {
+      background: linear-gradient(135deg, #B0CB1F, #8aA000);
+      color: #1a1f00;
+  }
+  /* Light mode – edit item modal (account.php) */
+  body[data-theme="light"] .edit-modal-content {
+      background: #f8fce6;
+      border: 2px solid #B0CB1F;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 40px rgba(176, 203, 31, 0.2);
+      color: #1a1f00;
+  }
+  body[data-theme="light"] .edit-modal-header {
+      background: rgba(176, 203, 31, 0.12);
+      border-bottom-color: rgba(140, 170, 10, 0.25);
+  }
+  body[data-theme="light"] .edit-modal-title {
+      color: #7a9200;
+  }
+  body[data-theme="light"] .edit-modal-close {
+      color: #7a9200;
+  }
+  body[data-theme="light"] .edit-modal-close:hover {
+      background: rgba(176, 203, 31, 0.25);
+  }
+  body[data-theme="light"] .edit-form-input,
+  body[data-theme="light"] .edit-form-textarea {
+      background: rgba(245, 252, 215, 0.95);
+      border-color: rgba(140, 170, 10, 0.3);
+      color: #1a1f00;
+  }
+  body[data-theme="light"] .edit-form-input:focus,
+  body[data-theme="light"] .edit-form-textarea:focus {
+      border-color: #B0CB1F;
+      background: rgba(242, 252, 200, 1);
+      box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.18);
+  }
+  body[data-theme="light"] .edit-price-suffix {
+      color: #7a9200;
+  }
+  body[data-theme="light"] .btn-edit-cancel {
+      background: rgba(240, 252, 200, 0.7);
+      border: 1px solid rgba(140, 170, 10, 0.4);
+      color: #6a7a20;
+  }
+  body[data-theme="light"] .btn-edit-cancel:hover {
+      background: rgba(176, 203, 31, 0.2);
+      border-color: #B0CB1F;
+      color: #4a6000;
+  }
+  body[data-theme="light"] .btn-edit-save {
+      background: linear-gradient(105deg, #B0CB1F, #8aA000);
+      color: #1a1f00;
+  }
+  /* Light mode – lightbox */
+  body[data-theme="light"] .lightbox-overlay {
+      background: rgba(240, 245, 220, 0.97);
+  }
+  body[data-theme="light"] .lightbox-image {
+      border-color: #B0CB1F;
+  }
+  body[data-theme="light"] .lightbox-close {
+      background: rgba(240, 245, 220, 0.9);
+      border-color: #B0CB1F;
+      color: #7a9200;
+  }
+  body[data-theme="light"] .lightbox-close:hover {
+      background: #B0CB1F;
+      color: #1a1f00;
+  }
   .product-modal-card {
-      width: 90vw;
-      height: 90vh;
+      width: 100vw;
+      height: 100vh;
       max-width: none;
       max-height: none;
-      background: rgba(5, 5, 5, 0.98);
+      background: rgba(5, 5, 5, 0.99);
       position: relative;
       display: grid;
       grid-template-columns: 1.5fr 1fr;
       gap: 1.5rem;
-      padding: 1.5rem;
+      /* top padding a fix header helye miatt */
+      padding: 4rem 2rem 2rem 2rem;
       transform: scale(0.98);
       transition: transform 0.3s ease;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 140, 0, 0.15);
-      border-radius: 24px;
-      border: 1px solid var(--glass-border);
+      box-shadow: none;
+      border-radius: 0;
+      border: none;
       overflow: hidden;
+      box-sizing: border-box;
   }
   .product-modal-overlay.active .product-modal-card {
       transform: scale(1);
@@ -943,8 +1128,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       position: absolute;
       top: 1rem;
       right: 1rem;
-      bottom: auto;
-      left: auto;
       display: flex;
       gap: 0.75rem;
       z-index: 100;
@@ -1033,20 +1216,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       background: rgba(255, 0, 0, 0.2);
       color: #ff0000;
   }
+  /* Gallery: kép felül, thumbs alul – sosem görgethető */
   .product-gallery {
-      position: relative;
-      height: 100%;
       display: flex;
       flex-direction: column;
       background: rgba(0, 0, 0, 0.3);
       border-radius: 20px;
       padding: 1rem;
+      overflow: hidden;
       min-height: 0;
   }
+  /* Képkonténer: maradék helyet foglalja el */
   .product-main-image-container {
       position: relative;
       width: 100%;
-      flex: 1;
+      flex: 1 1 0;
       border-radius: 16px;
       overflow: hidden;
       background: rgba(0, 0, 0, 0.5);
@@ -1065,6 +1249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       transition: opacity 0.2s ease;
       border: 1px solid var(--glass-border);
       border-radius: 16px;
+      display: block;
   }
   .product-no-image-placeholder {
       text-align: center;
@@ -1099,28 +1284,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       color: black;
       transform: translateY(-50%) scale(1.1);
   }
-  .gallery-nav.prev {
-      left: 12px;
-  }
-  .gallery-nav.next {
-      right: 12px;
-  }
-  .gallery-nav.hidden {
-      display: none;
-  }
+  .gallery-nav.prev { left: 12px; }
+  .gallery-nav.next { right: 12px; }
+  .gallery-nav.hidden { display: none; }
+  /* Thumbnails: fix magasság, KÉP ALATT */
   .product-thumbnails {
       display: flex;
-      gap: 0.75rem;
+      gap: 0.6rem;
       overflow-x: auto;
-      padding: 0.5rem 0;
-      min-height: 80px;
-      margin-bottom: 1rem;
+      padding: 0.5rem 0 0 0;
       flex-shrink: 0;
+      height: 72px;
+      align-items: center;
+  }
+  .product-thumbnails::-webkit-scrollbar { height: 3px; }
+  .product-thumbnails::-webkit-scrollbar-track { background: transparent; }
+  .product-thumbnails::-webkit-scrollbar-thumb {
+      background: rgba(255, 140, 0, 0.3);
+      border-radius: 2px;
   }
   .product-thumbnail {
-      width: 80px;
-      height: 80px;
-      border-radius: 10px;
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
       overflow: hidden;
       cursor: pointer;
       border: 2px solid transparent;
@@ -1133,27 +1319,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
   }
   .product-thumbnail.active {
       border-color: var(--orange-bright);
-      box-shadow: 0 0 15px var(--orange-glow);
+      box-shadow: 0 0 12px var(--orange-glow);
   }
   .product-thumbnail img {
       width: 100%;
       height: 100%;
       object-fit: cover;
   }
+  /* Details panel: fix magasság, belső görgetés, buy btn alul rögzítve */
   .product-details {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
-      padding: 1rem;
+      gap: 0.75rem;
+      padding: 1.25rem;
       background: rgba(10, 10, 10, 0.7);
       border-radius: 20px;
       border: 1px solid var(--glass-border);
-      height: 100%;
+      overflow: hidden;
+      min-height: 0;
+  }
+  /* Görgethető belső rész (cím, ár, eladó, leírás) */
+  .product-details-inner {
+      flex: 1 1 0;
       overflow-y: auto;
-      user-select: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      min-height: 0;
+      padding-right: 0.2rem;
   }
   .product-title {
-      font-size: 1.8rem;
+      font-size: 1.5rem;
       color: var(--orange-bright);
       margin: 0;
       word-break: break-word;
@@ -1161,57 +1357,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       font-weight: bold;
   }
   .product-price {
-      font-size: 2rem;
+      font-size: 1.7rem;
       font-weight: bold;
       color: var(--orange-bright);
       text-shadow: 0 0 20px var(--orange-glow);
   }
   .product-seller {
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       color: rgba(255, 255, 255, 0.7);
       cursor: pointer;
   }
   .product-seller strong {
       color: var(--orange-bright);
-      font-size: 1.1rem;
+      font-size: 0.95rem;
   }
   .product-date {
-      font-size: 0.85rem;
+      font-size: 0.78rem;
       color: rgba(255, 255, 255, 0.4);
   }
   .product-description {
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       line-height: 1.6;
       color: rgba(255, 255, 255, 0.9);
       background: rgba(0, 0, 0, 0.4);
-      border-radius: 14px;
-      padding: 1rem;
+      border-radius: 12px;
+      padding: 0.85rem;
       border: 1px solid var(--glass-border);
-      max-height: 250px;
-      overflow-y: auto;
       white-space: pre-wrap;
       user-select: text;
+      overflow-y: auto;
+      flex: 1 1 60px;
+      min-height: 60px;
   }
+  /* Buy gomb: nem görgethető, alul fix */
   .product-buy-btn {
       background: linear-gradient(135deg, #00c851, #007e33);
       border: none;
-      border-radius: 14px;
-      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
       color: white;
-      font-size: 1.2rem;
+      font-size: 0.95rem;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
       user-select: none;
-      margin-top: auto;
+      flex-shrink: 0;
+      width: 100%;
   }
   .product-buy-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 200, 0, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 200, 0, 0.4);
   }
   .lightbox-overlay {
       position: fixed;
@@ -1269,76 +1468,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
       .product-modal-card {
           grid-template-columns: 1fr;
           gap: 1rem;
-          padding: 1rem;
-          width: 95vw;
-          height: 95vh;
+          padding: 3.5rem 1rem 1rem 1rem;
+          width: 100vw;
+          height: 100vh;
       }
       .product-gallery {
-          height: 45vh;
+          height: 45%;
+          min-height: 0;
+          flex-shrink: 0;
+      }
+      .product-details {
+          flex: 1 1 0;
           min-height: 0;
       }
-      .product-title {
-          font-size: 1.5rem;
-      }
-      .product-price {
-          font-size: 1.8rem;
-      }
-      .product-description {
-          max-height: 200px;
-      }
-      .product-thumbnail {
-          width: 65px;
-          height: 65px;
-      }
+      .product-title { font-size: 1.3rem; }
+      .product-price { font-size: 1.5rem; }
+      .product-thumbnail { width: 52px; height: 52px; }
   }
   @media (max-width: 600px) {
       .product-modal-card {
-          padding: 0.75rem;
+          padding: 3rem 0.75rem 0.75rem 0.75rem;
+          width: 100vw;
+          height: 100vh;
       }
-      .product-gallery {
-          height: 40vh;
-      }
-      .product-details {
-          padding: 0.75rem;
-      }
-      .product-title {
-          font-size: 1.2rem;
-      }
-      .product-price {
-          font-size: 1.4rem;
-      }
-      .product-description {
-          padding: 0.75rem;
-          font-size: 0.85rem;
-      }
-      .product-modal-header {
-          top: 0.5rem;
-          right: 0.5rem;
-      }
+      .product-gallery { height: 40%; }
+      .product-details { padding: 0.75rem; }
+      .product-title { font-size: 1.1rem; }
+      .product-price { font-size: 1.3rem; }
+      .product-description { font-size: 0.82rem; padding: 0.65rem; }
+      .product-modal-header { top: 0.5rem; right: 0.5rem; }
       .product-modal-close,
-      .product-menu-button {
-          width: 32px;
-          height: 32px;
-          font-size: 1.1rem;
-      }
-      .product-thumbnail {
-          width: 55px;
-          height: 55px;
-      }
-      .product-buy-btn {
-          padding: 0.75rem 1rem;
-          font-size: 1rem;
-      }
-      .gallery-nav {
-          width: 32px;
-          height: 32px;
-          font-size: 1rem;
-      }
-      .lightbox-close {
-          width: 36px;
-          height: 36px;
-          font-size: 1.4rem;
-      }
+      .product-menu-button { width: 34px; height: 34px; font-size: 1.1rem; }
+      .product-thumbnail { width: 46px; height: 46px; }
+      .product-buy-btn { padding: 0.65rem 0.75rem; font-size: 0.88rem; }
+      .gallery-nav { width: 32px; height: 32px; font-size: 1rem; }
   }
   .unselectable {
       user-select: none;
@@ -1516,20 +1679,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             <button class="product-modal-close unselectable" id="closeProductModalBtn">✕</button>
         </div>
         <div class="product-gallery">
-            <div class="product-thumbnails" id="productThumbnails"></div>
             <div class="product-main-image-container">
                 <img src="" alt="Termék képe" class="product-main-image" id="productMainImage" style="display: none;">
                 <div class="product-no-image-placeholder unselectable" id="productNoImagePlaceholder" style="display: none;">📷 Nincs kép</div>
                 <button class="gallery-nav prev unselectable" id="galleryPrev">❮</button>
                 <button class="gallery-nav next unselectable" id="galleryNext">❯</button>
             </div>
+            <div class="product-thumbnails" id="productThumbnails"></div>
         </div>
         <div class="product-details">
-            <h2 class="product-title unselectable" id="productTitle"></h2>
-            <div class="product-price unselectable" id="productPrice"></div>
-            <div class="product-seller unselectable" id="productSeller"></div>
-            <div class="product-date unselectable" id="productDate"></div>
-            <div class="product-description selectable" id="productDescription"></div>
+            <div class="product-details-inner">
+                <h2 class="product-title unselectable" id="productTitle"></h2>
+                <div class="product-price unselectable" id="productPrice"></div>
+                <div class="product-seller unselectable" id="productSeller"></div>
+                <div class="product-date unselectable" id="productDate"></div>
+                <div class="product-description selectable" id="productDescription"></div>
+            </div>
             <button class="product-buy-btn unselectable" id="productBuyBtn">🛒 Vásárlás</button>
         </div>
     </div>
