@@ -737,6 +737,24 @@ body[data-theme="light"] .dropdown-divider {
     background: linear-gradient(90deg, transparent, rgba(122, 146, 0, 0.3), transparent) !important;
 }
 
+/* Light mode – dropdown item (Fiókom) és kijelentkezés gomb */
+body[data-theme="light"] .dropdown-item,
+body[data-theme="light"] .logout-form-btn {
+    color: #2a3a00 !important;
+    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+body[data-theme="light"] .dropdown-item:hover,
+body[data-theme="light"] .logout-form-btn:hover {
+    background: rgba(176, 203, 31, 0.18) !important;
+    border-color: rgba(122, 146, 0, 0.4) !important;
+    color: #4a6000 !important;
+    transform: translateX(4px) !important;
+    padding-left: 1.6rem !important;
+    border-left: 2px solid #B0CB1F !important;
+    box-shadow: 0 4px 12px rgba(176, 203, 31, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
 /* Fiókom link */
 body[data-theme="light"] .account-link span {
     color: #2a3a00 !important;
@@ -753,20 +771,20 @@ body[data-theme="light"] .account-link span:hover {
     box-shadow: 0 4px 12px rgba(176, 203, 31, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
 }
 
-/* Kijelentkezés gomb */
+/* Kijelentkezés gomb - light mód (egységes zöld hover) */
 body[data-theme="light"] .logout-button span {
     color: #2a3a00 !important;
     transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
 }
 
 body[data-theme="light"] .logout-button span:hover {
-    background: rgba(200, 60, 60, 0.06) !important;
-    border-color: rgba(180, 60, 60, 0.4) !important;
-    color: #b33 !important;
+    background: rgba(176, 203, 31, 0.18) !important;
+    border-color: rgba(122, 146, 0, 0.4) !important;
+    color: #4a6000 !important;
     transform: translateX(4px) !important;
     padding-left: 1.6rem !important;
-    border-left: 2px solid #cc8888 !important;
-    box-shadow: 0 4px 12px rgba(200, 60, 60, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+    border-left: 2px solid #B0CB1F !important;
+    box-shadow: 0 4px 12px rgba(176, 203, 31, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
 }
 
 /* Téma kapcsoló sor – itt állítjuk be a "Világos mód" felirat sötét színét */
@@ -902,8 +920,25 @@ body[data-theme="light"] .product-description {
 
 /* 8. Account.php edit modal light fixes */
 body[data-theme="light"] .edit-modal-header {
-    background: rgba(176, 203, 31, 0.12) !important;
+    background: transparent !important;
     border-bottom-color: rgba(140, 170, 10, 0.25) !important;
+}
+
+/* 8b. Edit modal cím glow zöld */
+body[data-theme="light"] .edit-modal-title {
+    color: #7a9200 !important;
+    text-shadow: 0 0 12px rgba(176, 203, 31, 0.7) !important;
+}
+
+/* 8c. Edit modal bezáró gomb átlátszó */
+body[data-theme="light"] .edit-modal-close {
+    background: transparent !important;
+    border-color: #B0CB1F !important;
+    color: #7a9200 !important;
+}
+body[data-theme="light"] .edit-modal-close:hover {
+    background: rgba(176, 203, 31, 0.15) !important;
+    color: #4a6000 !important;
 }
 
 /* 9. Account.php fiók-módosító modal light */
@@ -927,4 +962,23 @@ body[data-theme="light"] .form-group input {
 body[data-theme="light"] .form-group input:focus {
     border-color: #B0CB1F !important;
     box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.18) !important;
+}
+
+/* 10. Összes label zöld színű light módban */
+body[data-theme="light"] .edit-form-label,
+body[data-theme="light"] .form-label,
+body[data-theme="light"] .report-form-label {
+    color: #6a8c00 !important;
+}
+
+/* 11. Report modal textarea fix – ne legyen átméretezhető */
+body[data-theme="light"] .report-modal .form-textarea,
+body[data-theme="dark"]  .report-modal .form-textarea {
+    resize: none !important;
+}
+
+/* 12. Edit form textarea fix – ne lehessen átméretezni (sötét és világos módban is) */
+body[data-theme="light"] .edit-form-textarea,
+body[data-theme="dark"]  .edit-form-textarea {
+    resize: none !important;
 }

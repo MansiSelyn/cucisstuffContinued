@@ -644,6 +644,24 @@ body[data-theme="dark"] .dropdown-divider {
     background: linear-gradient(90deg, transparent, rgba(255, 140, 0, 0.4), transparent) !important;
 }
 
+/* Dark mode – dropdown item (Fiókom) és kijelentkezés gomb */
+body[data-theme="dark"] .dropdown-item,
+body[data-theme="dark"] .logout-form-btn {
+    color: #e0d6c0 !important;
+    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+body[data-theme="dark"] .dropdown-item:hover,
+body[data-theme="dark"] .logout-form-btn:hover {
+    background: rgba(255, 140, 0, 0.15) !important;
+    border-color: rgba(255, 140, 0, 0.4) !important;
+    color: #ffb347 !important;
+    transform: translateX(4px) !important;
+    padding-left: 1.6rem !important;
+    border-left: 2px solid var(--orange-bright) !important;
+    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
 /* Fiókom link */
 body[data-theme="dark"] .account-link span {
     color: #e0d6c0 !important;
@@ -660,20 +678,20 @@ body[data-theme="dark"] .account-link span:hover {
     box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
-/* Kijelentkezés gomb - dark mód (narancs, a light mód mintájára) */
+/* Kijelentkezés gomb - dark mód */
 body[data-theme="dark"] .logout-button span {
-    color: #ffb347 !important;
+    color: #e0d6c0 !important;
     transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
 }
 
 body[data-theme="dark"] .logout-button span:hover {
-    background: rgba(255, 140, 0, 0.08) !important;
+    background: rgba(255, 140, 0, 0.15) !important;
     border-color: rgba(255, 140, 0, 0.4) !important;
-    color: #ffaa33 !important;
+    color: #ffb347 !important;
     transform: translateX(4px) !important;
     padding-left: 1.6rem !important;
-    border-left: 2px solid #ffaa33 !important;
-    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    border-left: 2px solid var(--orange-bright) !important;
+    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
 /* Téma kapcsoló hover */
