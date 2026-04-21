@@ -258,6 +258,35 @@ try {
         exit;
     }
 
+    // ================================
+    // AJAX – Get item details (for product modal)
+    // ================================
+    if (isset($_GET['get_item']) && !empty($_GET['get_item'])) {
+        header('Content-Type: application/json');
+        $itemId = $_GET['get_item'];
+        
+        $stmt = $conn->prepare("
+            SELECT i.id, i.title, i.description, i.price, i.created_at, u.username as seller_name, i.user_id
+            FROM items i
+            JOIN users u ON i.user_id = u.id
+            WHERE i.id = ?
+        ");
+        $stmt->execute([$itemId]);
+        $item = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$item) {
+            echo json_encode(['error' => 'Termék nem található']);
+            exit;
+        }
+        
+        $imgStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? ORDER BY sort_order");
+        $imgStmt->execute([$itemId]);
+        $item['images'] = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        echo json_encode($item);
+        exit;
+    }
+
 } catch (PDOException $e) {
     die("DB hiba: " . $e->getMessage());
 }
@@ -406,7 +435,7 @@ try {
             right: 0;
             top: calc(100% + 0.5rem);
             width: 250px;
-            background: rgba(0, 0, 0, 0.8);
+            background: #000; /* teljesen fekete dark módban */
             backdrop-filter: blur(24px);
             border: 1px solid var(--border-glass);
             border-radius: 16px;
@@ -414,6 +443,31 @@ try {
             box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(255,140,0,0.2);
             z-index: 1001;
             animation: dropdownFade 0.2s ease;
+        }
+
+        /* Light mode account dropdown */
+        body[data-theme="light"] .account-dropdown {
+            background: #f0f5e0 !important; /* világos zöldes háttér */
+            border-color: rgba(122,146,0,0.4) !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1), 0 0 20px rgba(176,203,31,0.2) !important;
+        }
+
+        body[data-theme="light"] .account-summary:hover {
+            background: rgba(176, 203, 31, 0.15) !important;
+            border-color: #B0CB1F !important;
+        }
+
+        body[data-theme="light"] .user-info strong {
+            color: #4a6000 !important;
+        }
+
+        body[data-theme="light"] .dropdown-divider {
+            background: linear-gradient(90deg, transparent, #B0CB1F, transparent) !important;
+        }
+
+        body[data-theme="light"] .logout-button span:hover {
+            background: rgba(176, 203, 31, 0.1) !important;
+            color: #7a9200 !important;
         }
 
         @keyframes dropdownFade {
@@ -567,6 +621,14 @@ try {
 
         .partner-item:hover,
         .partner-item.active {
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+        }
+
+        .partner-item.active {
+            cursor: default;
+        }
+
+        .partner-item.active:hover {
             background: color-mix(in srgb, var(--accent) 10%, transparent);
         }
 
@@ -1331,11 +1393,380 @@ try {
             vertical-align: middle;
         }
 
+        /* Light mode fixes for seller popup */
+        body[data-theme="light"] .seller-popup-avatar {
+            background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
+            box-shadow: 0 0 40px rgba(176, 203, 31, 0.3) !important;
+        }
+
+        body[data-theme="light"] .seller-popup-msg-btn {
+            background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
+        }
+
+        body[data-theme="light"] .seller-popup-msg-btn:hover {
+            box-shadow: 0 10px 30px rgba(176, 203, 31, 0.4) !important;
+        }
+
+        /* ===================== PRODUCT MODAL ===================== */
+        .product-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            background: rgba(0, 0, 0, 0.98);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            padding: 0;
+        }
+
+        .product-modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .product-modal-card {
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 5, 5, 0.99);
+            position: relative;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            transform: scale(0.98);
+            transition: transform 0.3s ease;
+            box-shadow: none;
+            overflow: hidden;
+        }
+
+        .product-modal-overlay.active .product-modal-card {
+            transform: scale(1);
+        }
+
+        .product-modal-header {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .product-modal-close {
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-size: 1.8rem;
+            cursor: pointer;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .product-modal-close:hover {
+            background: var(--accent);
+            color: black;
+            transform: scale(1.1);
+        }
+
+        .product-gallery {
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 24px;
+            padding: 1rem;
+            min-height: 0;
+        }
+
+        .product-main-image-container {
+            position: relative;
+            width: 100%;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border-glass);
+            margin-bottom: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+
+        .product-main-image {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .product-main-image:hover {
+            opacity: 0.9;
+        }
+
+        .product-no-image-placeholder {
+            text-align: center;
+            font-size: 1.2rem;
+            padding: 2rem;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid var(--accent);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.2s ease;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+        }
+
+        .gallery-nav:hover {
+            background: var(--accent);
+            color: black;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .gallery-nav.prev {
+            left: 20px;
+        }
+
+        .gallery-nav.next {
+            right: 20px;
+        }
+
+        .gallery-nav.hidden {
+            display: none;
+        }
+
+        .product-thumbnails {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding: 0.5rem 0;
+            min-height: 100px;
+        }
+
+        .product-thumbnail {
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .product-thumbnail:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .product-thumbnail.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .product-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .product-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding: 2rem;
+            background: rgba(10, 10, 10, 0.8);
+            border-radius: 24px;
+            border: 1px solid var(--border-glass);
+            height: 100%;
+            overflow-y: auto;
+            user-select: none;
+        }
+
+        .product-details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .product-title {
+            font-size: 2.5rem;
+            color: var(--accent);
+            margin: 0;
+            word-break: break-word;
+            line-height: 1.2;
+            font-weight: bold;
+        }
+
+        .product-price {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        .product-seller {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+        }
+
+        .product-seller strong {
+            color: var(--accent);
+            font-size: 1.4rem;
+        }
+
+        .product-date {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .product-description {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border-glass);
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            user-select: none;
+        }
+
+        .product-buy-btn {
+            background: linear-gradient(135deg, #00c851, #007e33);
+            border: none;
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            user-select: none;
+        }
+
+        .product-buy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 200, 0, 0.4);
+        }
+
+        .lightbox-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 5500;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .lightbox-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .lightbox-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            max-width: 95vw;
+            max-height: 95vh;
+        }
+
+        .lightbox-image {
+            max-width: calc(95vw - 70px);
+            max-height: 95vh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+        }
+
+        .lightbox-close {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-size: 2rem;
+            cursor: pointer;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .lightbox-close:hover {
+            background: var(--accent);
+            color: black;
+            transform: scale(1.1);
+        }
+
         @media (max-width: 640px) {
             .messages-layout { grid-template-columns: 1fr; }
             .sidebar { display: <?php echo $withUserId > 0 ? 'none' : 'flex'; ?>; height: calc(100vh - 64px); }
             .chat-area { display: <?php echo $withUserId > 0 ? 'flex' : 'none'; ?>; }
             .msg-bubble { max-width: 85%; }
+            .product-modal-card {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 1rem;
+                overflow-y: auto;
+            }
+            .product-gallery {
+                height: 50vh;
+            }
+            .product-title {
+                font-size: 2rem;
+            }
+            .product-price {
+                font-size: 2.5rem;
+            }
+            .product-description {
+                max-height: 300px;
+            }
         }
 
         ::-webkit-scrollbar { width: 5px; }
@@ -1581,6 +2012,40 @@ try {
         </div>
     </div>
 
+    <!-- Product Modal -->
+    <div class="product-modal-overlay" id="productModal">
+        <div class="product-modal-card">
+            <div class="product-modal-header">
+                <button class="product-modal-close unselectable" id="closeProductModalBtn">✕</button>
+            </div>
+            <div class="product-gallery">
+                <div class="product-main-image-container">
+                    <img src="" alt="Termék képe" class="product-main-image" id="productMainImage" style="display: none;">
+                    <div class="product-no-image-placeholder unselectable" id="productNoImagePlaceholder" style="display: none;">📷 Nincs kép</div>
+                    <button class="gallery-nav prev unselectable" id="galleryPrev">❮</button>
+                    <button class="gallery-nav next unselectable" id="galleryNext">❯</button>
+                </div>
+                <div class="product-thumbnails" id="productThumbnails"></div>
+            </div>
+            <div class="product-details">
+                <h2 class="product-title unselectable" id="productTitle"></h2>
+                <div class="product-price unselectable" id="productPrice"></div>
+                <div class="product-seller unselectable" id="productSeller"></div>
+                <div class="product-date unselectable" id="productDate"></div>
+                <div class="product-description unselectable" id="productDescription"></div>
+                <button class="product-buy-btn unselectable" id="productBuyBtn">🛒 Vásárlás</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox-overlay" id="lightboxOverlay">
+        <div class="lightbox-content">
+            <img src="" alt="Nagyított kép" class="lightbox-image" id="lightboxImage">
+            <button class="lightbox-close unselectable" id="lightboxClose">✕</button>
+        </div>
+    </div>
+
     <script>
         const currentUserId = <?php echo $currentUserId; ?>;
         const partnerId = <?php echo $withUserId ?: 0; ?>;
@@ -1591,6 +2056,17 @@ try {
         const msgInput = document.getElementById('msgInput');
         const sendBtn = document.getElementById('sendBtn');
         const toast = document.getElementById('toastNotification');
+
+        // Product modal variables
+        let currentProductImages = [];
+        let currentImageIndex = 0;
+        const productModal = document.getElementById('productModal');
+        const productMainImage = document.getElementById('productMainImage');
+        const productNoImagePlaceholder = document.getElementById('productNoImagePlaceholder');
+        const lightboxOverlay = document.getElementById('lightboxOverlay');
+        const lightboxImage = document.getElementById('lightboxImage');
+        const lightboxClose = document.getElementById('lightboxClose');
+        const closeProductModalBtn = document.getElementById('closeProductModalBtn');
 
         function showToast(msg) {
             toast.textContent = msg;
@@ -1947,7 +2423,7 @@ try {
                                 `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="seller-item-thumb-placeholder unselectable" style="display:none;">📷</div>` :
                                 `<div class="seller-item-thumb-placeholder unselectable">📷</div>`;
                             itemsHtml += `
-                                <div class="seller-item-thumb" onclick="closeSellerPopup(); window.location.href='uzenetek.php?with=${escapeHtml(item.id)}';">
+                                <div class="seller-item-thumb" onclick="closeSellerPopup(); fetchItemDetails('${escapeHtml(item.id)}');">
                                     ${imgHtml}
                                     <div class="seller-item-info">
                                         <div class="seller-item-title unselectable">${escapeHtml(item.title)}</div>
@@ -1995,6 +2471,168 @@ try {
         });
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape' && sellerOverlay.classList.contains('active')) closeSellerPopup();
+        });
+
+        // Product modal functions
+        function setMainImage(index) {
+            if (index >= 0 && index < currentProductImages.length && currentProductImages[index]) {
+                productMainImage.style.display = 'block';
+                productNoImagePlaceholder.style.display = 'none';
+                productMainImage.src = currentProductImages[index];
+                currentImageIndex = index;
+                productMainImage.onload = function() {
+                    adjustImageContainerHeight();
+                };
+                productMainImage.onerror = function() {
+                    productMainImage.style.display = 'none';
+                    productNoImagePlaceholder.style.display = 'block';
+                    adjustImageContainerHeight();
+                };
+                document.querySelectorAll('.product-thumbnail').forEach((thumb, i) => {
+                    thumb.classList.toggle('active', i === index);
+                });
+            } else {
+                productMainImage.style.display = 'none';
+                productNoImagePlaceholder.style.display = 'block';
+                adjustImageContainerHeight();
+            }
+        }
+
+        function adjustImageContainerHeight() {
+            const imageContainer = document.querySelector('.product-main-image-container');
+            const gallery = document.querySelector('.product-gallery');
+            const thumbnails = document.querySelector('.product-thumbnails');
+            if (imageContainer) {
+                const galleryPadding = 32;
+                const thumbnailsHeight = thumbnails ? thumbnails.offsetHeight : 100;
+                const availableHeight = gallery.clientHeight - galleryPadding - thumbnailsHeight - 20;
+                if (productMainImage.style.display !== 'none' && productMainImage.complete && productMainImage.naturalHeight > 0) {
+                    const imageHeight = Math.min(productMainImage.naturalHeight, availableHeight);
+                    imageContainer.style.height = imageHeight + 'px';
+                } else {
+                    imageContainer.style.height = Math.max(300, availableHeight) + 'px';
+                }
+            }
+        }
+
+        function openProductModal() {
+            productModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => {
+                adjustImageContainerHeight();
+            }, 100);
+        }
+
+        function closeProductModal() {
+            if (lightboxOverlay.classList.contains('active')) closeLightbox();
+            productModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function closeLightbox() {
+            lightboxOverlay.classList.remove('active');
+        }
+
+        function fetchItemDetails(itemId) {
+            fetch(`?get_item=${itemId}`)
+                .then(response => response.json())
+                .then(item => {
+                    if (item.error) {
+                        console.error(item.error);
+                        return;
+                    }
+
+                    currentProductImages = item.images;
+                    currentImageIndex = 0;
+
+                    document.getElementById('productTitle').textContent = item.title;
+                    document.getElementById('productPrice').textContent = `${Number(item.price).toLocaleString('hu-HU')} Ft`;
+                    document.getElementById('productSeller').innerHTML = `Eladó: <strong>${escapeHtml(item.seller_name)}</strong>`;
+                    document.getElementById('productSeller').setAttribute('data-seller-id', item.user_id);
+                    document.getElementById('productDate').textContent = item.created_at.substring(0, 10);
+                    document.getElementById('productDescription').textContent = item.description;
+
+                    const thumbnailsContainer = document.getElementById('productThumbnails');
+                    thumbnailsContainer.innerHTML = '';
+
+                    if (item.images && item.images.length > 0) {
+                        item.images.forEach((img, index) => {
+                            const thumbnail = document.createElement('div');
+                            thumbnail.className = `product-thumbnail ${index === 0 ? 'active' : ''}`;
+                            thumbnail.innerHTML = `<img src="${img}" alt="Thumbnail ${index+1}">`;
+                            thumbnail.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                setMainImage(index);
+                            });
+                            thumbnailsContainer.appendChild(thumbnail);
+                        });
+                        setMainImage(0);
+                    } else {
+                        setMainImage(-1);
+                    }
+
+                    const prevBtn = document.getElementById('galleryPrev');
+                    const nextBtn = document.getElementById('galleryNext');
+                    prevBtn.classList.toggle('hidden', !item.images || item.images.length <= 1);
+                    nextBtn.classList.toggle('hidden', !item.images || item.images.length <= 1);
+
+                    openProductModal();
+                })
+                .catch(err => console.error('Error fetching item details:', err));
+        }
+
+        // Product modal event listeners
+        closeProductModalBtn.addEventListener('click', closeProductModal);
+        productModal.addEventListener('click', (e) => {
+            if (e.target === productModal) closeProductModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && productModal.classList.contains('active')) closeProductModal();
+        });
+
+        document.getElementById('galleryPrev').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const newIndex = currentImageIndex - 1;
+            setMainImage(newIndex >= 0 ? newIndex : currentProductImages.length - 1);
+        });
+
+        document.getElementById('galleryNext').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const newIndex = currentImageIndex + 1;
+            setMainImage(newIndex < currentProductImages.length ? newIndex : 0);
+        });
+
+        productMainImage.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (productMainImage.src && productMainImage.style.display !== 'none' && !productMainImage.src.includes('svg')) {
+                lightboxImage.src = productMainImage.src;
+                lightboxOverlay.classList.add('active');
+            }
+        });
+
+        lightboxClose.addEventListener('click', closeLightbox);
+        lightboxOverlay.addEventListener('click', (e) => {
+            if (e.target === lightboxOverlay) closeLightbox();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightboxOverlay.classList.contains('active')) closeLightbox();
+        });
+
+        window.addEventListener('resize', () => {
+            if (productModal.classList.contains('active')) adjustImageContainerHeight();
+        });
+
+        document.getElementById('productBuyBtn').addEventListener('click', () => {
+            alert('Vásárlás funkció még nem elérhető!');
+        });
+
+        // Make product seller clickable
+        document.getElementById('productSeller').addEventListener('click', function() {
+            const sellerId = this.getAttribute('data-seller-id');
+            if (sellerId) {
+                closeProductModal();
+                openSellerPopup(sellerId);
+            }
         });
 
         scrollToBottom();
