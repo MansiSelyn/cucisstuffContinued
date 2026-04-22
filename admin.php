@@ -185,7 +185,9 @@ try {
     $counts['reports'] = (int)$cItem + (int)$cMsg;
     $totalItems = $counts[$view] ?? 0;
     $totalPages = $perPage ? (int)ceil($totalItems / $perPage) : 0;
-    $items = $users = $reports = [];
+    $items = $users = $reports = $conversations = $messages = [];
+    $selectedUser1 = $selectedUser2 = 0;
+    $user1Name = $user2Name = '';
     if ($view === 'items' && !$editId) {
         $s = $conn->prepare("SELECT i.*,u.username AS seller_name FROM items i JOIN users u ON i.user_id=u.id ORDER BY i.created_at DESC LIMIT :o,:l");
         $s->bindValue(':o', $offset, PDO::PARAM_INT);
@@ -229,6 +231,51 @@ try {
         $s->bindValue(':l', $perPage, PDO::PARAM_INT);
         $s->execute();
         $reports = $s->fetchAll(PDO::FETCH_ASSOC);
+    } elseif ($view === 'conversations') {
+        // Beszélgetések listája (felhasználópárok)
+        $convStmt = $conn->prepare("
+            SELECT 
+                LEAST(u1.id, u2.id) AS user1_id,
+                GREATEST(u1.id, u2.id) AS user2_id,
+                u1.username AS user1_name,
+                u2.username AS user2_name,
+                MAX(m.sent_at) AS last_message_at,
+                (SELECT message FROM uzenetek WHERE 
+                    (sender_id = user1_id AND receiver_id = user2_id) OR 
+                    (sender_id = user2_id AND receiver_id = user1_id) 
+                    ORDER BY sent_at DESC LIMIT 1) AS last_message
+            FROM uzenetek m
+            JOIN users u1 ON (u1.id = m.sender_id OR u1.id = m.receiver_id)
+            JOIN users u2 ON (u2.id = m.sender_id OR u2.id = m.receiver_id)
+            WHERE u1.id < u2.id
+            GROUP BY user1_id, user2_id, user1_name, user2_name
+            ORDER BY last_message_at DESC
+        ");
+        $convStmt->execute();
+        $conversations = $convStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $selectedUser1 = isset($_GET['user1']) ? (int)$_GET['user1'] : 0;
+        $selectedUser2 = isset($_GET['user2']) ? (int)$_GET['user2'] : 0;
+        if ($selectedUser1 > 0 && $selectedUser2 > 0) {
+            $msgStmt = $conn->prepare("
+                SELECT m.*, s.username AS sender_name, r.username AS receiver_name
+                FROM uzenetek m
+                JOIN users s ON m.sender_id = s.id
+                JOIN users r ON m.receiver_id = r.id
+                WHERE (m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?)
+                ORDER BY m.sent_at ASC
+            ");
+            $msgStmt->execute([$selectedUser1, $selectedUser2, $selectedUser2, $selectedUser1]);
+            $messages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
+            // Felhasználónevek kinyerése
+            foreach ($conversations as $c) {
+                if ($c['user1_id'] == $selectedUser1 && $c['user2_id'] == $selectedUser2) {
+                    $user1Name = $c['user1_name'];
+                    $user2Name = $c['user2_name'];
+                    break;
+                }
+            }
+        }
     }
     $editItem = $editUser = null;
     if ($editId) {
@@ -246,7 +293,7 @@ try {
     $error = "DB HIBA: " . $e->getMessage();
     $totalPages = 0;
     $view = 'main';
-    $items = $users = $reports = [];
+    $items = $users = $reports = $conversations = $messages = [];
     $editItem = $editUser = null;
     $counts = ['users' => 0, 'items' => 0, 'reports' => 0];
 }
@@ -265,9 +312,9 @@ function pgLink($v, $p)
     <title>ADMIN TERMINAL // CUCI-SYS</title>
     <style>
         /* ═══════════════════════════════════════════════
-MILITARY COMPUTER TERMINAL — ADMIN INTERFACE
-SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
-═══════════════════════════════════════════════ */
+        MILITARY COMPUTER TERMINAL — ADMIN INTERFACE
+        SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
+        ═══════════════════════════════════════════════ */
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
 
         *,
@@ -1503,6 +1550,167 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
             color: var(--c-green);
         }
 
+        /* ═══════════ CONVERSATIONS VIEW ═══════════ */
+        .conversations-container {
+            display: flex;
+            gap: 1rem;
+            height: calc(100vh - 220px);
+            min-height: 500px;
+        }
+        .conversation-sidebar {
+            width: 300px;
+            background: var(--c-panel);
+            border: 1px solid var(--c-border2);
+            overflow-y: auto;
+        }
+        /* ═══════════ CONVERSATION SIDEBAR SCROLLBAR ═══════════ */
+        .conversation-sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .conversation-sidebar::-webkit-scrollbar-track {
+            background: var(--c-panel);
+            border-left: 1px solid var(--c-border);
+        }
+        .conversation-sidebar::-webkit-scrollbar-thumb {
+            background: var(--c-border2);
+            border-radius: 4px;
+            border: 1px solid var(--c-green-dim);
+        }
+        .conversation-sidebar::-webkit-scrollbar-thumb:hover {
+            background: var(--c-green-mid);
+            border-color: var(--c-green);
+        }
+        /* Firefox scrollbar */
+        .conversation-sidebar {
+            scrollbar-width: thin;
+            scrollbar-color: var(--c-border2) var(--c-panel);
+        }
+        .conversation-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid var(--c-border);
+            text-decoration: none;
+            color: var(--c-text);
+            transition: background 0.15s;
+        }
+        .conversation-item:hover,
+        .conversation-item.active {
+            background: rgba(57, 255, 20, 0.07);
+            color: var(--c-green);
+        }
+        /* Ne legyen kattintható az aktív elem */
+        .conversation-item.active {
+            cursor: default;
+            pointer-events: none;
+        }
+        .conv-avatars {
+            display: flex;
+            gap: 0.2rem;
+        }
+        .conv-avatars span {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--c-border2);
+            color: var(--c-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid var(--c-green-dim);
+        }
+        .conv-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .conv-names {
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .conv-lastmsg {
+            font-size: 0.75rem;
+            color: var(--c-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .conv-time {
+            font-size: 0.65rem;
+            color: var(--c-green-dim);
+            margin-top: 2px;
+        }
+        .conversation-chat {
+            flex: 1;
+            background: var(--c-panel);
+            border: 1px solid var(--c-border2);
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            padding: 0.8rem 1.2rem;
+            border-bottom: 1px solid var(--c-border2);
+            font-family: var(--font-vt);
+            font-size: 1.2rem;
+            color: var(--c-green);
+            background: rgba(57, 255, 20, 0.03);
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .message-row {
+            display: flex;
+        }
+        .message-row.left {
+            justify-content: flex-start;
+        }
+        .message-row.right {
+            justify-content: flex-end;
+        }
+        .message-bubble {
+            max-width: 70%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            padding: 0.6rem 0.9rem;
+        }
+        .message-sender {
+            font-size: 0.7rem;
+            color: var(--c-green-mid);
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+        }
+        .message-text {
+            font-size: 0.85rem;
+            color: var(--c-text);
+            word-break: break-word;
+        }
+        .message-time {
+            font-size: 0.6rem;
+            color: var(--c-muted);
+            text-align: right;
+            margin-top: 0.3rem;
+        }
+        .chat-placeholder {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--c-muted);
+            font-family: var(--font-vt);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+
         /* Responsive */
         @media (max-width: 1100px) {
             .product-modal-card {
@@ -1514,6 +1722,17 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
                 height: 45vh;
                 border-right: none;
                 border-bottom: 1px solid var(--c-border2);
+            }
+        }
+
+        @media (max-width: 800px) {
+            .conversations-container {
+                flex-direction: column;
+                height: auto;
+            }
+            .conversation-sidebar {
+                width: 100%;
+                max-height: 300px;
             }
         }
 
@@ -1564,6 +1783,9 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
                 <a href="admin.php?view=items" class="nav-btn <?= $view === 'items' ? 'active' : '' ?>">
                     <span>◧</span><span class="nav-label">TERMÉKEK</span>
                     <span class="nav-badge"><?= $counts['items'] ?></span>
+                </a>
+                <a href="admin.php?view=conversations" class="nav-btn <?= $view === 'conversations' ? 'active' : '' ?>">
+                    <span class="nav-label">BESZÉLGETÉSEK</span>
                 </a>
                 <button class="nav-btn purge-btn" id="purgeBtn">⚠ VIZSGAPURGE</button>
                 <a href="main.php" class="nav-btn nav-back">← KILÉPÉS</a>
@@ -1795,9 +2017,68 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
                         </table>
                     </div>
                 <?php endif; ?>
+                <!-- ════════════ CONVERSATIONS ════════════ -->
+            <?php elseif ($view === 'conversations'): ?>
+                <div class="section-header">
+                    <h2>BESZÉLGETÉSEK</h2>
+                    <span class="record-count">TOTAL: <?= count($conversations) ?> CONVERSATION(S)</span>
+                </div>
+                <div class="conversations-container">
+                    <div class="conversation-sidebar" id="conversationSidebar">
+                        <?php foreach ($conversations as $conv): ?>
+                            <?php $isActive = ($selectedUser1 == $conv['user1_id'] && $selectedUser2 == $conv['user2_id']); ?>
+                            <?php if ($isActive): ?>
+                                <div class="conversation-item active">
+                                    <div class="conv-avatars">
+                                        <span><?= strtoupper(substr($conv['user1_name'],0,1)) ?></span>
+                                        <span><?= strtoupper(substr($conv['user2_name'],0,1)) ?></span>
+                                    </div>
+                                    <div class="conv-info">
+                                        <div class="conv-names"><?= htmlspecialchars($conv['user1_name']) ?> ↔ <?= htmlspecialchars($conv['user2_name']) ?></div>
+                                        <div class="conv-lastmsg"><?= htmlspecialchars(mb_substr($conv['last_message'] ?? '', 0, 30)) ?></div>
+                                        <div class="conv-time"><?= date('Y-m-d H:i', strtotime($conv['last_message_at'])) ?></div>
+                                    </div>
+                                </div>
+                            <?php else: ?>
+                                <a href="admin.php?view=conversations&user1=<?= $conv['user1_id'] ?>&user2=<?= $conv['user2_id'] ?>" 
+                                   class="conversation-item">
+                                    <div class="conv-avatars">
+                                        <span><?= strtoupper(substr($conv['user1_name'],0,1)) ?></span>
+                                        <span><?= strtoupper(substr($conv['user2_name'],0,1)) ?></span>
+                                    </div>
+                                    <div class="conv-info">
+                                        <div class="conv-names"><?= htmlspecialchars($conv['user1_name']) ?> ↔ <?= htmlspecialchars($conv['user2_name']) ?></div>
+                                        <div class="conv-lastmsg"><?= htmlspecialchars(mb_substr($conv['last_message'] ?? '', 0, 30)) ?></div>
+                                        <div class="conv-time"><?= date('Y-m-d H:i', strtotime($conv['last_message_at'])) ?></div>
+                                    </div>
+                                </a>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="conversation-chat">
+                        <?php if ($selectedUser1 && $selectedUser2): ?>
+                            <div class="chat-header">
+                                <span><?= htmlspecialchars($user1Name) ?> ↔ <?= htmlspecialchars($user2Name) ?></span>
+                            </div>
+                            <div class="chat-messages">
+                                <?php foreach ($messages as $msg): ?>
+                                    <div class="message-row <?= $msg['sender_id'] == $selectedUser1 ? 'left' : 'right' ?>">
+                                        <div class="message-bubble">
+                                            <div class="message-sender"><?= htmlspecialchars($msg['sender_name']) ?></div>
+                                            <div class="message-text"><?= nl2br(htmlspecialchars($msg['message'])) ?></div>
+                                            <div class="message-time"><?= date('H:i', strtotime($msg['sent_at'])) ?></div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="chat-placeholder">[ VÁLASSZ KI EGY BESZÉLGETÉST A BAL OLDALI LISTÁBÓL ]</div>
+                        <?php endif; ?>
+                    </div>
+                </div>
             <?php endif; ?>
             <!-- LAPOZÁS -->
-            <?php if ($totalPages > 1 && !in_array($view, ['main']) && !$editId): ?>
+            <?php if ($totalPages > 1 && !in_array($view, ['main', 'conversations']) && !$editId): ?>
                 <div class="pagination">
                     <?php if ($page > 1): ?>
                         <a href="<?= pgLink($view, $page - 1) ?>" class="pg-btn">◄ ELŐZŐ</a>
@@ -2122,6 +2403,27 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
             if (pm.modal.classList.contains('active')) adjustH();
         });
         document.getElementById('productBuyBtn').addEventListener('click', () => alert('Vásárlás funkció még nem elérhető!'));
+
+        // ========== SCROLL MEGŐRZÉSE A SIDEBARBAN ==========
+        (function() {
+            const sidebar = document.getElementById('conversationSidebar');
+            if (!sidebar) return;
+
+            // Visszaállítás betöltés után
+            const savedScroll = sessionStorage.getItem('convSidebarScroll');
+            if (savedScroll !== null) {
+                sidebar.scrollTop = parseInt(savedScroll, 10);
+                sessionStorage.removeItem('convSidebarScroll');
+            }
+
+            // Kattintás előtti mentés
+            sidebar.addEventListener('click', function(e) {
+                const link = e.target.closest('.conversation-item');
+                if (link && link.tagName === 'A') {
+                    sessionStorage.setItem('convSidebarScroll', sidebar.scrollTop);
+                }
+            });
+        })();
     </script>
 </body>
 
