@@ -479,7 +479,7 @@ body[data-theme="light"] .product-seller strong {
 
 body[data-theme="light"] .product-description {
     background: rgba(255, 255, 255, 0.8) !important;
-    color: #1a1f00 !important;
+    color: #7a9200 !important;
 }
 
 body[data-theme="light"] .product-buy-btn {
@@ -596,6 +596,18 @@ body[data-theme="light"] .btn-edit-save {
 body[data-theme="light"] .btn-edit-save:hover {
     background: linear-gradient(105deg, #c4df25, #9ab800) !important;
     box-shadow: 0 8px 25px rgba(176, 203, 31, 0.4) !important;
+}
+
+/* ============================================
+   TEXTAREA RESIZE FIX - LIGHT THEME
+   ============================================ */
+body[data-theme="light"] .form-textarea,
+body[data-theme="light"] .edit-form-textarea,
+body[data-theme="light"] .report-modal .form-textarea,
+body[data-theme="light"] .msg-textarea,
+body[data-theme="light"] .edit-textarea,
+body[data-theme="light"] .report-form-textarea {
+    resize: none !important;
 }
 
 /* ============================================

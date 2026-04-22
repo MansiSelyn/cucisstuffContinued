@@ -426,7 +426,7 @@ body[data-theme="dark"] .product-seller strong {
 
 body[data-theme="dark"] .product-description {
     background: rgba(0, 0, 0, 0.5) !important;
-    color: rgba(255, 255, 255, 0.9) !important;
+    color: #ff9a1f !important;
 }
 
 body[data-theme="dark"] .product-buy-btn {
@@ -543,6 +543,18 @@ body[data-theme="dark"] .edit-modal .submit-btn {
 
 body[data-theme="dark"] .edit-modal .submit-btn:hover {
     background: linear-gradient(135deg, #ff8c00, #ff4400) !important;
+}
+
+/* ============================================
+   TEXTAREA RESIZE FIX - DARK THEME
+   ============================================ */
+body[data-theme="dark"] .form-textarea,
+body[data-theme="dark"] .edit-form-textarea,
+body[data-theme="dark"] .report-modal .form-textarea,
+body[data-theme="dark"] .msg-textarea,
+body[data-theme="dark"] .edit-textarea,
+body[data-theme="dark"] .report-form-textarea {
+    resize: none !important;
 }
 
 /* ============================================
