@@ -450,7 +450,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Főoldal - Termékek</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css">
+    <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css?v=2">
     <style>
         /* ═══════════════════════════════════════════════════════════════════
         MAIN STYLES (dark mode default)
@@ -2363,7 +2363,7 @@ try {
         }
 
         /* =====================
-        FLOATING MESSAGES BTN
+        FLOATING MESSAGES BTN - VÉGLEGES KÉK VERZIÓ
         ===================== */
         .floating-messages-btn {
             position: fixed;
@@ -2373,22 +2373,23 @@ try {
             width: 58px;
             height: 58px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--orange-bright), #ff5500);
+            background: linear-gradient(135deg, #007bff, #0056b3) !important;
             border: none;
-            color: #fff;
+            color: #fff !important;
             font-size: 1.5rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 6px 24px rgba(255, 140, 0, 0.5);
+            box-shadow: 0 6px 24px rgba(0, 123, 255, 0.5) !important;
             transition: all 0.25s ease;
             text-decoration: none;
         }
 
         .floating-messages-btn:hover {
             transform: scale(1.1) translateY(-2px);
-            box-shadow: 0 10px 32px rgba(255, 140, 0, 0.7);
+            box-shadow: 0 10px 32px rgba(0, 123, 255, 0.7) !important;
+            background: linear-gradient(135deg, #0069d9, #004085) !important;
         }
 
         .floating-messages-badge {
@@ -3495,7 +3496,7 @@ try {
             const themeLink = document.getElementById('themeStylesheet');
 
             function applyTheme(theme) {
-                themeLink.href = theme === 'light' ? 'theme-light.css' : 'theme-dark.css';
+                themeLink.href = theme === 'light' ? 'theme-light.css?v=2' : 'theme-dark.css?v=2';
                 localStorage.setItem('theme', theme);
                 checkbox.checked = (theme === 'light');
                 document.documentElement.setAttribute('data-theme', theme);

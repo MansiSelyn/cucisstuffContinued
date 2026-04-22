@@ -18,7 +18,7 @@
     --scrollbar-track: #e8f0c0;
     --scrollbar-thumb: rgba(140, 170, 10, 0.35);
     --scrollbar-thumb-hover: rgba(140, 170, 10, 0.6);
-    --placeholder-color: #9aaa50;
+    --placeholder-color: #2a3a00;  /* sötét placeholder light módban */
     --input-focus-bg: rgba(242, 252, 200, 1);
     --status-bg-from: rgba(244, 252, 220, 0.98);
     --status-bg-to: rgba(234, 248, 195, 0.95);
@@ -432,6 +432,12 @@ body[data-theme="light"] .report-modal-close:hover {
     color: #1a1f00;
 }
 
+/* 🔧 Javítás: sötét placeholder az ÖSSZES textarea-ban light módban */
+body[data-theme="light"] textarea::placeholder {
+    color: #2a3a00 !important;
+    opacity: 1;
+}
+
 /* ============================================
    PRODUCT MODAL - LIGHT THEME
    ============================================ */
@@ -830,12 +836,14 @@ body[data-theme="light"] .account-menu-btn:hover {
    EGYÉB STÍLUSOK
    ============================================ */
 body[data-theme="light"] .floating-messages-btn {
-    background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
-    color: #1a1f00 !important;
-    box-shadow: 0 6px 24px rgba(176, 203, 31, 0.5) !important;
+    background: linear-gradient(135deg, #007bff, #0056b3) !important;
+    color: #fff !important;
+    box-shadow: 0 6px 24px rgba(0, 123, 255, 0.5) !important;
 }
+
 body[data-theme="light"] .floating-messages-btn:hover {
-    box-shadow: 0 10px 32px rgba(176, 203, 31, 0.7) !important;
+    background: linear-gradient(135deg, #0069d9, #004085) !important;
+    box-shadow: 0 10px 32px rgba(0, 123, 255, 0.7) !important;
 }
 
 body[data-theme="light"] .admin-badge {

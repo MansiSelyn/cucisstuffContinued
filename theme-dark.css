@@ -558,11 +558,17 @@ body[data-theme="dark"] .report-form-textarea {
 }
 
 /* ============================================
-   FLOATING MESSAGES BUTTON - DARK THEME
+   FLOATING MESSAGES BUTTON - DARK THEME (FIX KÉK)
    ============================================ */
 body[data-theme="dark"] .floating-messages-btn {
-    background: linear-gradient(135deg, #ff9a1f, #e07800) !important;
-    color: #000 !important;
+    background: linear-gradient(135deg, #007bff, #0056b3) !important;
+    color: #fff !important;
+    box-shadow: 0 6px 24px rgba(0, 123, 255, 0.5) !important;
+}
+
+body[data-theme="dark"] .floating-messages-btn:hover {
+    background: linear-gradient(135deg, #0069d9, #004085) !important;
+    box-shadow: 0 10px 32px rgba(0, 123, 255, 0.7) !important;
 }
 
 body[data-theme="dark"] .floating-messages-badge {
