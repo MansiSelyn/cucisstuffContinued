@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 session_start();
 $status = '';
 
@@ -11,6 +14,8 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
     exit();
 }
 
+require_once 'config.php';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['login'])) {
         $mode = 'login';
@@ -21,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // BEJELENTKEZÉS KEZELÉSE
     if (isset($_POST['login'])) {
         if (!empty($_POST['felhasznalonev']) && !empty($_POST['jelszo'])) {
-            $conn = new mysqli('localhost', 'root', '', 'cucidb');
+            $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
             if ($conn->connect_error) {
                 $status = "Adatbázis hiba";
             } else {
@@ -64,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (strpos($_POST['email'], '@') === false) {
             $status = "Érvénytelen email cím";
         } else {
-            $conn = new mysqli('localhost', 'root', '', 'cucidb');
+            $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
             if ($conn->connect_error) {
                 $status = "Adatbázis hiba";
             } else {

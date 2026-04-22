@@ -1,7 +1,7 @@
 -- Adatbázis létrehozása
-CREATE DATABASE IF NOT EXISTS cucidb;
+CREATE DATABASE IF NOT EXISTS cuci_ady_pepa_hu;
 
-USE cucidb;
+USE cuci_ady_pepa_hu;
 
 -- Jelszavak tábla
 CREATE TABLE

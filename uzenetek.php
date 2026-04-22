@@ -13,10 +13,11 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     exit();
 }
 
-$servername = "localhost";
-$username   = "root";
-$password   = "";
-$dbname     = "cucidb";
+require_once 'config.php';
+$servername = DB_HOST;
+$username   = DB_USER;
+$password   = DB_PASS;
+$dbname     = DB_NAME;
 
 $currentUserId = (int)$_SESSION['user_id'];
 

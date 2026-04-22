@@ -4,8 +4,9 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: index.php");
     exit();
 }
+require_once 'config.php';
 try {
-    $conn = new PDO("mysql:host=localhost;dbname=cucidb", "root", "");
+    $conn = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $adminCheck = $conn->prepare("SELECT COUNT(*) FROM admins WHERE user_id = ?");
     $adminCheck->execute([$_SESSION['user_id']]);
