@@ -152,7 +152,9 @@ try {
     die("Adatbázis hiba: " . $e->getMessage());
 }
 
-// AJAX feldolgozás (fiók módosítás)
+// =============================================
+// FIÓK MÓDOSÍTÁS KEZELÉSE (AJAX) - JAVÍTOTT VÁLTOZAT
+// =============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
     header('Content-Type: application/json');
     
@@ -176,24 +178,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             if ($checkEmail->fetchColumn()) {
                 $response['message'] = 'Ez az e-mail cím már regisztrálva van!';
             } else {
-                // Frissítés
-                if (!empty($newPassword)) {
-                    if (strlen($newPassword) < 6) {
-                        $response['message'] = 'A jelszónak legalább 6 karakternek kell lennie!';
+                try {
+                    // Jelszó kezelése (ha van új jelszó)
+                    if (!empty($newPassword)) {
+                        if (strlen($newPassword) < 6) {
+                            $response['message'] = 'A jelszónak legalább 6 karakternek kell lennie!';
+                        } else {
+                            // 1. Új jelszó hash-elése
+                            $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
+                            
+                            // 2. Új rekord beszúrása a passwords táblába
+                            $insPwd = $conn->prepare("INSERT INTO passwords (password_hash) VALUES (?)");
+                            $insPwd->execute([$hashed]);
+                            $newPasswordId = $conn->lastInsertId();
+                            
+                            // 3. Felhasználó frissítése az új password_id-vel
+                            $upd = $conn->prepare("UPDATE users SET username=?, email=?, password_id=? WHERE id=?");
+                            $upd->execute([$newUsername, $newEmail, $newPasswordId, $userId]);
+                        }
                     } else {
-                        $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
-                        $upd = $conn->prepare("UPDATE users SET username=?, email=?, password=? WHERE id=?");
-                        $upd->execute([$newUsername, $newEmail, $hashed, $userId]);
+                        // Nincs jelszóváltozás
+                        $upd = $conn->prepare("UPDATE users SET username=?, email=? WHERE id=?");
+                        $upd->execute([$newUsername, $newEmail, $userId]);
                     }
-                } else {
-                    $upd = $conn->prepare("UPDATE users SET username=?, email=? WHERE id=?");
-                    $upd->execute([$newUsername, $newEmail, $userId]);
-                }
 
-                if (empty($response['message'])) {
-                    $response['success'] = true;
-                    $response['message'] = 'Fiók sikeresen frissítve!';
-                    $_SESSION['username'] = $newUsername;
+                    if (empty($response['message'])) {
+                        $response['success'] = true;
+                        $response['message'] = 'Fiók sikeresen frissítve!';
+                        $_SESSION['username'] = $newUsername;
+                    }
+                } catch (PDOException $e) {
+                    $response['message'] = 'Adatbázis hiba: ' . $e->getMessage();
                 }
             }
         }
