@@ -108,6 +108,59 @@ try {
                 }
             }
         }
+        // ---- VIZSGAPURGE ----
+        if (isset($_POST['purge_confirm'])) {
+            // Kivétel nevek listája
+            $keeperNames = ['gabi', 'martin', 'cuci', 'admin'];
+            $placeholders = implode(',', array_fill(0, count($keeperNames), '?'));
+            // Tranzakció indítása
+            $conn->beginTransaction();
+            try {
+                // Lekérjük a törlendő felhasználók ID-ját (akik nincsenek a kivételek között)
+                $stmt = $conn->prepare("SELECT id FROM users WHERE LOWER(username) NOT IN ($placeholders)");
+                $stmt->execute($keeperNames);
+                $userIdsToDelete = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                // Lekérjük az ezen felhasználókhoz tartozó hirdetések ID-ját és a képek elérési útját
+                $itemsToDelete = [];
+                $imagePaths = [];
+                if (!empty($userIdsToDelete)) {
+                    $inUsers = implode(',', array_fill(0, count($userIdsToDelete), '?'));
+                    $itemStmt = $conn->prepare("SELECT id FROM items WHERE user_id IN ($inUsers)");
+                    $itemStmt->execute($userIdsToDelete);
+                    $itemIds = $itemStmt->fetchAll(PDO::FETCH_COLUMN);
+                    if (!empty($itemIds)) {
+                        $inItems = implode(',', array_fill(0, count($itemIds), '?'));
+                        $imgStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id IN ($inItems)");
+                        $imgStmt->execute($itemIds);
+                        $imagePaths = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
+                    }
+                    // Felhasználók törlése (ON DELETE CASCADE törli az itemeket és az item_images rekordokat is)
+                    $delUserStmt = $conn->prepare("DELETE FROM users WHERE id IN ($inUsers)");
+                    $delUserStmt->execute($userIdsToDelete);
+                }
+                $conn->commit();
+                // Fájlok törlése a commit után
+                foreach ($imagePaths as $path) {
+                    if (file_exists($path)) {
+                        unlink($path);
+                    }
+                }
+                // Üres mappák törlése (opcionális, de az item_id mappák törlése)
+                if (!empty($itemIds)) {
+                    foreach ($itemIds as $itemId) {
+                        $dir = 'uploads/' . $itemId . '/';
+                        if (is_dir($dir)) {
+                            array_map('unlink', glob($dir . '*'));
+                            rmdir($dir);
+                        }
+                    }
+                }
+                $message = "VIZSGAPURGE végrehajtva. Törölt felhasználók: " . count($userIdsToDelete) . ", törölt hirdetések: " . count($itemIds ?? []);
+            } catch (Exception $e) {
+                $conn->rollBack();
+                $error = "Hiba a VIZSGAPURGE során: " . $e->getMessage();
+            }
+        }
     }
     // Adatok lekérése
     $counts = ['users' => 0, 'items' => 0, 'reports' => 0];
@@ -458,6 +511,28 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
 
         .nav-btn.nav-back:hover {
             color: var(--c-amber);
+        }
+
+        /* VIZSGAPURGE gomb – PIROS, témától függetlenül */
+        .nav-btn.purge-btn {
+            color: #ff3333 !important;
+            border-color: #ff3333 !important;
+        }
+
+        .nav-btn.purge-btn:hover {
+            background: rgba(255, 51, 51, 0.2) !important;
+            color: #ff6666 !important;
+            box-shadow: 0 0 12px rgba(255, 0, 0, 0.5) !important;
+        }
+
+        body.light-mode .nav-btn.purge-btn {
+            color: #ff0000 !important;
+            border-color: #ff0000 !important;
+        }
+
+        body.light-mode .nav-btn.purge-btn:hover {
+            background: rgba(255, 0, 0, 0.15) !important;
+            color: #ff4444 !important;
         }
 
         /* Theme toggle */
@@ -969,6 +1044,116 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
             letter-spacing: 2px;
         }
 
+        /* ═══════════ PURGE MODAL ═══════════ */
+        .purge-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .purge-modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .purge-modal-card {
+            width: 100%;
+            max-width: 500px;
+            background: var(--c-panel);
+            border: 2px solid #ff3333;
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 0 40px rgba(255, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.7);
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s;
+            opacity: 0;
+            text-align: center;
+        }
+
+        .purge-modal-overlay.active .purge-modal-card {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        .purge-modal-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .purge-modal-title {
+            font-family: var(--font-vt);
+            font-size: 2rem;
+            color: #ff3333;
+            text-shadow: 0 0 15px #ff0000;
+            letter-spacing: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .purge-modal-text {
+            color: var(--c-text);
+            margin-bottom: 1.8rem;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .purge-modal-text strong {
+            color: #ff8888;
+        }
+
+        .purge-modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .purge-btn-confirm {
+            padding: 0.75rem 2rem;
+            background: #ff3333;
+            border: none;
+            border-radius: 40px;
+            color: #000;
+            font-family: var(--font-mono);
+            font-weight: bold;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 0 15px #ff0000;
+        }
+
+        .purge-btn-confirm:hover {
+            background: #ff5555;
+            box-shadow: 0 0 25px #ff4444;
+            transform: scale(1.02);
+        }
+
+        .purge-btn-cancel {
+            padding: 0.75rem 2rem;
+            background: transparent;
+            border: 1px solid var(--c-border2);
+            border-radius: 40px;
+            color: var(--c-muted);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .purge-btn-cancel:hover {
+            border-color: var(--c-green);
+            color: var(--c-green);
+        }
+
         /* ═══════════ PRODUCT MODAL ═══════════ */
         .product-modal-overlay {
             position: fixed;
@@ -1310,6 +1495,8 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
             text-decoration: underline;
             letter-spacing: 0.5px;
             transition: color 0.15s;
+            padding: 0;
+            text-align: left;
         }
 
         .view-item-btn:hover {
@@ -1378,6 +1565,7 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
                     <span>◧</span><span class="nav-label">TERMÉKEK</span>
                     <span class="nav-badge"><?= $counts['items'] ?></span>
                 </a>
+                <button class="nav-btn purge-btn" id="purgeBtn">⚠ VIZSGAPURGE</button>
                 <a href="main.php" class="nav-btn nav-back">← KILÉPÉS</a>
             </nav>
         </div>
@@ -1588,7 +1776,11 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
                                 <?php foreach ($items as $it): ?>
                                     <tr>
                                         <td class="mono"><?= $it['id'] ?></td>
-                                        <td><?= htmlspecialchars($it['title']) ?></td>
+                                        <td>
+                                            <button class="view-item-btn" data-item-id="<?= $it['id'] ?>">
+                                                <?= htmlspecialchars($it['title']) ?>
+                                            </button>
+                                        </td>
                                         <td><?= htmlspecialchars($it['seller_name']) ?></td>
                                         <td class="mono"><?= number_format($it['price'], 0, ',', ' ') ?> FT</td>
                                         <td class="wrap"><?= htmlspecialchars(mb_substr($it['description'], 0, 50)) ?>...</td>
@@ -1622,6 +1814,29 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
             <?php endif; ?>
         </div><!-- /terminal-body -->
     </div><!-- /crt-wrap -->
+
+    <!-- PURGE MODAL -->
+    <div class="purge-modal-overlay" id="purgeModal">
+        <div class="purge-modal-card">
+            <div class="purge-modal-icon">⚠️⚠️⚠️</div>
+            <div class="purge-modal-title">VIZSGAPURGE</div>
+            <div class="purge-modal-text">
+                <strong>FIGYELEM!</strong> Ez a művelet <strong>véglegesen törli</strong> az összes felhasználót,<br>
+                akik <strong>nem</strong> a következők: <strong>gabi, martin, cuci, admin</strong>.<br>
+                Törlődik továbbá az összes olyan hirdetés és a hozzájuk tartozó kép is,<br>
+                amit nem ezek a felhasználók töltöttek fel.<br><br>
+                Biztosan folytatod?
+            </div>
+            <div class="purge-modal-actions">
+                <button class="purge-btn-cancel" id="purgeCancelBtn">Mégse</button>
+                <form method="post" id="purgeForm" style="margin:0;">
+                    <input type="hidden" name="purge_confirm" value="1">
+                    <button type="submit" class="purge-btn-confirm">VÉGREHAJT</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- TERMÉKMODÁL -->
     <div class="product-modal-overlay" id="productModal">
         <div class="product-modal-card">
@@ -1715,6 +1930,31 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
                 body: body
             }).then(() => location.reload());
         }
+
+        // ── PURGE MODAL ──
+        const purgeModal = document.getElementById('purgeModal');
+        const purgeBtn = document.getElementById('purgeBtn');
+        const purgeCancelBtn = document.getElementById('purgeCancelBtn');
+
+        function openPurgeModal() {
+            purgeModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePurgeModal() {
+            purgeModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        purgeBtn.addEventListener('click', openPurgeModal);
+        purgeCancelBtn.addEventListener('click', closePurgeModal);
+        purgeModal.addEventListener('click', (e) => {
+            if (e.target === purgeModal) closePurgeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && purgeModal.classList.contains('active')) closePurgeModal();
+        });
+
         // ── TERMÉKMODÁL ──
         const pm = {
             modal: document.getElementById('productModal'),
@@ -1781,6 +2021,8 @@ SYSTEM: CUCI-SYS v2.1 // CLASSIFIED ACCESS
             pm.modal.classList.remove('active');
             document.body.style.overflow = '';
         }
+
+        // Eseménykezelő a view-item-btn gombokhoz (Reportok és Termékek táblában egyaránt)
         document.querySelectorAll('.view-item-btn').forEach(btn => btn.addEventListener('click', function(e) {
             e.preventDefault();
             fetch('admin.php?get_item_data=' + this.dataset.itemId).then(r => r.json()).then(d => {
