@@ -27,19 +27,10 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 }
 
 // Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "cucidb";
-
-// Sessionből hibaüzenet és form adatok betöltése (ha van)
-$uploadError = $_SESSION['upload_error'] ?? '';
-$formData = $_SESSION['form_data'] ?? [];
-// Session adatok törlése olvasás után
-unset($_SESSION['upload_error'], $_SESSION['form_data']);
+require_once 'config.php';
 
 try {
-    $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+    $conn = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Check if current user is admin
