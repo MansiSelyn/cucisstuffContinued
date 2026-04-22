@@ -395,69 +395,28 @@ try {
         }
     }
 
-    // =============================================
-    // PAGINATION & RANDOM ORDER WITH SESSION CACHE
-    // =============================================
+    // Pagination settings
     $itemsPerPage = 24;
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+    $offset = ($page - 1) * $itemsPerPage;
 
-    // Új véletlen sorrend generálása, ha nincs page paraméter (első oldal)
-    if (!isset($_GET['page']) || $page == 1) {
-        $idsStmt = $conn->query("SELECT id FROM items");
-        $allIds = $idsStmt->fetchAll(PDO::FETCH_COLUMN);
-        shuffle($allIds);
-        $_SESSION['shuffled_ids'] = $allIds;
-    }
-
-    // Ha a session-ben nincs lista (pl. lejárt), generálunk
-    if (empty($_SESSION['shuffled_ids'])) {
-        $idsStmt = $conn->query("SELECT id FROM items");
-        $allIds = $idsStmt->fetchAll(PDO::FETCH_COLUMN);
-        shuffle($allIds);
-        $_SESSION['shuffled_ids'] = $allIds;
-    }
-
-    $shuffledIds = $_SESSION['shuffled_ids'];
-
-    // Ellenőrizzük, hogy a tárolt ID-k még léteznek-e (opcionális, de ajánlott)
-    if (!empty($shuffledIds)) {
-        $placeholders = implode(',', array_fill(0, count($shuffledIds), '?'));
-        $checkStmt = $conn->prepare("SELECT id FROM items WHERE id IN ($placeholders)");
-        $checkStmt->execute($shuffledIds);
-        $existingIds = $checkStmt->fetchAll(PDO::FETCH_COLUMN);
-        if (count($existingIds) !== count($shuffledIds)) {
-            $shuffledIds = array_values(array_intersect($shuffledIds, $existingIds));
-            $_SESSION['shuffled_ids'] = $shuffledIds;
-        }
-    }
-
-    $totalItems = count($shuffledIds);
+    // Get total items count
+    $totalStmt = $conn->query("SELECT COUNT(*) FROM items");
+    $totalItems = $totalStmt->fetchColumn();
     $totalPages = ceil($totalItems / $itemsPerPage);
 
-    // Ha az oldalszám nagyobb, mint az elérhető, akkor az utolsó oldalra irányítunk
-    if ($page > $totalPages && $totalPages > 0) {
-        header("Location: main.php?page=" . $totalPages);
-        exit;
-    }
-
-    $offset = ($page - 1) * $itemsPerPage;
-    $pageIds = array_slice($shuffledIds, $offset, $itemsPerPage);
-
-    if (!empty($pageIds)) {
-        $placeholders = implode(',', array_fill(0, count($pageIds), '?'));
-        $stmt = $conn->prepare("
-            SELECT i.*, u.username as seller_name
-            FROM items i
-            JOIN users u ON i.user_id = u.id
-            WHERE i.id IN ($placeholders)
-            ORDER BY FIELD(i.id, $placeholders)
-        ");
-        $stmt->execute($pageIds);
-        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } else {
-        $items = [];
-    }
-
+    // Fetch items for current page with RANDOM ordering
+    $stmt = $conn->prepare("
+        SELECT i.*, u.username as seller_name
+        FROM items i
+        JOIN users u ON i.user_id = u.id
+        ORDER BY RAND()
+        LIMIT :offset, :itemsPerPage
+    ");
+    $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+    $stmt->bindParam(':itemsPerPage', $itemsPerPage, PDO::PARAM_INT);
+    $stmt->execute();
+    $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     echo "Connection failed: " . $e->getMessage();
     $items = [];
