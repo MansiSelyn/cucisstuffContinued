@@ -3232,6 +3232,10 @@ try {
         }
 
         form.addEventListener('submit', (e) => {
+            const dt = new DataTransfer();
+            selectedFiles.forEach(file => dt.items.add(file));
+            imageInput.files = dt.files;
+
             let valid = true;
             valid = validateImages() && valid;
             valid = validateField(titleInput, 'title-error', titleInput.value.trim() !== '') && valid;
@@ -3239,6 +3243,11 @@ try {
             valid = validateField(priceInput, 'price-error', priceInput.value !== '' && parseFloat(priceInput.value) >= 0) && valid;
             if (!valid) e.preventDefault();
         });
+
+
+        const dt = new DataTransfer();
+        selectedFiles.forEach(file => dt.items.add(file));
+        imageInput.files = dt.files;
 
         [titleInput, descInput, priceInput].forEach(el => {
             el.addEventListener('input', () => el.classList.remove('invalid'));
@@ -3862,6 +3871,7 @@ try {
         function closeDropdown() {
             accountDropdown.classList.remove('show');
         }
+
         function toggleDropdown(e) {
             e.stopPropagation();
             accountDropdown.classList.toggle('show');
