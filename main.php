@@ -1,6 +1,11 @@
 <?php
 session_start();
 
+// Hibák megjelenítése (fejlesztéshez)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // =============================================
 // 1. KIJELENTKEZÉS
 // =============================================
@@ -28,6 +33,11 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
 // Database connection
 require_once 'config.php';
+
+// Hibaüzenetek és űrlapadatok kiolvasása a session-ből
+$uploadError = $_SESSION['upload_error'] ?? '';
+$formData = $_SESSION['form_data'] ?? [];
+unset($_SESSION['upload_error'], $_SESSION['form_data']);
 
 try {
     $conn = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
@@ -147,38 +157,28 @@ try {
         exit;
     }
 
-    // Handle new item upload
+    // =============================================
+    // TERMÉK FELTÖLTÉS KEZELÉSE
+    // =============================================
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_item'])) {
         $title       = trim($_POST['item_title'] ?? '');
         $description = trim($_POST['item_description'] ?? '');
         $price       = trim($_POST['item_price'] ?? '');
 
         // Check for uploaded files
-        if (!isset($_FILES['item_images']) || empty($_FILES['item_images']['name'][0])) {
+        if (!isset($_FILES['item_images']) || empty($_FILES['item_images']['name'][0]) || $_FILES['item_images']['error'][0] === UPLOAD_ERR_NO_FILE) {
             $_SESSION['upload_error'] = 'Legalább egy képet fel kell tölteni!';
-            $_SESSION['form_data'] = [
-                'item_title' => $title,
-                'item_description' => $description,
-                'item_price' => $price
-            ];
+            $_SESSION['form_data'] = compact('title', 'description', 'price');
             header("Location: main.php");
             exit();
         } elseif ($title === '' || $description === '' || $price === '') {
             $_SESSION['upload_error'] = 'Minden mező kitöltése kötelező!';
-            $_SESSION['form_data'] = [
-                'item_title' => $title,
-                'item_description' => $description,
-                'item_price' => $price
-            ];
+            $_SESSION['form_data'] = compact('title', 'description', 'price');
             header("Location: main.php");
             exit();
         } elseif (!is_numeric($price) || floatval($price) < 0) {
             $_SESSION['upload_error'] = 'Az ár csak pozitív szám lehet!';
-            $_SESSION['form_data'] = [
-                'item_title' => $title,
-                'item_description' => $description,
-                'item_price' => $price
-            ];
+            $_SESSION['form_data'] = compact('title', 'description', 'price');
             header("Location: main.php");
             exit();
         } else {
@@ -186,116 +186,118 @@ try {
             $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
             $maxFileSize = 5 * 1024 * 1024; // 5MB
             $files = $_FILES['item_images'];
-            $uploadValid = true;
+
+            // Részletes hibaüzenetek a fájlfeltöltési hibakódokhoz
+            $phpFileErrors = [
+                UPLOAD_ERR_OK         => 'Sikeres feltöltés.',
+                UPLOAD_ERR_INI_SIZE   => 'A fájl mérete meghaladja a szerver által engedélyezett maximumot.',
+                UPLOAD_ERR_FORM_SIZE  => 'A fájl mérete meghaladja az űrlap által engedélyezett maximumot.',
+                UPLOAD_ERR_PARTIAL    => 'A fájl csak részben lett feltöltve.',
+                UPLOAD_ERR_NO_FILE    => 'Nem lett fájl feltöltve.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Hiányzik az ideiglenes könyvtár.',
+                UPLOAD_ERR_CANT_WRITE => 'A fájl írása sikertelen.',
+                UPLOAD_ERR_EXTENSION  => 'Egy PHP kiterjesztés leállította a feltöltést.',
+            ];
 
             // Check each file
             for ($i = 0; $i < count($files['name']); $i++) {
                 if ($files['error'][$i] !== UPLOAD_ERR_OK) {
-                    $_SESSION['upload_error'] = 'Hiba történt a képfeltöltés során!';
-                    $_SESSION['form_data'] = [
-                        'item_title' => $title,
-                        'item_description' => $description,
-                        'item_price' => $price
-                    ];
+                    $errCode = $files['error'][$i];
+                    $errMsg = $phpFileErrors[$errCode] ?? "Ismeretlen hibakód: $errCode";
+                    $_SESSION['upload_error'] = "Hiba a(z) {$files['name'][$i]} feltöltésekor: $errMsg";
+                    $_SESSION['form_data'] = compact('title', 'description', 'price');
                     header("Location: main.php");
                     exit();
                 }
                 if (!in_array($files['type'][$i], $allowedTypes)) {
                     $_SESSION['upload_error'] = 'Csak JPEG, PNG, GIF és WebP formátumú képek tölthetők fel!';
-                    $_SESSION['form_data'] = [
-                        'item_title' => $title,
-                        'item_description' => $description,
-                        'item_price' => $price
-                    ];
+                    $_SESSION['form_data'] = compact('title', 'description', 'price');
                     header("Location: main.php");
                     exit();
                 }
                 if ($files['size'][$i] > $maxFileSize) {
                     $_SESSION['upload_error'] = 'Egy kép maximális mérete 5MB lehet!';
-                    $_SESSION['form_data'] = [
-                        'item_title' => $title,
-                        'item_description' => $description,
-                        'item_price' => $price
-                    ];
+                    $_SESSION['form_data'] = compact('title', 'description', 'price');
                     header("Location: main.php");
                     exit();
                 }
             }
 
-            if ($uploadValid) {
-                // Generate unique 12-char ID for the item
-                do {
-                    $newId = substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 12);
-                    $check = $conn->prepare("SELECT COUNT(*) FROM items WHERE id = ?");
-                    $check->execute([$newId]);
-                } while ($check->fetchColumn() > 0);
+            // Generate unique 12-char ID for the item
+            do {
+                $newId = substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 12);
+                $check = $conn->prepare("SELECT COUNT(*) FROM items WHERE id = ?");
+                $check->execute([$newId]);
+            } while ($check->fetchColumn() > 0);
 
-                // Start transaction
-                $conn->beginTransaction();
-                try {
-                    // Insert item
-                    $insert = $conn->prepare("
-                        INSERT INTO items (id, user_id, title, description, price)
-                        VALUES (:id, :user_id, :title, :description, :price)
-                    ");
-                    $insert->execute([
-                        ':id'          => $newId,
-                        ':user_id'     => $_SESSION['user_id'],
-                        ':title'       => $title,
-                        ':description' => $description,
-                        ':price'       => floatval($price),
-                    ]);
+            // Start transaction
+            $conn->beginTransaction();
+            try {
+                // Insert item
+                $insert = $conn->prepare("
+                    INSERT INTO items (id, user_id, title, description, price)
+                    VALUES (:id, :user_id, :title, :description, :price)
+                ");
+                $insert->execute([
+                    ':id'          => $newId,
+                    ':user_id'     => $_SESSION['user_id'],
+                    ':title'       => $title,
+                    ':description' => $description,
+                    ':price'       => floatval($price),
+                ]);
 
-                    // Create directory for images if it doesn't exist
-                    $uploadDir = 'uploads/' . $newId . '/';
-                    if (!file_exists($uploadDir)) {
-                        mkdir($uploadDir, 0777, true);
+                // Create directory for images if it doesn't exist
+                $uploadDir = 'uploads/' . $newId . '/';
+                if (!file_exists($uploadDir)) {
+                    if (!mkdir($uploadDir, 0777, true) && !is_dir($uploadDir)) {
+                        throw new Exception('Nem sikerült létrehozni a könyvtárat: ' . $uploadDir);
                     }
-
-                    // Upload each image
-                    $sortOrder = 0;
-                    for ($i = 0; $i < count($files['name']); $i++) {
-                        // Generate unique filename to avoid conflicts
-                        $extension = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
-                        $filename = uniqid() . '_' . $i . '.' . $extension;
-                        $filepath = $uploadDir . $filename;
-
-                        // Move uploaded file
-                        if (move_uploaded_file($files['tmp_name'][$i], $filepath)) {
-                            // Save to database
-                            $imageInsert = $conn->prepare("
-                                INSERT INTO item_images (item_id, image_path, image_filename, is_primary, sort_order)
-                                VALUES (:item_id, :image_path, :image_filename, :is_primary, :sort_order)
-                            ");
-                            $imageInsert->execute([
-                                ':item_id' => $newId,
-                                ':image_path' => $filepath,
-                                ':image_filename' => $filename,
-                                ':is_primary' => ($i === 0) ? 1 : 0,
-                                ':sort_order' => $sortOrder
-                            ]);
-                            $sortOrder++;
-                        } else {
-                            throw new Exception('Hiba történt a kép mentése során: ' . $files['name'][$i]);
-                        }
-                    }
-
-                    $conn->commit();
-
-                    // ✅ ÁTIRÁNYÍTÁS SIKERES FELTÖLTÉS UTÁN (PRG Pattern)
-                    header("Location: main.php?upload=success");
-                    exit();
-                } catch (Exception $e) {
-                    $conn->rollBack();
-                    $_SESSION['upload_error'] = 'Hiba történt a hirdetés mentése során: ' . $e->getMessage();
-                    $_SESSION['form_data'] = [
-                        'item_title' => $title,
-                        'item_description' => $description,
-                        'item_price' => $price
-                    ];
-                    header("Location: main.php");
-                    exit();
                 }
+
+                // Upload each image
+                $sortOrder = 0;
+                for ($i = 0; $i < count($files['name']); $i++) {
+                    // Generate unique filename to avoid conflicts
+                    $extension = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
+                    $filename = uniqid() . '_' . $i . '.' . $extension;
+                    $filepath = $uploadDir . $filename;
+
+                    // Move uploaded file
+                    if (!move_uploaded_file($files['tmp_name'][$i], $filepath)) {
+                        $lastError = error_get_last();
+                        throw new Exception(
+                            'Nem sikerült áthelyezni a fájlt: ' . $files['name'][$i] .
+                            ' ide: ' . $filepath .
+                            ($lastError ? ' - Hiba: ' . $lastError['message'] : '')
+                        );
+                    }
+
+                    // Save to database
+                    $imageInsert = $conn->prepare("
+                        INSERT INTO item_images (item_id, image_path, image_filename, is_primary, sort_order)
+                        VALUES (:item_id, :image_path, :image_filename, :is_primary, :sort_order)
+                    ");
+                    $imageInsert->execute([
+                        ':item_id'       => $newId,
+                        ':image_path'    => $filepath,
+                        ':image_filename'=> $filename,
+                        ':is_primary'    => ($i === 0) ? 1 : 0,
+                        ':sort_order'    => $sortOrder
+                    ]);
+                    $sortOrder++;
+                }
+
+                $conn->commit();
+
+                // SIKERES FELTÖLTÉS
+                header("Location: main.php?upload=success");
+                exit();
+            } catch (Exception $e) {
+                $conn->rollBack();
+                $_SESSION['upload_error'] = 'Hiba történt a hirdetés mentése során: ' . $e->getMessage();
+                $_SESSION['form_data'] = compact('title', 'description', 'price');
+                header("Location: main.php");
+                exit();
             }
         }
     }
@@ -421,6 +423,24 @@ try {
     $totalPages = 0;
     $page = 1;
 }
+
+// Függvény a readmore-hoz
+function formatMessage($msg) {
+    $msg = htmlspecialchars($msg);
+    $msg = preg_replace('/\*(.*?)\*/', '<strong>$1</strong>', $msg);
+    $msg = preg_replace('/\-(.*?)\-/', '<em>$1</em>', $msg);
+    return $msg;
+}
+
+// Unread messages count
+$unreadMsgCount = 0;
+try {
+    $unreadStmt = $conn->prepare("SELECT COUNT(*) FROM uzenetek WHERE receiver_id = ? AND is_read = 0");
+    $unreadStmt->execute([$_SESSION['user_id']]);
+    $unreadMsgCount = (int)$unreadStmt->fetchColumn();
+} catch (Exception $e) {
+    $unreadMsgCount = 0;
+}
 ?>
 <!DOCTYPE html>
 <html lang="hu">
@@ -482,51 +502,19 @@ try {
         }
 
         @keyframes noise {
-
-            0%,
-            100% {
-                transform: translate(0, 0);
-            }
-
-            10% {
-                transform: translate(-5%, -5%);
-            }
-
-            20% {
-                transform: translate(-10%, 5%);
-            }
-
-            30% {
-                transform: translate(5%, -10%);
-            }
-
-            40% {
-                transform: translate(-5%, 15%);
-            }
-
-            50% {
-                transform: translate(-10%, 5%);
-            }
-
-            60% {
-                transform: translate(15%, 0);
-            }
-
-            70% {
-                transform: translate(0, 10%);
-            }
-
-            80% {
-                transform: translate(-15%, 0);
-            }
-
-            90% {
-                transform: translate(10%, 5%);
-            }
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-5%, -5%); }
+            20% { transform: translate(-10%, 5%); }
+            30% { transform: translate(5%, -10%); }
+            40% { transform: translate(-5%, 15%); }
+            50% { transform: translate(-10%, 5%); }
+            60% { transform: translate(15%, 0); }
+            70% { transform: translate(0, 10%); }
+            80% { transform: translate(-15%, 0); }
+            90% { transform: translate(10%, 5%); }
         }
 
-        .orb-1,
-        .orb-2 {
+        .orb-1, .orb-2 {
             position: fixed;
             width: min(60vw, 600px);
             height: min(60vw, 600px);
@@ -552,35 +540,15 @@ try {
         }
 
         @keyframes float1 {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(10vw, 10vh) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-5vw, 15vh) scale(0.9);
-            }
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(10vw, 10vh) scale(1.1); }
+            66% { transform: translate(-5vw, 15vh) scale(0.9); }
         }
 
         @keyframes float2 {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(-10vw, -10vh) scale(1.2);
-            }
-
-            66% {
-                transform: translate(5vw, -15vh) scale(0.8);
-            }
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-10vw, -10vh) scale(1.2); }
+            66% { transform: translate(5vw, -15vh) scale(0.8); }
         }
 
         /* Top bar - KÖZÉPRE IGAZÍTOTT VERZIÓ */
@@ -2986,16 +2954,6 @@ try {
     </div>
 
     <!-- Floating Messages Button -->
-    <?php
-    // Count unread messages for the current user
-    $unreadMsgCount = 0;
-    try {
-        $unreadStmt = $conn->prepare("SELECT COUNT(*) FROM uzenetek WHERE receiver_id = ? AND is_read = 0");
-        $unreadStmt->execute([$_SESSION['user_id']]);
-        $unreadMsgCount = (int)$unreadStmt->fetchColumn();
-    } catch (Exception $e) {
-    }
-    ?>
     <a href="uzenetek.php" class="floating-messages-btn unselectable" title="Üzenetek">
         💬
         <?php if ($unreadMsgCount > 0): ?>
