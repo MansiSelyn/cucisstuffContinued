@@ -387,6 +387,7 @@ try {
         .back-btn:hover {
             background: color-mix(in srgb, var(--accent) 25%, transparent);
             border-color: var(--accent);
+            color: var(--accent);
         }
 
         .page-title {
