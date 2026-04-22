@@ -14,10 +14,11 @@ if (isset($_POST['logout'])) {
 }
 
 // Adatbázis kapcsolat
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "cucidb";
+require_once 'config.php';
+$servername = DB_HOST;
+$username   = DB_USER;
+$password   = DB_PASS;
+$dbname     = DB_NAME;
 
 try {
     $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
