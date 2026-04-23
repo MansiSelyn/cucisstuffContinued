@@ -110,6 +110,32 @@ try {
     }
 
     // ================================
+    // AJAX – Elérhető felhasználók listája (akikkel még nincs beszélgetés)
+    // ================================
+    if (isset($_GET['ajax_get_available_users'])) {
+        header('Content-Type: application/json');
+        $stmt = $conn->prepare("
+            SELECT id, username 
+            FROM users 
+            WHERE id != ? 
+              AND id NOT IN (
+                  SELECT DISTINCT 
+                      CASE 
+                          WHEN sender_id = ? THEN receiver_id 
+                          ELSE sender_id 
+                      END 
+                  FROM uzenetek 
+                  WHERE sender_id = ? OR receiver_id = ?
+              )
+            ORDER BY username
+        ");
+        $stmt->execute([$currentUserId, $currentUserId, $currentUserId, $currentUserId]);
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($users);
+        exit;
+    }
+
+    // ================================
     // Hagyományos POST – szerkesztés / törlés / report
     // ================================
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_message'])) {
@@ -614,12 +640,35 @@ try {
         }
 
         .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 1rem 1.2rem;
             font-size: 0.85rem;
             color: var(--partner-time);
             text-transform: uppercase;
             letter-spacing: 0.1em;
             border-bottom: 1px solid var(--border-glass);
+        }
+
+        .new-chat-btn {
+            background: transparent;
+            border: 1px solid var(--border-glass);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background: color-mix(in srgb, var(--accent) 15%, transparent);
+            border-color: var(--accent);
         }
 
         .partner-item {
@@ -689,6 +738,79 @@ try {
             color: var(--partner-time);
             font-size: 0.9rem;
             line-height: 1.6;
+        }
+
+        /* Új beszélgetés modál */
+        .new-chat-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            z-index: 4000;
+        }
+        .new-chat-modal.open {
+            display: flex;
+        }
+        .new-chat-modal-content {
+            background: var(--bg-glass);
+            border: 1px solid var(--accent);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .new-chat-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid var(--border-glass);
+        }
+        .new-chat-modal-header h3 {
+            color: var(--accent);
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .new-chat-modal-close {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .new-chat-search {
+            padding: 0.8rem 1.2rem;
+            background: var(--bg-input);
+            border: none;
+            border-bottom: 1px solid var(--border-glass);
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+        }
+        .new-chat-user-list {
+            overflow-y: auto;
+            padding: 0.5rem 0;
+        }
+        .new-chat-user-item {
+            padding: 0.8rem 1.2rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: var(--text-primary);
+        }
+        .new-chat-user-item:hover {
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--partner-time);
         }
 
         .chat-area {
@@ -1835,7 +1957,10 @@ try {
 
     <div class="messages-layout">
         <div class="sidebar">
-            <div class="sidebar-header">Beszélgetések</div>
+            <div class="sidebar-header">
+                <span>Beszélgetések</span>
+                <button class="new-chat-btn" id="newChatBtn" title="Új beszélgetés">+</button>
+            </div>
             <?php if (empty($partners)): ?>
                 <div class="no-partners">
                     Még nincsenek üzeneteid.<br>
@@ -2011,6 +2136,20 @@ try {
             <div class="delete-modal-actions">
                 <button type="button" class="delete-cancel-btn" id="deleteCancelBtn">Mégse</button>
                 <button type="button" class="delete-confirm-btn" id="deleteConfirmBtn">Törlés</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Új beszélgetés modál -->
+    <div class="new-chat-modal" id="newChatModal">
+        <div class="new-chat-modal-content">
+            <div class="new-chat-modal-header">
+                <h3>Új beszélgetés</h3>
+                <button class="new-chat-modal-close" id="newChatModalClose">&times;</button>
+            </div>
+            <input type="text" class="new-chat-search" id="newChatSearch" placeholder="Keresés...">
+            <div class="new-chat-user-list" id="newChatUserList">
+                <div class="loading">Betöltés...</div>
             </div>
         </div>
     </div>
@@ -2401,6 +2540,63 @@ try {
         <?php if (isset($_SESSION['report_success'])): unset($_SESSION['report_success']); ?>
             showToast('✅ Bejelentésedet rögzítettük. Köszönjük!');
         <?php endif; ?>
+
+        // ========== ÚJ BESZÉLGETÉS MODÁL ==========
+        const newChatBtn = document.getElementById('newChatBtn');
+        const newChatModal = document.getElementById('newChatModal');
+        const newChatClose = document.getElementById('newChatModalClose');
+        const newChatSearch = document.getElementById('newChatSearch');
+        const newChatUserList = document.getElementById('newChatUserList');
+
+        let availableUsers = [];
+
+        newChatBtn.addEventListener('click', async () => {
+            newChatModal.classList.add('open');
+            newChatUserList.innerHTML = '<div class="loading">Betöltés...</div>';
+            newChatSearch.value = '';
+            try {
+                const resp = await fetch('?ajax_get_available_users=1');
+                const users = await resp.json();
+                availableUsers = users;
+                renderUserList(users);
+            } catch (e) {
+                newChatUserList.innerHTML = '<div class="loading">Hiba történt.</div>';
+            }
+        });
+
+        function renderUserList(users) {
+            if (users.length === 0) {
+                newChatUserList.innerHTML = '<div class="loading">Nincs elérhető felhasználó.</div>';
+                return;
+            }
+            const html = users.map(u => `
+                <div class="new-chat-user-item" data-user-id="${u.id}">
+                    ${escapeHtml(u.username)}
+                </div>
+            `).join('');
+            newChatUserList.innerHTML = html;
+        }
+
+        newChatUserList.addEventListener('click', (e) => {
+            const item = e.target.closest('.new-chat-user-item');
+            if (!item) return;
+            const userId = item.dataset.userId;
+            window.location.href = `uzenetek.php?with=${userId}`;
+        });
+
+        newChatSearch.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = availableUsers.filter(u => u.username.toLowerCase().includes(term));
+            renderUserList(filtered);
+        });
+
+        newChatClose.addEventListener('click', () => {
+            newChatModal.classList.remove('open');
+        });
+        newChatModal.addEventListener('click', (e) => {
+            if (e.target === newChatModal) newChatModal.classList.remove('open');
+        });
+        // ==========================================
 
         // Seller popup
         const sellerOverlay = document.getElementById('sellerPopupOverlay');
