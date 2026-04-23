@@ -18,7 +18,8 @@
     --scrollbar-track: #e8f0c0;
     --scrollbar-thumb: rgba(140, 170, 10, 0.35);
     --scrollbar-thumb-hover: rgba(140, 170, 10, 0.6);
-    --placeholder-color: #2a3a00;  /* sötét placeholder light módban */
+    --placeholder-color: #2a3a00;
+    /* sötét placeholder light módban */
     --input-focus-bg: rgba(242, 252, 200, 1);
     --status-bg-from: rgba(244, 252, 220, 0.98);
     --status-bg-to: rgba(234, 248, 195, 0.95);
@@ -892,14 +893,17 @@ body[data-theme="light"] .product-main-image-container {
 body[data-theme="light"] .lightbox-overlay {
     background: rgba(240, 245, 220, 0.97) !important;
 }
+
 body[data-theme="light"] .lightbox-image {
     border: 2px solid #B0CB1F !important;
 }
+
 body[data-theme="light"] .lightbox-close {
     background: rgba(240, 245, 220, 0.9) !important;
     border: 1px solid #B0CB1F !important;
     color: #7a9200 !important;
 }
+
 body[data-theme="light"] .lightbox-close:hover {
     background: #B0CB1F !important;
     color: #1a1f00 !important;
@@ -956,6 +960,7 @@ body[data-theme="light"] .edit-modal-close {
     border-color: #B0CB1F !important;
     color: #7a9200 !important;
 }
+
 body[data-theme="light"] .edit-modal-close:hover {
     background: rgba(176, 203, 31, 0.15) !important;
     color: #4a6000 !important;
@@ -993,12 +998,12 @@ body[data-theme="light"] .report-form-label {
 
 /* 11. Report modal textarea fix – ne legyen átméretezhető */
 body[data-theme="light"] .report-modal .form-textarea,
-body[data-theme="dark"]  .report-modal .form-textarea {
+body[data-theme="dark"] .report-modal .form-textarea {
     resize: none !important;
 }
 
 /* 12. Edit form textarea fix – ne lehessen átméretezni (sötét és világos módban is) */
 body[data-theme="light"] .edit-form-textarea,
-body[data-theme="dark"]  .edit-form-textarea {
+body[data-theme="dark"] .edit-form-textarea {
     resize: none !important;
 }

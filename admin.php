@@ -167,7 +167,8 @@ try {
     foreach (['users', 'items'] as $tbl) {
         try {
             $counts[$tbl] = $conn->query("SELECT COUNT(*) FROM $tbl")->fetchColumn();
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) {
+        }
     }
     // Report count: termék + üzenet reportok összege
     try {
@@ -1557,34 +1558,41 @@ function pgLink($v, $p)
             height: calc(100vh - 220px);
             min-height: 500px;
         }
+
         .conversation-sidebar {
             width: 300px;
             background: var(--c-panel);
             border: 1px solid var(--c-border2);
             overflow-y: auto;
         }
+
         /* ═══════════ CONVERSATION SIDEBAR SCROLLBAR ═══════════ */
         .conversation-sidebar::-webkit-scrollbar {
             width: 8px;
         }
+
         .conversation-sidebar::-webkit-scrollbar-track {
             background: var(--c-panel);
             border-left: 1px solid var(--c-border);
         }
+
         .conversation-sidebar::-webkit-scrollbar-thumb {
             background: var(--c-border2);
             border-radius: 4px;
             border: 1px solid var(--c-green-dim);
         }
+
         .conversation-sidebar::-webkit-scrollbar-thumb:hover {
             background: var(--c-green-mid);
             border-color: var(--c-green);
         }
+
         /* Firefox scrollbar */
         .conversation-sidebar {
             scrollbar-width: thin;
             scrollbar-color: var(--c-border2) var(--c-panel);
         }
+
         .conversation-item {
             display: flex;
             align-items: center;
@@ -1595,20 +1603,24 @@ function pgLink($v, $p)
             color: var(--c-text);
             transition: background 0.15s;
         }
+
         .conversation-item:hover,
         .conversation-item.active {
             background: rgba(57, 255, 20, 0.07);
             color: var(--c-green);
         }
+
         /* Ne legyen kattintható az aktív elem */
         .conversation-item.active {
             cursor: default;
             pointer-events: none;
         }
+
         .conv-avatars {
             display: flex;
             gap: 0.2rem;
         }
+
         .conv-avatars span {
             width: 32px;
             height: 32px;
@@ -1622,16 +1634,19 @@ function pgLink($v, $p)
             font-size: 0.9rem;
             border: 1px solid var(--c-green-dim);
         }
+
         .conv-info {
             flex: 1;
             min-width: 0;
         }
+
         .conv-names {
             font-weight: bold;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .conv-lastmsg {
             font-size: 0.75rem;
             color: var(--c-muted);
@@ -1639,11 +1654,13 @@ function pgLink($v, $p)
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .conv-time {
             font-size: 0.65rem;
             color: var(--c-green-dim);
             margin-top: 2px;
         }
+
         .conversation-chat {
             flex: 1;
             background: var(--c-panel);
@@ -1651,6 +1668,7 @@ function pgLink($v, $p)
             display: flex;
             flex-direction: column;
         }
+
         .chat-header {
             padding: 0.8rem 1.2rem;
             border-bottom: 1px solid var(--c-border2);
@@ -1659,6 +1677,7 @@ function pgLink($v, $p)
             color: var(--c-green);
             background: rgba(57, 255, 20, 0.03);
         }
+
         .chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -1667,15 +1686,19 @@ function pgLink($v, $p)
             flex-direction: column;
             gap: 0.6rem;
         }
+
         .message-row {
             display: flex;
         }
+
         .message-row.left {
             justify-content: flex-start;
         }
+
         .message-row.right {
             justify-content: flex-end;
         }
+
         .message-bubble {
             max-width: 70%;
             background: rgba(0, 0, 0, 0.4);
@@ -1683,23 +1706,27 @@ function pgLink($v, $p)
             border-radius: 8px;
             padding: 0.6rem 0.9rem;
         }
+
         .message-sender {
             font-size: 0.7rem;
             color: var(--c-green-mid);
             margin-bottom: 0.25rem;
             text-transform: uppercase;
         }
+
         .message-text {
             font-size: 0.85rem;
             color: var(--c-text);
             word-break: break-word;
         }
+
         .message-time {
             font-size: 0.6rem;
             color: var(--c-muted);
             text-align: right;
             margin-top: 0.3rem;
         }
+
         .chat-placeholder {
             flex: 1;
             display: flex;
@@ -1730,6 +1757,7 @@ function pgLink($v, $p)
                 flex-direction: column;
                 height: auto;
             }
+
             .conversation-sidebar {
                 width: 100%;
                 max-height: 300px;
@@ -2030,8 +2058,8 @@ function pgLink($v, $p)
                             <?php if ($isActive): ?>
                                 <div class="conversation-item active">
                                     <div class="conv-avatars">
-                                        <span><?= strtoupper(substr($conv['user1_name'],0,1)) ?></span>
-                                        <span><?= strtoupper(substr($conv['user2_name'],0,1)) ?></span>
+                                        <span><?= strtoupper(substr($conv['user1_name'], 0, 1)) ?></span>
+                                        <span><?= strtoupper(substr($conv['user2_name'], 0, 1)) ?></span>
                                     </div>
                                     <div class="conv-info">
                                         <div class="conv-names"><?= htmlspecialchars($conv['user1_name']) ?> ↔ <?= htmlspecialchars($conv['user2_name']) ?></div>
@@ -2040,11 +2068,11 @@ function pgLink($v, $p)
                                     </div>
                                 </div>
                             <?php else: ?>
-                                <a href="admin.php?view=conversations&user1=<?= $conv['user1_id'] ?>&user2=<?= $conv['user2_id'] ?>" 
-                                   class="conversation-item">
+                                <a href="admin.php?view=conversations&user1=<?= $conv['user1_id'] ?>&user2=<?= $conv['user2_id'] ?>"
+                                    class="conversation-item">
                                     <div class="conv-avatars">
-                                        <span><?= strtoupper(substr($conv['user1_name'],0,1)) ?></span>
-                                        <span><?= strtoupper(substr($conv['user2_name'],0,1)) ?></span>
+                                        <span><?= strtoupper(substr($conv['user1_name'], 0, 1)) ?></span>
+                                        <span><?= strtoupper(substr($conv['user2_name'], 0, 1)) ?></span>
                                     </div>
                                     <div class="conv-info">
                                         <div class="conv-names"><?= htmlspecialchars($conv['user1_name']) ?> ↔ <?= htmlspecialchars($conv['user2_name']) ?></div>

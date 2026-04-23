@@ -309,8 +309,8 @@ try {
                         $lastError = error_get_last();
                         throw new Exception(
                             'Nem sikerült áthelyezni a fájlt: ' . $files['name'][$i] .
-                            ' ide: ' . $filepath .
-                            ($lastError ? ' - Hiba: ' . $lastError['message'] : '')
+                                ' ide: ' . $filepath .
+                                ($lastError ? ' - Hiba: ' . $lastError['message'] : '')
                         );
                     }
 
@@ -322,7 +322,7 @@ try {
                     $imageInsert->execute([
                         ':item_id'       => $newId,
                         ':image_path'    => $filepath,
-                        ':image_filename'=> $filename,
+                        ':image_filename' => $filename,
                         ':is_primary'    => ($i === 0) ? 1 : 0,
                         ':sort_order'    => $sortOrder
                     ]);
@@ -467,7 +467,8 @@ try {
 }
 
 // Függvény a readmore-hoz
-function formatMessage($msg) {
+function formatMessage($msg)
+{
     $msg = htmlspecialchars($msg);
     $msg = preg_replace('/\*(.*?)\*/', '<strong>$1</strong>', $msg);
     $msg = preg_replace('/\-(.*?)\-/', '<em>$1</em>', $msg);
@@ -544,19 +545,51 @@ try {
         }
 
         @keyframes noise {
-            0%, 100% { transform: translate(0, 0); }
-            10% { transform: translate(-5%, -5%); }
-            20% { transform: translate(-10%, 5%); }
-            30% { transform: translate(5%, -10%); }
-            40% { transform: translate(-5%, 15%); }
-            50% { transform: translate(-10%, 5%); }
-            60% { transform: translate(15%, 0); }
-            70% { transform: translate(0, 10%); }
-            80% { transform: translate(-15%, 0); }
-            90% { transform: translate(10%, 5%); }
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            10% {
+                transform: translate(-5%, -5%);
+            }
+
+            20% {
+                transform: translate(-10%, 5%);
+            }
+
+            30% {
+                transform: translate(5%, -10%);
+            }
+
+            40% {
+                transform: translate(-5%, 15%);
+            }
+
+            50% {
+                transform: translate(-10%, 5%);
+            }
+
+            60% {
+                transform: translate(15%, 0);
+            }
+
+            70% {
+                transform: translate(0, 10%);
+            }
+
+            80% {
+                transform: translate(-15%, 0);
+            }
+
+            90% {
+                transform: translate(10%, 5%);
+            }
         }
 
-        .orb-1, .orb-2 {
+        .orb-1,
+        .orb-2 {
             position: fixed;
             width: min(60vw, 600px);
             height: min(60vw, 600px);
@@ -582,15 +615,35 @@ try {
         }
 
         @keyframes float1 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(10vw, 10vh) scale(1.1); }
-            66% { transform: translate(-5vw, 15vh) scale(0.9); }
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(10vw, 10vh) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-5vw, 15vh) scale(0.9);
+            }
         }
 
         @keyframes float2 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(-10vw, -10vh) scale(1.2); }
-            66% { transform: translate(5vw, -15vh) scale(0.8); }
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(-10vw, -10vh) scale(1.2);
+            }
+
+            66% {
+                transform: translate(5vw, -15vh) scale(0.8);
+            }
         }
 
         /* Top bar - KÖZÉPRE IGAZÍTOTT VERZIÓ */
@@ -3916,7 +3969,7 @@ try {
                 pointer-events: none;
             `;
             document.body.appendChild(toastMsgElement);
-            
+
             // Kattintásra ugorjon az üzenetek oldalra
             toastMsgElement.addEventListener('click', () => {
                 window.location.href = 'uzenetek.php';
@@ -3928,7 +3981,7 @@ try {
             toastMsgElement.style.opacity = '1';
             toastMsgElement.style.transform = 'translateY(0)';
             toastMsgElement.style.pointerEvents = 'auto';
-            
+
             // 5 másodperc után eltűnik
             setTimeout(() => {
                 toastMsgElement.style.opacity = '0';
@@ -3941,14 +3994,14 @@ try {
             try {
                 const response = await fetch('?get_unread_count=1');
                 const data = await response.json();
-                
+
                 if (data.error) {
                     console.error('Unread count error:', data.error);
                     return;
                 }
-                
+
                 const newCount = data.unread_count;
-                
+
                 // Badge frissítése
                 if (msgBadge) {
                     if (newCount > 0) {
@@ -3958,12 +4011,12 @@ try {
                         msgBadge.style.display = 'none';
                     }
                 }
-                
+
                 // Ha nőtt az olvasatlan szám és van új üzenet adat, toast megjelenítése
                 if (newCount > lastUnreadCount && data.last_message) {
                     showMessageToast(data.last_message.sender, data.last_message.preview);
                 }
-                
+
                 lastUnreadCount = newCount;
             } catch (err) {
                 console.error('Polling hiba:', err);
