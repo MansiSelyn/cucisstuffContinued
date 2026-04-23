@@ -21,7 +21,7 @@ if (isset($_POST['logout'])) {
 // =============================================
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     // Ha AJAX kérés (JSON választ vár), akkor ne redirecteljünk, hanem küldjünk JSON hibát
-    if (isset($_GET['search_query']) || isset($_GET['get_item']) || isset($_GET['get_seller'])) {
+    if (isset($_GET['search_query']) || isset($_GET['get_item']) || isset($_GET['get_seller']) || isset($_GET['get_unread_count'])) {
         header('Content-Type: application/json');
         echo json_encode(['error' => 'Nincs bejelentkezve']);
         exit();
@@ -49,6 +49,48 @@ try {
         $adminCheck = $conn->prepare("SELECT COUNT(*) FROM admins WHERE user_id = ?");
         $adminCheck->execute([$_SESSION['user_id']]);
         $isAdmin = $adminCheck->fetchColumn() > 0;
+    }
+
+    // =============================================
+    // GET UNREAD MESSAGES COUNT (JSON output) - REALTIME BADGE FRISSÍTÉSHEZ
+    // =============================================
+    if (isset($_GET['get_unread_count'])) {
+        header('Content-Type: application/json');
+        try {
+            if (!isset($_SESSION['user_id'])) {
+                echo json_encode(['error' => 'Nincs bejelentkezve']);
+                exit;
+            }
+
+            // Olvasatlan üzenetek száma
+            $unreadStmt = $conn->prepare("SELECT COUNT(*) FROM uzenetek WHERE receiver_id = ? AND is_read = 0");
+            $unreadStmt->execute([$_SESSION['user_id']]);
+            $unreadCount = (int)$unreadStmt->fetchColumn();
+
+            // Legutolsó üzenet adatai (opcionális, toast értesítéshez)
+            $lastMsgStmt = $conn->prepare("
+                SELECT u.username AS sender_name, m.message, m.sent_at
+                FROM uzenetek m
+                JOIN users u ON m.sender_id = u.id
+                WHERE m.receiver_id = ? AND m.is_read = 0
+                ORDER BY m.sent_at DESC
+                LIMIT 1
+            ");
+            $lastMsgStmt->execute([$_SESSION['user_id']]);
+            $lastMsg = $lastMsgStmt->fetch(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'unread_count' => $unreadCount,
+                'last_message' => $lastMsg ? [
+                    'sender' => $lastMsg['sender_name'],
+                    'preview' => mb_substr($lastMsg['message'], 0, 50) . (mb_strlen($lastMsg['message']) > 50 ? '…' : ''),
+                    'sent_at' => $lastMsg['sent_at']
+                ] : null
+            ]);
+        } catch (PDOException $e) {
+            echo json_encode(['error' => 'Adatbázis hiba: ' . $e->getMessage()]);
+        }
+        exit;
     }
 
     // =============================================
@@ -2958,7 +3000,9 @@ try {
     <a href="uzenetek.php" class="floating-messages-btn unselectable" title="Üzenetek">
         💬
         <?php if ($unreadMsgCount > 0): ?>
-            <span class="floating-messages-badge"><?php echo $unreadMsgCount > 9 ? '9+' : $unreadMsgCount; ?></span>
+            <span class="floating-messages-badge" id="floatingMessagesBadge"><?php echo $unreadMsgCount > 9 ? '9+' : $unreadMsgCount; ?></span>
+        <?php else: ?>
+            <span class="floating-messages-badge" id="floatingMessagesBadge" style="display: none;"></span>
         <?php endif; ?>
     </a>
 
@@ -3841,6 +3885,109 @@ try {
             accountDropdown.addEventListener('click', (e) => e.stopPropagation());
             document.addEventListener('click', closeDropdown);
         }
+
+        // =====================
+        // UNREAD MESSAGES POLLING (realtime badge frissítés)
+        // =====================
+        let lastUnreadCount = <?php echo $unreadMsgCount; ?>;
+        const msgBadge = document.getElementById('floatingMessagesBadge');
+        const msgButton = document.querySelector('.floating-messages-btn');
+
+        // Toast értesítés (ha még nincs ilyen elem, létrehozzuk)
+        let toastMsgElement = document.getElementById('messageToast');
+        if (!toastMsgElement) {
+            toastMsgElement = document.createElement('div');
+            toastMsgElement.id = 'messageToast';
+            toastMsgElement.style.cssText = `
+                position: fixed;
+                bottom: 100px;
+                right: 30px;
+                z-index: 9999;
+                background: var(--orange-bright);
+                color: #000;
+                padding: 12px 20px;
+                border-radius: 50px;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                opacity: 0;
+                transform: translateY(20px);
+                pointer-events: none;
+            `;
+            document.body.appendChild(toastMsgElement);
+            
+            // Kattintásra ugorjon az üzenetek oldalra
+            toastMsgElement.addEventListener('click', () => {
+                window.location.href = 'uzenetek.php';
+            });
+        }
+
+        function showMessageToast(sender, preview) {
+            toastMsgElement.textContent = `💬 Új üzenet: ${sender} - "${preview}"`;
+            toastMsgElement.style.opacity = '1';
+            toastMsgElement.style.transform = 'translateY(0)';
+            toastMsgElement.style.pointerEvents = 'auto';
+            
+            // 5 másodperc után eltűnik
+            setTimeout(() => {
+                toastMsgElement.style.opacity = '0';
+                toastMsgElement.style.transform = 'translateY(20px)';
+                toastMsgElement.style.pointerEvents = 'none';
+            }, 5000);
+        }
+
+        async function checkUnreadMessages() {
+            try {
+                const response = await fetch('?get_unread_count=1');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Unread count error:', data.error);
+                    return;
+                }
+                
+                const newCount = data.unread_count;
+                
+                // Badge frissítése
+                if (msgBadge) {
+                    if (newCount > 0) {
+                        msgBadge.textContent = newCount > 9 ? '9+' : newCount;
+                        msgBadge.style.display = 'flex';
+                    } else {
+                        msgBadge.style.display = 'none';
+                    }
+                }
+                
+                // Ha nőtt az olvasatlan szám és van új üzenet adat, toast megjelenítése
+                if (newCount > lastUnreadCount && data.last_message) {
+                    showMessageToast(data.last_message.sender, data.last_message.preview);
+                }
+                
+                lastUnreadCount = newCount;
+            } catch (err) {
+                console.error('Polling hiba:', err);
+            }
+        }
+
+        // Polling indítása (15 másodpercenként, hogy ne terhelje túl a szervert)
+        let unreadPollInterval = setInterval(checkUnreadMessages, 15000);
+
+        // Ha az oldal inaktívvá válik, lassíthatjuk a pollingot
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearInterval(unreadPollInterval);
+                unreadPollInterval = setInterval(checkUnreadMessages, 60000); // 1 perc
+            } else {
+                clearInterval(unreadPollInterval);
+                unreadPollInterval = setInterval(checkUnreadMessages, 15000);
+                // Visszatéréskor azonnal ellenőrizzük
+                checkUnreadMessages();
+            }
+        });
+
+        // Azonnali első ellenőrzés (ha esetleg közben érkezett üzenet)
+        checkUnreadMessages();
     </script>
 </body>
 
