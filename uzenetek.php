@@ -136,6 +136,39 @@ try {
     }
 
     // ================================
+    // AJAX – Partnerek listájának lekérése (realtime sidebar frissítés)
+    // ================================
+    if (isset($_GET['ajax_get_partners'])) {
+        header('Content-Type: application/json');
+        $partnersStmt = $conn->prepare("
+            SELECT
+                u.id,
+                u.username,
+                u.created_at AS member_since,
+                MAX(m.sent_at) AS last_message_at,
+                SUM(CASE WHEN m.receiver_id = :me AND m.is_read = 0 THEN 1 ELSE 0 END) AS unread_count
+            FROM users u
+            JOIN uzenetek m ON (
+                (m.sender_id = u.id AND m.receiver_id = :me2)
+                OR
+                (m.receiver_id = u.id AND m.sender_id = :me3)
+            )
+            WHERE u.id != :me4
+            GROUP BY u.id, u.username, u.created_at
+            ORDER BY last_message_at DESC
+        ");
+        $partnersStmt->execute([
+            ':me'  => $currentUserId,
+            ':me2' => $currentUserId,
+            ':me3' => $currentUserId,
+            ':me4' => $currentUserId,
+        ]);
+        $partners = $partnersStmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($partners);
+        exit;
+    }
+
+    // ================================
     // Hagyományos POST – szerkesztés / törlés / report
     // ================================
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_message'])) {
@@ -1956,61 +1989,63 @@ try {
     </div>
 
     <div class="messages-layout">
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <span>Beszélgetések</span>
                 <button class="new-chat-btn" id="newChatBtn" title="Új beszélgetés">+</button>
             </div>
-            <?php if (empty($partners)): ?>
-                <div class="no-partners">
-                    Még nincsenek üzeneteid.<br>
-                    Kattints egy eladóra a főoldalon az üzenetküldéshez.
-                </div>
-            <?php else: ?>
-                <?php foreach ($partners as $p): ?>
-                    <?php if ($withUserId == $p['id']): ?>
-                        <div class="partner-item active">
-                            <div class="partner-avatar"><?php echo strtoupper(substr($p['username'], 0, 1)); ?></div>
-                            <div class="partner-info">
-                                <div class="partner-name"><?php echo htmlspecialchars($p['username']); ?></div>
-                                <div class="partner-time">
-                                    <?php
-                                        $ts = strtotime($p['last_message_at']);
-                                        $diff = time() - $ts;
-                                        if ($diff < 60) echo 'Az imént';
-                                        elseif ($diff < 3600) echo round($diff/60) . ' perce';
-                                        elseif ($diff < 86400) echo round($diff/3600) . ' órája';
-                                        else echo date('Y.m.d', $ts);
-                                    ?>
+            <div id="sidebarContent">
+                <?php if (empty($partners)): ?>
+                    <div class="no-partners">
+                        Még nincsenek üzeneteid.<br>
+                        Kattints egy eladóra a főoldalon az üzenetküldéshez.
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($partners as $p): ?>
+                        <?php if ($withUserId == $p['id']): ?>
+                            <div class="partner-item active" data-partner-id="<?php echo $p['id']; ?>">
+                                <div class="partner-avatar"><?php echo strtoupper(substr($p['username'], 0, 1)); ?></div>
+                                <div class="partner-info">
+                                    <div class="partner-name"><?php echo htmlspecialchars($p['username']); ?></div>
+                                    <div class="partner-time">
+                                        <?php
+                                            $ts = strtotime($p['last_message_at']);
+                                            $diff = time() - $ts;
+                                            if ($diff < 60) echo 'Az imént';
+                                            elseif ($diff < 3600) echo round($diff/60) . ' perce';
+                                            elseif ($diff < 86400) echo round($diff/3600) . ' órája';
+                                            else echo date('Y.m.d', $ts);
+                                        ?>
+                                    </div>
                                 </div>
+                                <?php if ($p['unread_count'] > 0): ?>
+                                    <div class="unread-badge"><?php echo $p['unread_count']; ?></div>
+                                <?php endif; ?>
                             </div>
-                            <?php if ($p['unread_count'] > 0): ?>
-                                <div class="unread-badge"><?php echo $p['unread_count']; ?></div>
-                            <?php endif; ?>
-                        </div>
-                    <?php else: ?>
-                        <a href="uzenetek.php?with=<?php echo $p['id']; ?>" class="partner-item">
-                            <div class="partner-avatar"><?php echo strtoupper(substr($p['username'], 0, 1)); ?></div>
-                            <div class="partner-info">
-                                <div class="partner-name"><?php echo htmlspecialchars($p['username']); ?></div>
-                                <div class="partner-time">
-                                    <?php
-                                        $ts = strtotime($p['last_message_at']);
-                                        $diff = time() - $ts;
-                                        if ($diff < 60) echo 'Az imént';
-                                        elseif ($diff < 3600) echo round($diff/60) . ' perce';
-                                        elseif ($diff < 86400) echo round($diff/3600) . ' órája';
-                                        else echo date('Y.m.d', $ts);
-                                    ?>
+                        <?php else: ?>
+                            <a href="uzenetek.php?with=<?php echo $p['id']; ?>" class="partner-item" data-partner-id="<?php echo $p['id']; ?>">
+                                <div class="partner-avatar"><?php echo strtoupper(substr($p['username'], 0, 1)); ?></div>
+                                <div class="partner-info">
+                                    <div class="partner-name"><?php echo htmlspecialchars($p['username']); ?></div>
+                                    <div class="partner-time">
+                                        <?php
+                                            $ts = strtotime($p['last_message_at']);
+                                            $diff = time() - $ts;
+                                            if ($diff < 60) echo 'Az imént';
+                                            elseif ($diff < 3600) echo round($diff/60) . ' perce';
+                                            elseif ($diff < 86400) echo round($diff/3600) . ' órája';
+                                            else echo date('Y.m.d', $ts);
+                                        ?>
+                                    </div>
                                 </div>
-                            </div>
-                            <?php if ($p['unread_count'] > 0): ?>
-                                <div class="unread-badge"><?php echo $p['unread_count']; ?></div>
-                            <?php endif; ?>
-                        </a>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            <?php endif; ?>
+                                <?php if ($p['unread_count'] > 0): ?>
+                                    <div class="unread-badge"><?php echo $p['unread_count']; ?></div>
+                                <?php endif; ?>
+                            </a>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
         </div>
 
         <div class="chat-area">
@@ -2206,6 +2241,7 @@ try {
         const partnerId = <?php echo $withUserId ?: 0; ?>;
         let lastTimestamp = '';
         let pollInterval = null;
+        let partnersPollInterval = null;
 
         const messagesList = document.getElementById('messagesList');
         const msgInput = document.getElementById('msgInput');
@@ -2316,6 +2352,107 @@ try {
             }
         }
 
+        // ========== REALTIME PARTNERS LIST ==========
+        async function pollPartners() {
+            try {
+                const response = await fetch('?ajax_get_partners=1');
+                const partners = await response.json();
+                updateSidebar(partners);
+            } catch (e) {
+                console.error('Partners poll error:', e);
+            }
+        }
+
+        function updateSidebar(partners) {
+            const sidebarContent = document.getElementById('sidebarContent');
+            const currentActiveId = document.querySelector('.partner-item.active')?.dataset.partnerId;
+            let activePartnerExists = false;
+
+            if (partners.length === 0) {
+                sidebarContent.innerHTML = `
+                    <div class="no-partners">
+                        Még nincsenek üzeneteid.<br>
+                        Kattints egy eladóra a főoldalon az üzenetküldéshez.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            for (const p of partners) {
+                const isActive = (currentActiveId == p.id);
+                if (isActive) activePartnerExists = true;
+
+                const lastMessageAt = new Date(p.last_message_at.replace(/-/g, '/'));
+                const now = new Date();
+                const diffMs = now - lastMessageAt;
+                const diffMins = Math.floor(diffMs / 60000);
+                let timeStr;
+                if (diffMins < 1) timeStr = 'Az imént';
+                else if (diffMins < 60) timeStr = diffMins + ' perce';
+                else if (diffMins < 1440) timeStr = Math.floor(diffMins / 60) + ' órája';
+                else timeStr = lastMessageAt.toISOString().slice(0, 10).replace(/-/g, '.');
+
+                const avatarLetter = p.username.charAt(0).toUpperCase();
+                const unreadBadge = p.unread_count > 0 ? `<div class="unread-badge">${p.unread_count}</div>` : '';
+
+                if (isActive) {
+                    html += `
+                        <div class="partner-item active" data-partner-id="${p.id}">
+                            <div class="partner-avatar">${avatarLetter}</div>
+                            <div class="partner-info">
+                                <div class="partner-name">${escapeHtml(p.username)}</div>
+                                <div class="partner-time">${timeStr}</div>
+                            </div>
+                            ${unreadBadge}
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <a href="uzenetek.php?with=${p.id}" class="partner-item" data-partner-id="${p.id}">
+                            <div class="partner-avatar">${avatarLetter}</div>
+                            <div class="partner-info">
+                                <div class="partner-name">${escapeHtml(p.username)}</div>
+                                <div class="partner-time">${timeStr}</div>
+                            </div>
+                            ${unreadBadge}
+                        </a>
+                    `;
+                }
+            }
+
+            sidebarContent.innerHTML = html;
+
+            // Ha az aktív partner időközben eltűnt (pl. törölték), akkor nincs aktív kiemelés
+            if (!activePartnerExists) {
+                const activeEl = document.querySelector('.partner-item.active');
+                if (activeEl) activeEl.classList.remove('active');
+            }
+        }
+
+        function startPartnersPolling() {
+            if (partnersPollInterval) clearInterval(partnersPollInterval);
+            pollPartners(); // azonnal frissít
+            partnersPollInterval = setInterval(pollPartners, 5000); // 5 másodpercenként
+        }
+
+        startPartnersPolling();
+
+        // Amikor az oldal láthatósága változik, állítsuk be a pollozást
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (pollInterval) clearInterval(pollInterval);
+                if (partnersPollInterval) clearInterval(partnersPollInterval);
+            } else {
+                if (partnerId) {
+                    startPolling();
+                }
+                startPartnersPolling();
+            }
+        });
+
+        // =========================================
+
         let isSending = false;
 
         async function sendMessage() {
@@ -2371,6 +2508,9 @@ try {
                         });
                     }
                     if (data.sent_at > lastTimestamp) lastTimestamp = data.sent_at;
+                    
+                    // Azonnal frissítjük a partnerek listáját, hogy az üzenet hatása látszódjon
+                    pollPartners();
                 } else if (!data.success) {
                     // Ha sikertelen, töröljük az optimista elemet
                     const tempRow = document.querySelector(`.msg-row[data-msg-id="${tempId}"]`);
