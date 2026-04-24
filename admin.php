@@ -2069,7 +2069,6 @@ function pgLink($v, $p)
 
         .user-item-thumb:hover {
             border-color: var(--c-green);
-            transform: translateY(-3px);
             box-shadow: 0 8px 24px rgba(57, 255, 20, 0.2);
         }
 
@@ -2216,6 +2215,7 @@ function pgLink($v, $p)
         /* Light mode fix: user popup narancs színek */
         html.light-mode .user-popup-avatar {
             background: linear-gradient(135deg, #ff8c00, #cc4400) !important;
+            box-shadow: 0 0 40px rgba(255, 140, 0, 0.4) !important;
         }
 
         html.light-mode .user-popup-name,
@@ -2235,14 +2235,24 @@ function pgLink($v, $p)
         }
 
         html.light-mode .user-popup-close {
-            background: rgba(255, 140, 0, 0.15) !important;
-            border-color: rgba(255, 140, 0, 0.4) !important;
-            color: #ff8c00 !important;
+            background: rgba(255, 170, 51, 0.2) !important;
+            border-color: rgba(255, 170, 51, 0.5) !important;
+            color: #ffaa33 !important;
         }
 
         html.light-mode .user-popup-close:hover {
-            background: #ff8c00 !important;
+            background: #ffaa33 !important;
             color: #000 !important;
+        }
+
+        html.light-mode .user-stat {
+            background: rgba(255, 140, 0, 0.08) !important;
+            border-color: rgba(255, 140, 0, 0.2) !important;
+        }
+
+        html.light-mode .user-item-thumb-placeholder {
+            background: rgba(255, 140, 0, 0.1) !important;
+            color: rgba(255, 140, 0, 0.4) !important;
         }
     </style>
 </head>
@@ -2918,7 +2928,7 @@ function pgLink($v, $p)
                             const soldBadge = item.sold == 1 ? '<div class="user-item-sold-badge">[ELKELT]</div>' : '';
                             const imgHtml = item.thumb ?
                                 `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="user-item-thumb-placeholder" style="display:none;">📷</div>` :
-                                `<div class="user-item-thumb-placeholder">📷</div>`;
+                                `<div class="user-item-thumb-placeholder" style="display: flex;">📷</div>`;
                             itemsHtml += `
                                 <div class="user-item-thumb${soldClass}" onclick="fetchItemDetailsAndOpen('${escapeHtml(item.id)}');">
                                     ${imgHtml}

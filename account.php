@@ -1736,10 +1736,10 @@ try {
 
         <!-- ========== TOGGLE GOMBOK SORA ========== -->
         <div class="toggle-buttons-row">
-            <button class="section-toggle-btn" id="toggleItemsMainBtn" onclick="toggleItemsSection()">
+            <button class="section-toggle-btn unselectable" id="toggleItemsMainBtn" onclick="toggleItemsSection()">
                 📦 Hirdetéseim (<?= count($userItems) ?>)
             </button>
-            <button class="section-toggle-btn" id="toggleOrdersMainBtn" onclick="toggleOrdersSection()">
+            <button class="section-toggle-btn unselectable" id="toggleOrdersMainBtn" onclick="toggleOrdersSection()">
                 🛒 Rendeléseim (<?= count($userOrders) ?>)
             </button>
         </div>
