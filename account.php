@@ -5,7 +5,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     exit();
 }
 
-// Kijelentkezés kezelése (ugyanúgy, mint main.php-ban)
+// Kijelentkezés kezelése
 if (isset($_POST['logout'])) {
     $_SESSION = array();
     session_destroy();
@@ -16,16 +16,102 @@ if (isset($_POST['logout'])) {
 // Adatbázis kapcsolat
 require_once 'config.php';
 $servername = DB_HOST;
-$username   = DB_USER;
-$password   = DB_PASS;
+$usernameDB = DB_USER;
+$passwordDB = DB_PASS;
 $dbname     = DB_NAME;
 
+// --- KÉP ÁTMÉRETEZŐ FÜGGVÉNY (main.php-ból) ---
+function resizeImage($source, $destination, $maxDim = 1024)
+{
+    $info = getimagesize($source);
+    if (!$info) return false;
+
+    $mime = $info['mime'];
+    $srcWidth = $info[0];
+    $srcHeight = $info[1];
+
+    if ($srcWidth <= $maxDim && $srcHeight <= $maxDim) {
+        return copy($source, $destination);
+    }
+
+    $ratio = $srcWidth / $srcHeight;
+    if ($srcWidth > $srcHeight) {
+        $newWidth = $maxDim;
+        $newHeight = (int) round($maxDim / $ratio);
+    } else {
+        $newHeight = $maxDim;
+        $newWidth = (int) round($maxDim * $ratio);
+    }
+
+    switch ($mime) {
+        case 'image/jpeg':
+            $srcImg = imagecreatefromjpeg($source);
+            break;
+        case 'image/png':
+            $srcImg = imagecreatefrompng($source);
+            break;
+        case 'image/gif':
+            $srcImg = imagecreatefromgif($source);
+            break;
+        case 'image/webp':
+            if (function_exists('imagecreatefromwebp')) $srcImg = imagecreatefromwebp($source);
+            else return copy($source, $destination);
+            break;
+        default:
+            return false;
+    }
+    if (!$srcImg) return false;
+
+    $dstImg = imagecreatetruecolor($newWidth, $newHeight);
+    if ($mime == 'image/png' || $mime == 'image/webp') {
+        imagealphablending($dstImg, false);
+        imagesavealpha($dstImg, true);
+        $transparent = imagecolorallocatealpha($dstImg, 0, 0, 0, 127);
+        imagefilledrectangle($dstImg, 0, 0, $newWidth, $newHeight, $transparent);
+    } elseif ($mime == 'image/gif') {
+        $transparentIndex = imagecolortransparent($srcImg);
+        if ($transparentIndex >= 0) {
+            $transparentColor = imagecolorsforindex($srcImg, $transparentIndex);
+            $transparentIndex = imagecolorallocate($dstImg, $transparentColor['red'], $transparentColor['green'], $transparentColor['blue']);
+            imagefill($dstImg, 0, 0, $transparentIndex);
+            imagecolortransparent($dstImg, $transparentIndex);
+        }
+    }
+
+    imagecopyresampled($dstImg, $srcImg, 0, 0, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
+    $success = false;
+    switch ($mime) {
+        case 'image/jpeg':
+            $success = imagejpeg($dstImg, $destination, 85);
+            break;
+        case 'image/png':
+            $success = imagepng($dstImg, $destination, 8);
+            break;
+        case 'image/gif':
+            $success = imagegif($dstImg, $destination);
+            break;
+        case 'image/webp':
+            if (function_exists('imagewebp')) $success = imagewebp($dstImg, $destination, 85);
+            break;
+    }
+    imagedestroy($srcImg);
+    imagedestroy($dstImg);
+    return $success;
+}
+// --- vége resizeImage ---
+
 try {
-    $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+    $conn = new PDO("mysql:host=$servername;dbname=$dbname", $usernameDB, $passwordDB);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $userId = $_SESSION['user_id'];
 
-    // Admin ellenőrzés (ugyanaz, mint main.php-ban)
+    // profile_picture mező ellenőrzése és létrehozása, ha hiányzik
+    $checkCol = $conn->query("SHOW COLUMNS FROM users LIKE 'profile_picture'");
+    if ($checkCol->rowCount() == 0) {
+        $conn->exec("ALTER TABLE users ADD COLUMN profile_picture VARCHAR(255) NULL");
+    }
+
+    // Admin ellenőrzés
     $adminCheck = $conn->prepare("SELECT COUNT(*) FROM admins WHERE user_id = ?");
     $adminCheck->execute([$userId]);
     $isAdmin = $adminCheck->fetchColumn() > 0;
@@ -36,7 +122,6 @@ try {
     if (isset($_GET['get_item']) && !empty($_GET['get_item'])) {
         header('Content-Type: application/json');
         $itemId = $_GET['get_item'];
-
         $stmt = $conn->prepare("
             SELECT i.id, i.title, i.description, i.price, i.created_at, u.username as seller_name, i.user_id
             FROM items i
@@ -45,72 +130,181 @@ try {
         ");
         $stmt->execute([$itemId]);
         $item = $stmt->fetch(PDO::FETCH_ASSOC);
-
         if (!$item) {
             echo json_encode(['error' => 'Termék nem található']);
             exit;
         }
-
-        // Képek lekérése
         $imgStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ? ORDER BY sort_order");
         $imgStmt->execute([$itemId]);
         $images = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
         $item['images'] = $images;
-
         echo json_encode($item);
         exit;
     }
 
     // =============================================
-    // AJAX: GET SELLER PROFILE (JSON) - opcionális
+    // PROFILKÉP FELTÖLTÉS (AJAX)
     // =============================================
-    if (isset($_GET['get_seller']) && !empty($_GET['get_seller'])) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_profile_picture'])) {
         header('Content-Type: application/json');
-        $sellerId = (int)$_GET['get_seller'];
+        $response = ['success' => false, 'message' => ''];
 
-        $sellerStmt = $conn->prepare("
-            SELECT u.id, u.username, u.created_at,
-                   COUNT(DISTINCT i.id) AS item_count,
-                   (SELECT COUNT(*) FROM admins WHERE user_id = u.id) AS is_admin
-            FROM users u
-            LEFT JOIN items i ON i.user_id = u.id
-            WHERE u.id = ?
-            GROUP BY u.id, u.username, u.created_at
-        ");
-        $sellerStmt->execute([$sellerId]);
-        $seller = $sellerStmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$seller) {
-            echo json_encode(['error' => 'Felhasználó nem található']);
+        if (!isset($_FILES['profile_image']) || $_FILES['profile_image']['error'] !== UPLOAD_ERR_OK) {
+            $response['message'] = 'Nem sikerült feltölteni a képet.';
+            echo json_encode($response);
             exit;
         }
 
-        // Legutóbbi termékek (max 4)
-        $latestStmt = $conn->prepare("
-            SELECT i.id, i.title, i.price,
-                   (SELECT image_path FROM item_images WHERE item_id = i.id AND is_primary = 1 LIMIT 1) as thumb
-            FROM items i
-            WHERE i.user_id = ?
-            ORDER BY i.created_at DESC
-            LIMIT 4
-        ");
-        $latestStmt->execute([$sellerId]);
-        $seller['latest_items'] = $latestStmt->fetchAll(PDO::FETCH_ASSOC);
+        $file = $_FILES['profile_image'];
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($file['type'], $allowedTypes)) {
+            $response['message'] = 'Csak JPEG, PNG, GIF vagy WebP kép tölthető fel.';
+            echo json_encode($response);
+            exit;
+        }
 
-        echo json_encode($seller);
+        $maxSize = 5 * 1024 * 1024; // 5MB
+        if ($file['size'] > $maxSize) {
+            $response['message'] = 'A kép mérete nem haladhatja meg az 5 MB-ot.';
+            echo json_encode($response);
+            exit;
+        }
+
+        // Könyvtár létrehozása
+        $uploadDir = 'uploads/profile/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $newFilename = 'user_' . $userId . '_' . time() . '.' . $ext;
+        $destination = $uploadDir . $newFilename;
+
+        // Átméretezés
+        if (!resizeImage($file['tmp_name'], $destination, 1024)) {
+            $response['message'] = 'Hiba történt a kép feldolgozása közben.';
+            echo json_encode($response);
+            exit;
+        }
+
+        // Régi kép törlése ha van
+        $stmt = $conn->prepare("SELECT profile_picture FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $oldPic = $stmt->fetchColumn();
+        if ($oldPic && file_exists($oldPic)) {
+            unlink($oldPic);
+        }
+
+        // Adatbázis frissítése
+        $update = $conn->prepare("UPDATE users SET profile_picture = ? WHERE id = ?");
+        $update->execute([$destination, $userId]);
+
+        $response['success'] = true;
+        $response['message'] = 'Profilkép sikeresen frissítve!';
+        $response['new_image'] = $destination;
+        echo json_encode($response);
         exit;
     }
 
     // =============================================
-    // TERMÉK MÓDOSÍTÁS KEZELÉSE (POST)
+    // FELHASZNÁLÓNÉV MÓDOSÍTÁS (AJAX)
     // =============================================
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_username'])) {
+        header('Content-Type: application/json');
+        $newUsername = trim($_POST['username'] ?? '');
+        $response = ['success' => false, 'message' => ''];
+        if (empty($newUsername)) {
+            $response['message'] = 'A felhasználónév nem lehet üres.';
+        } else {
+            $check = $conn->prepare("SELECT id FROM users WHERE username = ? AND id != ?");
+            $check->execute([$newUsername, $userId]);
+            if ($check->fetchColumn()) {
+                $response['message'] = 'Ez a felhasználónév már foglalt.';
+            } else {
+                $update = $conn->prepare("UPDATE users SET username = ? WHERE id = ?");
+                $update->execute([$newUsername, $userId]);
+                $_SESSION['username'] = $newUsername;
+                $response['success'] = true;
+                $response['message'] = 'Felhasználónév sikeresen módosítva.';
+            }
+        }
+        echo json_encode($response);
+        exit;
+    }
+
+    // =============================================
+    // EMAIL MÓDOSÍTÁS (AJAX)
+    // =============================================
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_email'])) {
+        header('Content-Type: application/json');
+        $newEmail = trim($_POST['email'] ?? '');
+        $response = ['success' => false, 'message' => ''];
+        if (empty($newEmail) || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+            $response['message'] = 'Érvénytelen e-mail cím.';
+        } else {
+            $check = $conn->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
+            $check->execute([$newEmail, $userId]);
+            if ($check->fetchColumn()) {
+                $response['message'] = 'Ez az e-mail cím már regisztrálva van.';
+            } else {
+                $update = $conn->prepare("UPDATE users SET email = ? WHERE id = ?");
+                $update->execute([$newEmail, $userId]);
+                $response['success'] = true;
+                $response['message'] = 'E-mail cím sikeresen módosítva.';
+            }
+        }
+        echo json_encode($response);
+        exit;
+    }
+
+    // =============================================
+    // JELSZÓ MÓDOSÍTÁS (AJAX)
+    // =============================================
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_password'])) {
+        header('Content-Type: application/json');
+        $oldPassword = $_POST['old_password'] ?? '';
+        $newPassword = $_POST['new_password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+        $response = ['success' => false, 'message' => ''];
+
+        if (empty($oldPassword) || empty($newPassword) || empty($confirmPassword)) {
+            $response['message'] = 'Minden mező kitöltése kötelező.';
+        } elseif ($newPassword !== $confirmPassword) {
+            $response['message'] = 'Az új jelszavak nem egyeznek.';
+        } elseif (strlen($newPassword) < 6) {
+            $response['message'] = 'A jelszónak legalább 6 karakter hosszúnak kell lennie.';
+        } else {
+            // Ellenőrizzük a régi jelszót
+            $userStmt = $conn->prepare("SELECT passwords.password_hash FROM users JOIN passwords ON users.password_id = passwords.id WHERE users.id = ?");
+            $userStmt->execute([$userId]);
+            $hash = $userStmt->fetchColumn();
+            if (!password_verify($oldPassword, $hash)) {
+                $response['message'] = 'A megadott régi jelszó helytelen.';
+            } else {
+                // Új jelszó hash
+                $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+                $insPwd = $conn->prepare("INSERT INTO passwords (password_hash) VALUES (?)");
+                $insPwd->execute([$newHash]);
+                $newPasswordId = $conn->lastInsertId();
+                $update = $conn->prepare("UPDATE users SET password_id = ? WHERE id = ?");
+                $update->execute([$newPasswordId, $userId]);
+                $response['success'] = true;
+                $response['message'] = 'Jelszó sikeresen módosítva.';
+            }
+        }
+        echo json_encode($response);
+        exit;
+    }
+
+    // ------------------------------------------------------------
+    // TERMÉK MÓDOSÍTÁS / TÖRLÉS (POST) - a meglévő logika
+    // ------------------------------------------------------------
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_item'])) {
         $itemId  = $_POST['item_id'] ?? '';
         $title   = trim($_POST['edit_title'] ?? '');
         $desc    = trim($_POST['edit_description'] ?? '');
         $price   = trim($_POST['edit_price'] ?? '');
 
-        // Jogosultság ellenőrzés: csak a tulajdonos módosíthatja
         $ownerCheck = $conn->prepare("SELECT user_id FROM items WHERE id = ?");
         $ownerCheck->execute([$itemId]);
         $ownerRow = $ownerCheck->fetch(PDO::FETCH_ASSOC);
@@ -130,11 +324,12 @@ try {
     }
 
     // Felhasználó adatainak lekérése
-    $stmt = $conn->prepare("SELECT username, email FROM users WHERE id = ?");
+    $stmt = $conn->prepare("SELECT username, email, profile_picture FROM users WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    $profilePic = $user['profile_picture'] ?? null;
 
-    // Felhasználó termékeinek lekérése (a főoldali modalhoz szükséges összes adat)
+    // Felhasználó termékeinek lekérése
     $itemStmt = $conn->prepare("
         SELECT i.id, i.title, i.description, i.price, i.created_at, i.user_id, u.username as seller_name
         FROM items i 
@@ -145,75 +340,9 @@ try {
     $itemStmt->execute([$userId]);
     $userItems = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Üzenet a sikeres módosításról (opcionális)
     $editSuccess = isset($_GET['edit']) && $_GET['edit'] === 'success';
 } catch (PDOException $e) {
     die("Adatbázis hiba: " . $e->getMessage());
-}
-
-// =============================================
-// FIÓK MÓDOSÍTÁS KEZELÉSE (AJAX) - JAVÍTOTT VÁLTOZAT
-// =============================================
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
-    header('Content-Type: application/json');
-
-    $newUsername = trim($_POST['username'] ?? '');
-    $newEmail    = trim($_POST['email'] ?? '');
-    $newPassword = trim($_POST['password'] ?? '');
-    $response = ['success' => false, 'message' => ''];
-
-    if (empty($newUsername) || empty($newEmail)) {
-        $response['message'] = 'A felhasználónév és e-mail mezők kitöltése kötelező!';
-    } else {
-        // Felhasználónév ellenőrzés
-        $checkUser = $conn->prepare("SELECT id FROM users WHERE username = ? AND id != ?");
-        $checkUser->execute([$newUsername, $userId]);
-        if ($checkUser->fetchColumn()) {
-            $response['message'] = 'Ez a felhasználónév már foglalt!';
-        } else {
-            // E-mail ellenőrzés
-            $checkEmail = $conn->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
-            $checkEmail->execute([$newEmail, $userId]);
-            if ($checkEmail->fetchColumn()) {
-                $response['message'] = 'Ez az e-mail cím már regisztrálva van!';
-            } else {
-                try {
-                    // Jelszó kezelése (ha van új jelszó)
-                    if (!empty($newPassword)) {
-                        if (strlen($newPassword) < 6) {
-                            $response['message'] = 'A jelszónak legalább 6 karakternek kell lennie!';
-                        } else {
-                            // 1. Új jelszó hash-elése
-                            $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
-
-                            // 2. Új rekord beszúrása a passwords táblába
-                            $insPwd = $conn->prepare("INSERT INTO passwords (password_hash) VALUES (?)");
-                            $insPwd->execute([$hashed]);
-                            $newPasswordId = $conn->lastInsertId();
-
-                            // 3. Felhasználó frissítése az új password_id-vel
-                            $upd = $conn->prepare("UPDATE users SET username=?, email=?, password_id=? WHERE id=?");
-                            $upd->execute([$newUsername, $newEmail, $newPasswordId, $userId]);
-                        }
-                    } else {
-                        // Nincs jelszóváltozás
-                        $upd = $conn->prepare("UPDATE users SET username=?, email=? WHERE id=?");
-                        $upd->execute([$newUsername, $newEmail, $userId]);
-                    }
-
-                    if (empty($response['message'])) {
-                        $response['success'] = true;
-                        $response['message'] = 'Fiók sikeresen frissítve!';
-                        $_SESSION['username'] = $newUsername;
-                    }
-                } catch (PDOException $e) {
-                    $response['message'] = 'Adatbázis hiba: ' . $e->getMessage();
-                }
-            }
-        }
-    }
-    echo json_encode($response);
-    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -224,8 +353,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fiókom</title>
     <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css">
+    <link rel="icon" type="image/png" href="logo.png">
     <style>
-        /* ========== GLOBÁLIS RESET – EZ HIÁNYZOTT ========== */
+        /* ========== GLOBÁLIS RESET (a meglévőből) ========== */
         *,
         *::before,
         *::after {
@@ -234,13 +364,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             padding: 0;
         }
 
-        /* ========== ALAP STÍLUSOK (account.php eredeti) ========== */
         body {
             min-height: 100vh;
             margin: 0;
             padding: 0;
-            /* eltávolítottuk a paddingot, mert a top-bar fixed */
-            box-sizing: border-box;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--body-bg);
             color: var(--text-primary);
@@ -250,14 +377,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         .container {
             max-width: 1100px;
             margin: 70px auto 0 auto;
-            /* hely a fixed top-bar alatt */
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
             padding: 0 1rem;
         }
 
-        /* ========== TOP BAR ÉS FIÓKMENÜ (átvéve main.php-ből) ========== */
+        /* top-bar (a meglévőből) */
         .top-bar {
             position: fixed;
             top: 0;
@@ -275,19 +401,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             pointer-events: auto;
         }
 
-        .top-bar-left {
-            display: flex;
-            gap: 0.5rem;
-            pointer-events: auto;
-        }
-
+        .top-bar-left,
         .top-bar-right {
             display: flex;
             gap: 0.5rem;
             pointer-events: auto;
         }
 
-        /* Vissza gomb */
         .back-btn {
             padding: 0.5rem 1rem;
             background: var(--orange-subtle);
@@ -305,12 +425,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
 
         .back-btn:hover {
             background: var(--orange-bright);
-            color: #000;
+            color: #FFF3E0;
         }
 
-        /* Admin gomb */
         .admin-btn {
-            pointer-events: auto;
             padding: 0.5rem 1.1rem;
             border: 1px solid rgba(255, 215, 0, 0.3);
             border-radius: 50px;
@@ -323,27 +441,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             display: flex;
             align-items: center;
             gap: 0.4rem;
-            user-select: none;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            white-space: nowrap;
             text-decoration: none;
+            white-space: nowrap;
         }
 
         .admin-btn:hover {
             background: rgba(255, 215, 0, 0.25);
             border-color: #ffd700;
-            box-shadow: 0 0 16px rgba(255, 215, 0, 0.35);
             transform: translateY(-1px);
-            color: #ffd700;
         }
 
-        /* ── ACCOUNT DROPDOWN (account.php) ── */
+        /* Account dropdown (a meglévőből) */
         .account-menu {
             position: relative;
             display: inline-block;
         }
 
-        /* A gomb */
         .account-menu-btn {
             display: flex;
             align-items: center;
@@ -358,9 +471,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             font-family: inherit;
             white-space: nowrap;
             cursor: pointer;
-            user-select: none;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: background 0.2s, border-color 0.2s;
         }
 
         .account-menu-btn:hover {
@@ -368,7 +478,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             border-color: var(--orange-bright);
         }
 
-        /* A panel – alapból rejtve, .show osztállyal jelenik meg */
         .account-dropdown {
             position: absolute;
             right: 0;
@@ -388,55 +497,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             transform: translateY(0);
         }
 
-        /* A tényleges vizuális doboz */
         .account-dropdown-panel {
             border-radius: 14px;
             padding: 0.5rem;
             overflow: hidden;
+            background: rgba(8, 8, 8, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
         }
 
-        /* Felhasználónév sor */
         .dropdown-username {
             font-size: 0.85rem;
             font-weight: 700;
             padding: 0.6rem 0.8rem 0.5rem;
-            word-break: break-all;
-            user-select: none;
         }
 
-        /* Elválasztó */
         .dropdown-divider {
             height: 1px;
             margin: 0.3rem 0.4rem;
+            background: linear-gradient(90deg, transparent, var(--orange-bright), transparent);
         }
 
-        /* Minden kattintható sor egységesen */
-        .dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            width: 100%;
-            padding: 0.65rem 0.8rem;
-            border-radius: 8px;
-            font-size: 0.88rem;
-            font-family: inherit;
-            text-decoration: none;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            user-select: none;
-            transition: background 0.15s, color 0.15s;
-            box-sizing: border-box;
-            text-align: left;
-        }
-
-        /* Kijelentkezés form wrapper */
-        .logout-form {
-            width: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
+        .dropdown-item,
         .logout-form-btn {
             display: flex;
             align-items: center;
@@ -445,31 +527,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             padding: 0.65rem 0.8rem;
             border-radius: 8px;
             font-size: 0.88rem;
-            font-family: inherit;
+            text-decoration: none;
             background: transparent;
             border: none;
             cursor: pointer;
-            user-select: none;
             transition: background 0.15s, color 0.15s;
-            box-sizing: border-box;
             text-align: left;
         }
 
-        /* Témaváltó sor */
+        .logout-form {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
         .dropdown-theme-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0.6rem 0.8rem;
             font-size: 0.85rem;
-            user-select: none;
-        }
-
-        .dropdown-theme-label {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            opacity: 0.8;
         }
 
         .theme-switch {
@@ -518,51 +595,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             background: #B0CB1F;
         }
 
-        /* ========== LIGHT MÓD FELÜLÍRÁSOK (világos háttér a dropdownhoz) ========== */
+        /* light mode overrides */
+        body[data-theme="light"] .account-dropdown-panel {
+            background: rgba(248, 252, 235, 0.98);
+            border: 1px solid rgba(122, 146, 0, 0.3);
+        }
+
         body[data-theme="light"] .account-menu-btn {
             background: rgba(240, 252, 200, 0.85);
             border-color: rgba(122, 146, 0, 0.5);
             color: #7a9200;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
 
         body[data-theme="light"] .account-menu-btn:hover {
             background: rgba(210, 240, 100, 0.95);
             border-color: #B0CB1F;
-            color: #4a6000;
         }
 
-        body[data-theme="light"] .account-dropdown .account-dropdown-panel {
-            background: rgba(248, 252, 235, 0.98);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(122, 146, 0, 0.3);
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08), 0 0 30px rgba(176, 203, 31, 0.1);
-        }
-
-        body[data-theme="light"] .dropdown-username {
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .dropdown-item,
-        body[data-theme="light"] .logout-form-btn {
-            color: #2a3a00;
-        }
-
-        body[data-theme="light"] .dropdown-item:hover,
-        body[data-theme="light"] .logout-form-btn:hover {
-            background: rgba(176, 203, 31, 0.18);
-            color: #4a6000;
-        }
-
-        body[data-theme="light"] .dropdown-divider {
-            background: linear-gradient(90deg, transparent, #B0CB1F, transparent);
-        }
-
-        body[data-theme="light"] .dropdown-theme-row {
-            color: #1a1f00;
-        }
-
-        /* ========== AZ EREDETI ACCOUNT.PHP STÍLUSOK (info-grid, items-section, modálok) ========== */
+        /* info-grid, items-section stb. (a meglévőből) */
         .info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -575,17 +625,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             border-radius: 12px;
             padding: 1.2rem;
             backdrop-filter: blur(10px);
-            user-select: none;
         }
 
         .info-card label {
             font-size: 0.8rem;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
             display: block;
             margin-bottom: 0.3rem;
-            user-select: none;
         }
 
         .info-card .val {
@@ -593,7 +640,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             font-weight: 500;
             color: var(--text-primary);
             word-break: break-all;
-            user-select: none;
         }
 
         .edit-btn {
@@ -606,7 +652,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             cursor: pointer;
             transition: 0.3s;
             margin-top: auto;
-            user-select: none;
         }
 
         .edit-btn:hover {
@@ -628,7 +673,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             color: var(--orange-bright);
             margin: 0 0 1rem 0;
             font-size: 1.3rem;
-            user-select: none;
         }
 
         .items-grid {
@@ -644,7 +688,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             overflow: hidden;
             transition: 0.3s;
             cursor: pointer;
-            user-select: none;
         }
 
         .mini-card:hover {
@@ -671,7 +714,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            user-select: none;
         }
 
         .mini-card .price {
@@ -679,10 +721,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             font-size: 0.85rem;
             color: var(--text-primary);
             opacity: 0.8;
-            user-select: none;
         }
 
-        /* ========== Fiók módosító modal (eredeti) ========== */
+        /* ---------- ÚJ MODÁLOK STÍLUSAI ---------- */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -704,7 +745,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             border-radius: 20px;
             padding: 2rem;
             width: 90%;
-            max-width: 420px;
+            max-width: 450px;
             box-shadow: var(--shadow-deep);
             position: relative;
         }
@@ -741,7 +782,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             color: var(--text-muted);
         }
 
-        .form-group input {
+        .form-group input,
+        .form-group textarea {
             width: 100%;
             padding: 0.75rem;
             background: var(--input-bg);
@@ -749,10 +791,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             border-radius: 10px;
             color: var(--text-primary);
             font-size: 0.95rem;
-            box-sizing: border-box;
         }
 
-        .form-group input:focus {
+        .form-group input:focus,
+        .form-group textarea:focus {
             outline: none;
             border-color: var(--orange-bright);
             box-shadow: 0 0 0 3px var(--orange-subtle);
@@ -773,6 +815,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
 
         .submit-btn:hover {
             opacity: 0.9;
+            transform: translateY(-1px);
         }
 
         .status-msg {
@@ -795,7 +838,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             color: #5dffa0;
         }
 
-        /* ========== EDIT MODAL (termék szerkesztő) – account.php saját ========== */
+        /* Profilkép megjelenítés */
+        .profile-pic-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-pic {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--orange-bright);
+            background: var(--placeholder-bg);
+        }
+
+        .no-profile-pic {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--placeholder-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--orange-bright);
+            border: 2px solid var(--orange-bright);
+        }
+
+        /* light theme */
+        body[data-theme="light"] .modal-card {
+            background: rgba(248, 252, 230, 0.98);
+            border: 1px solid rgba(140, 170, 10, 0.35);
+        }
+
+        body[data-theme="light"] .modal-title {
+            color: #7a9200;
+        }
+
+        body[data-theme="light"] .form-group input,
+        body[data-theme="light"] .form-group textarea {
+            background: rgba(245, 252, 215, 0.95);
+            border-color: rgba(140, 170, 10, 0.3);
+            color: #1a1f00;
+        }
+
+        body[data-theme="light"] .submit-btn {
+            background: linear-gradient(135deg, #B0CB1F, #8aA000);
+            color: #1a1f00;
+        }
+
+        /* Edit modal (termék szerkesztő) - a meglévőből */
         .edit-modal {
             position: fixed;
             top: 0;
@@ -821,23 +916,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             width: 100%;
             max-width: 560px;
             background: var(--glass-bg);
-            backdrop-filter: blur(24px);
             border-radius: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 140, 0, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             transform: translateY(30px) scale(0.96);
-            transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.25s ease;
-            opacity: 0;
+            transition: transform 0.3s ease;
             overflow: hidden;
         }
 
         .edit-modal.show .edit-modal-content {
             transform: translateY(0) scale(1);
-            opacity: 1;
         }
 
         .edit-modal-header {
             display: flex;
-            align-items: center;
             justify-content: space-between;
             padding: 1.25rem 1.8rem;
             background: rgba(255, 140, 0, 0.08);
@@ -848,17 +939,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             font-size: 1.3rem;
             font-weight: 600;
             color: var(--orange-bright);
-            letter-spacing: -0.3px;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
-
-        .edit-modal-title::before {
-            content: "✏️";
-            font-size: 1.2rem;
-            filter: drop-shadow(0 0 4px rgba(255, 140, 0, 0.4));
         }
 
         .edit-modal-close {
@@ -870,15 +950,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             font-size: 1.2rem;
             color: var(--orange-bright);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .edit-modal-close:hover {
-            background: rgba(255, 140, 0, 0.25);
-            transform: scale(1.05);
         }
 
         .edit-modal-body {
@@ -896,7 +967,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             font-size: 0.8rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
             color: var(--orange-bright);
             margin-bottom: 0.6rem;
         }
@@ -911,22 +981,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             color: var(--text-primary);
             font-family: inherit;
             font-size: 0.95rem;
-            transition: all 0.2s;
-            outline: none;
-        }
-
-        .edit-form-textarea {
-            resize: none;
-            overflow-y: auto;
-            min-height: 120px;
-            max-height: 300px;
-        }
-
-        .edit-form-input:focus,
-        .edit-form-textarea:focus {
-            border-color: var(--orange-bright);
-            background: rgba(0, 0, 0, 0.7);
-            box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.15);
         }
 
         .edit-price-wrapper {
@@ -935,19 +989,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             align-items: center;
         }
 
-        .edit-price-wrapper .edit-form-input {
-            padding-right: 3rem;
-        }
-
         .edit-price-suffix {
             position: absolute;
             right: 1.2rem;
             color: var(--orange-bright);
             font-weight: 600;
-            font-size: 0.9rem;
-            pointer-events: none;
-            background: transparent;
-            backdrop-filter: blur(4px);
         }
 
         .edit-modal-actions {
@@ -959,16 +1005,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         .btn-edit-cancel,
         .btn-edit-save {
             flex: 1;
-            padding: 0.9rem 1rem;
+            padding: 0.9rem;
             border-radius: 40px;
             font-weight: 700;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s;
             border: none;
-            font-family: inherit;
         }
 
         .btn-edit-cancel {
@@ -977,45 +1019,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             border: 1px solid rgba(255, 140, 0, 0.2);
         }
 
-        .btn-edit-cancel:hover {
-            background: rgba(255, 140, 0, 0.1);
-            color: var(--orange-bright);
-            border-color: var(--orange-bright);
-        }
-
         .btn-edit-save {
             background: linear-gradient(105deg, #ff9a1f, #ff5500);
             color: #0a0500;
-            box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
         }
 
-        .btn-edit-save:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 140, 0, 0.4);
-        }
-
-        .edit-success-banner {
-            margin: 0 1.8rem 1rem 1.8rem;
-            background: rgba(0, 200, 100, 0.12);
-            border: 1px solid #00c851;
-            border-radius: 40px;
-            padding: 0.6rem 1rem;
-            text-align: center;
-            color: #5dffa0;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        #editItemForm {
-            background: none !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-
-        /* ========== PRODUCT MODAL (account.php saját) ========== */
+        /* ========== TERMÉKMODÁL TELJES STÍLUSOK (JAVÍTVA) ========== */
         .product-modal-overlay {
             position: fixed;
             inset: 0;
@@ -1035,253 +1044,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             opacity: 1;
         }
 
-        /* Light mode overrides – product modal (account.php) */
-        body[data-theme="light"] .product-modal-overlay {
-            background: rgba(220, 230, 180, 0.98);
-        }
-
-        body[data-theme="light"] .product-modal-card {
-            background: rgba(240, 248, 210, 0.98);
-        }
-
-        body[data-theme="light"] .product-gallery {
-            background: rgba(240, 248, 210, 0.8);
-        }
-
-        body[data-theme="light"] .product-main-image-container {
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(140, 170, 10, 0.25);
-        }
-
-        body[data-theme="light"] .product-details {
-            background: rgba(240, 248, 210, 0.95);
-            border-color: rgba(140, 170, 10, 0.2);
-        }
-
-        body[data-theme="light"] .product-title,
-        body[data-theme="light"] .product-price {
-            color: #7a9200;
-        }
-
-        body[data-theme="light"] .product-seller {
-            color: rgba(26, 31, 0, 0.7);
-        }
-
-        body[data-theme="light"] .product-seller strong {
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .product-date {
-            color: rgba(26, 31, 0, 0.5);
-        }
-
-        body[data-theme="light"] .product-description {
-            background: rgba(255, 255, 255, 0.8);
-            color: #1a1f00;
-            border-color: rgba(140, 170, 10, 0.2);
-        }
-
-        body[data-theme="light"] .product-buy-btn {
-            background: linear-gradient(135deg, #B0CB1F, #8aA000);
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .product-thumbnail.active {
-            border-color: #B0CB1F;
-            box-shadow: 0 0 15px rgba(176, 203, 31, 0.3);
-        }
-
-        body[data-theme="light"] .product-thumbnail:hover {
-            border-color: #B0CB1F;
-        }
-
-        body[data-theme="light"] .gallery-nav {
-            background: rgba(240, 248, 210, 0.9);
-            border-color: #B0CB1F;
-            color: #7a9200;
-        }
-
-        body[data-theme="light"] .gallery-nav:hover {
-            background: #B0CB1F;
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .product-modal-close {
-            background: rgba(176, 203, 31, 0.2);
-            border-color: #B0CB1F;
-            color: #7a9200;
-        }
-
-        body[data-theme="light"] .product-modal-close:hover {
-            background: #B0CB1F;
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .product-menu-button {
-            background: rgba(240, 248, 210, 0.9);
-            border-color: #B0CB1F;
-            color: #7a9200;
-        }
-
-        body[data-theme="light"] .product-menu-button:hover {
-            background: #B0CB1F;
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .product-menu-content {
-            background: rgba(244, 252, 220, 0.98);
-            border-color: rgba(140, 170, 10, 0.3);
-        }
-
-        body[data-theme="light"] .product-menu-item {
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .product-menu-item:hover {
-            background: rgba(176, 203, 31, 0.2);
-            color: #7a9200;
-        }
-
-        /* Light mode – fiók módosító modal */
-        body[data-theme="light"] .modal-card {
-            background: rgba(248, 252, 230, 0.98);
-            border: 1px solid rgba(140, 170, 10, 0.35);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 40px rgba(176, 203, 31, 0.15);
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .modal-title {
-            color: #7a9200;
-        }
-
-        body[data-theme="light"] .modal-close {
-            color: #7a9200;
-        }
-
-        body[data-theme="light"] .modal-close:hover {
-            color: #1a1f00;
-            background: rgba(176, 203, 31, 0.2);
-        }
-
-        body[data-theme="light"] .form-group label {
-            color: #6a7a20;
-        }
-
-        body[data-theme="light"] .form-group input {
-            background: rgba(245, 252, 215, 0.95);
-            border-color: rgba(140, 170, 10, 0.3);
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .form-group input:focus {
-            border-color: #B0CB1F;
-            box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.18);
-        }
-
-        body[data-theme="light"] .submit-btn {
-            background: linear-gradient(135deg, #B0CB1F, #8aA000);
-            color: #1a1f00;
-        }
-
-        /* Light mode – edit item modal (account.php) */
-        body[data-theme="light"] .edit-modal-content {
-            background: #f8fce6;
-            border: 2px solid #B0CB1F;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 40px rgba(176, 203, 31, 0.2);
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .edit-modal-header {
-            background: rgba(176, 203, 31, 0.12);
-            border-bottom-color: rgba(140, 170, 10, 0.25);
-        }
-
-        body[data-theme="light"] .edit-modal-title {
-            color: #7a9200;
-        }
-
-        body[data-theme="light"] .edit-modal-close {
-            color: #7a9200;
-        }
-
-        body[data-theme="light"] .edit-modal-close:hover {
-            background: rgba(176, 203, 31, 0.25);
-        }
-
-        body[data-theme="light"] .edit-form-input,
-        body[data-theme="light"] .edit-form-textarea {
-            background: rgba(245, 252, 215, 0.95);
-            border-color: rgba(140, 170, 10, 0.3);
-            color: #1a1f00;
-        }
-
-        body[data-theme="light"] .edit-form-input:focus,
-        body[data-theme="light"] .edit-form-textarea:focus {
-            border-color: #B0CB1F;
-            background: rgba(242, 252, 200, 1);
-            box-shadow: 0 0 0 3px rgba(176, 203, 31, 0.18);
-        }
-
-        body[data-theme="light"] .edit-price-suffix {
-            color: #7a9200;
-        }
-
-        body[data-theme="light"] .btn-edit-cancel {
-            background: rgba(240, 252, 200, 0.7);
-            border: 1px solid rgba(140, 170, 10, 0.4);
-            color: #6a7a20;
-        }
-
-        body[data-theme="light"] .btn-edit-cancel:hover {
-            background: rgba(176, 203, 31, 0.2);
-            border-color: #B0CB1F;
-            color: #4a6000;
-        }
-
-        body[data-theme="light"] .btn-edit-save {
-            background: linear-gradient(105deg, #B0CB1F, #8aA000);
-            color: #1a1f00;
-        }
-
-        /* Light mode – lightbox */
-        body[data-theme="light"] .lightbox-overlay {
-            background: rgba(240, 245, 220, 0.97);
-        }
-
-        body[data-theme="light"] .lightbox-image {
-            border-color: #B0CB1F;
-        }
-
-        body[data-theme="light"] .lightbox-close {
-            background: rgba(240, 245, 220, 0.9);
-            border-color: #B0CB1F;
-            color: #7a9200;
-        }
-
-        body[data-theme="light"] .lightbox-close:hover {
-            background: #B0CB1F;
-            color: #1a1f00;
-        }
-
         .product-modal-card {
             width: 100vw;
             height: 100vh;
-            max-width: none;
-            max-height: none;
             background: rgba(5, 5, 5, 0.99);
             position: relative;
             display: grid;
             grid-template-columns: 1.5fr 1fr;
-            gap: 1.5rem;
-            /* top padding a fix header helye miatt */
-            padding: 4rem 2rem 2rem 2rem;
+            gap: 2rem;
+            padding: 2rem;
             transform: scale(0.98);
             transition: transform 0.3s ease;
             box-shadow: none;
-            border-radius: 0;
-            border: none;
             overflow: hidden;
-            box-sizing: border-box;
         }
 
         .product-modal-overlay.active .product-modal-card {
@@ -1290,34 +1065,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
 
         .product-modal-header {
             position: absolute;
-            top: 1rem;
-            right: 1rem;
+            top: 1.5rem;
+            right: 1.5rem;
             display: flex;
-            gap: 0.75rem;
+            gap: 1rem;
             z-index: 100;
         }
 
         .product-modal-close {
-            background: rgba(20, 20, 20, 0.9);
+            background: rgba(20, 20, 20, 0.8);
             border: 1px solid var(--orange-bright);
             color: var(--orange-bright);
-            font-size: 1.4rem;
+            font-size: 1.8rem;
             cursor: pointer;
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
             transition: all 0.2s ease;
             backdrop-filter: blur(5px);
-            user-select: none;
         }
 
         .product-modal-close:hover {
             background: var(--orange-bright);
             color: black;
-            transform: scale(1.05);
+            transform: scale(1.1);
         }
 
         .product-menu {
@@ -1325,13 +1099,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         }
 
         .product-menu-button {
-            width: 40px;
-            height: 40px;
-            background: rgba(20, 20, 20, 0.9);
+            width: 48px;
+            height: 48px;
+            background: rgba(20, 20, 20, 0.8);
             border: 1px solid var(--orange-bright);
             border-radius: 50%;
             color: var(--orange-bright);
-            font-size: 1.6rem;
+            font-size: 2rem;
             line-height: 1;
             cursor: pointer;
             display: flex;
@@ -1339,21 +1113,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             justify-content: center;
             transition: all 0.2s ease;
             backdrop-filter: blur(5px);
-            user-select: none;
         }
 
         .product-menu-button:hover {
             background: var(--orange-bright);
             color: black;
-            transform: scale(1.05);
+            transform: scale(1.1);
         }
 
         .product-menu-content {
             position: absolute;
-            top: 48px;
+            top: 55px;
             right: 0;
-            min-width: 160px;
-            background: rgba(10, 10, 10, 0.98);
+            min-width: 180px;
+            background: rgba(10, 10, 10, 0.95);
             backdrop-filter: blur(10px);
             border: 1px solid var(--orange-bright);
             border-radius: 12px;
@@ -1369,16 +1142,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
 
         .product-menu-item {
             width: 100%;
-            padding: 0.6rem 1rem;
+            padding: 0.75rem 1rem;
             background: transparent;
             border: none;
             color: white;
             text-align: left;
-            font-size: 0.85rem;
+            font-size: 1rem;
             cursor: pointer;
             border-radius: 6px;
             transition: all 0.2s ease;
-            user-select: none;
         }
 
         .product-menu-item:hover {
@@ -1391,29 +1163,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             color: #ff0000;
         }
 
-        /* Gallery: kép felül, thumbs alul – sosem görgethető */
         .product-gallery {
+            position: relative;
+            height: 100%;
             display: flex;
             flex-direction: column;
             background: rgba(0, 0, 0, 0.3);
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 1rem;
-            overflow: hidden;
             min-height: 0;
         }
 
-        /* Képkonténer: maradék helyet foglalja el */
         .product-main-image-container {
             position: relative;
             width: 100%;
-            flex: 1 1 0;
-            border-radius: 16px;
+            border-radius: 20px;
             overflow: hidden;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 1rem;
             background: rgba(0, 0, 0, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 0;
+            min-height: 300px;
         }
 
         .product-main-image {
@@ -1424,18 +1196,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             object-fit: contain;
             cursor: pointer;
             transition: opacity 0.2s ease;
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            display: block;
+        }
+
+        .product-main-image:hover {
+            opacity: 0.9;
         }
 
         .product-no-image-placeholder {
             text-align: center;
-            font-size: 1rem;
-            padding: 1.5rem;
+            font-size: 1.2rem;
+            padding: 2rem;
             user-select: none;
-            color: var(--orange-bright);
-            opacity: 0.6;
+            -webkit-user-select: none;
         }
 
         .gallery-nav {
@@ -1445,18 +1217,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             background: rgba(0, 0, 0, 0.7);
             color: white;
             border: 2px solid var(--orange-bright);
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             transition: all 0.2s ease;
             z-index: 10;
             backdrop-filter: blur(5px);
-            user-select: none;
         }
 
         .gallery-nav:hover {
@@ -1466,48 +1237,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         }
 
         .gallery-nav.prev {
-            left: 12px;
+            left: 20px;
         }
 
         .gallery-nav.next {
-            right: 12px;
+            right: 20px;
         }
 
         .gallery-nav.hidden {
             display: none;
         }
 
-        /* Thumbnails: fix magasság, KÉP ALATT */
         .product-thumbnails {
             display: flex;
-            gap: 0.6rem;
+            gap: 1rem;
             overflow-x: auto;
-            padding: 0.5rem 0 0 0;
-            flex-shrink: 0;
-            height: 72px;
-            align-items: center;
-        }
-
-        .product-thumbnails::-webkit-scrollbar {
-            height: 3px;
-        }
-
-        .product-thumbnails::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .product-thumbnails::-webkit-scrollbar-thumb {
-            background: rgba(255, 140, 0, 0.3);
-            border-radius: 2px;
+            padding: 0.5rem 0;
+            min-height: 100px;
         }
 
         .product-thumbnail {
-            width: 60px;
-            height: 60px;
-            border-radius: 8px;
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
             overflow: hidden;
             cursor: pointer;
-            border: 2px solid transparent;
+            border: 3px solid transparent;
             transition: all 0.2s ease;
             flex-shrink: 0;
         }
@@ -1519,7 +1274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
 
         .product-thumbnail.active {
             border-color: var(--orange-bright);
-            box-shadow: 0 0 12px var(--orange-glow);
+            box-shadow: 0 0 20px var(--orange-glow);
         }
 
         .product-thumbnail img {
@@ -1528,32 +1283,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             object-fit: cover;
         }
 
-        /* Details panel: fix magasság, belső görgetés, buy btn alul rögzítve */
         .product-details {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
-            padding: 1.25rem;
-            background: rgba(10, 10, 10, 0.7);
-            border-radius: 20px;
+            gap: 2rem;
+            padding: 2rem;
+            background: rgba(10, 10, 10, 0.8);
+            border-radius: 24px;
             border: 1px solid var(--glass-border);
-            overflow: hidden;
-            min-height: 0;
+            height: 100%;
+            overflow-y: auto;
+            user-select: none;
         }
 
-        /* Görgethető belső rész (cím, ár, eladó, leírás) */
-        .product-details-inner {
-            flex: 1 1 0;
-            overflow-y: auto;
+        .product-details-header {
             display: flex;
-            flex-direction: column;
-            gap: 0.6rem;
-            min-height: 0;
-            padding-right: 0.2rem;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
         }
 
         .product-title {
-            font-size: 1.5rem;
+            font-size: 2.5rem;
             color: var(--orange-bright);
             margin: 0;
             word-break: break-word;
@@ -1562,73 +1313,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         }
 
         .product-price {
-            font-size: 1.7rem;
+            font-size: 3rem;
             font-weight: bold;
             color: var(--orange-bright);
-            text-shadow: 0 0 20px var(--orange-glow);
+            text-shadow: 0 0 30px var(--orange-glow);
         }
 
         .product-seller {
-            font-size: 0.88rem;
+            font-size: 1.2rem;
             color: rgba(255, 255, 255, 0.7);
             cursor: pointer;
         }
 
         .product-seller strong {
             color: var(--orange-bright);
-            font-size: 0.95rem;
+            font-size: 1.4rem;
         }
 
         .product-date {
-            font-size: 0.78rem;
+            font-size: 1rem;
             color: rgba(255, 255, 255, 0.4);
         }
 
         .product-description {
-            font-size: 0.88rem;
-            line-height: 1.6;
+            font-size: 1.1rem;
+            line-height: 1.8;
             color: rgba(255, 255, 255, 0.9);
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 12px;
-            padding: 0.85rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            padding: 2rem;
             border: 1px solid var(--glass-border);
-            white-space: pre-wrap;
-            user-select: text;
+            max-height: 400px;
             overflow-y: auto;
-            flex: 1 1 60px;
-            min-height: 60px;
+            white-space: pre-wrap;
+            user-select: none;
         }
 
-        /* Buy gomb: nem görgethető, alul fix */
         .product-buy-btn {
             background: linear-gradient(135deg, #00c851, #007e33);
             border: none;
-            border-radius: 12px;
-            padding: 0.75rem 1rem;
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
             color: white;
-            font-size: 0.95rem;
+            font-size: 1.5rem;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
+            margin-top: auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 1rem;
             user-select: none;
-            flex-shrink: 0;
-            width: 100%;
         }
 
         .product-buy-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(0, 200, 0, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 200, 0, 0.4);
         }
 
         .lightbox-overlay {
             position: fixed;
             inset: 0;
             z-index: 5000;
-            background: rgba(0, 0, 0, 0.96);
+            background: rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(10px);
             display: none;
             align-items: center;
@@ -1664,10 +1412,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             background: rgba(20, 20, 20, 0.9);
             border: 1px solid var(--orange-bright);
             color: var(--orange-bright);
-            font-size: 1.8rem;
+            font-size: 2rem;
             cursor: pointer;
-            width: 45px;
-            height: 45px;
+            width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1679,166 +1427,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         .lightbox-close:hover {
             background: var(--orange-bright);
             color: black;
-            transform: scale(1.05);
+            transform: scale(1.1);
+        }
+
+        .unselectable {
+            user-select: none;
         }
 
         @media (max-width: 900px) {
             .product-modal-card {
                 grid-template-columns: 1fr;
                 gap: 1rem;
-                padding: 3.5rem 1rem 1rem 1rem;
-                width: 100vw;
-                height: 100vh;
+                padding: 1rem;
+                overflow-y: auto;
             }
 
             .product-gallery {
-                height: 45%;
-                min-height: 0;
-                flex-shrink: 0;
-            }
-
-            .product-details {
-                flex: 1 1 0;
-                min-height: 0;
+                height: 50vh;
             }
 
             .product-title {
-                font-size: 1.3rem;
+                font-size: 2rem;
             }
 
             .product-price {
-                font-size: 1.5rem;
-            }
-
-            .product-thumbnail {
-                width: 52px;
-                height: 52px;
-            }
-        }
-
-        @media (max-width: 600px) {
-            .product-modal-card {
-                padding: 3rem 0.75rem 0.75rem 0.75rem;
-                width: 100vw;
-                height: 100vh;
-            }
-
-            .product-gallery {
-                height: 40%;
-            }
-
-            .product-details {
-                padding: 0.75rem;
-            }
-
-            .product-title {
-                font-size: 1.1rem;
-            }
-
-            .product-price {
-                font-size: 1.3rem;
+                font-size: 2.5rem;
             }
 
             .product-description {
-                font-size: 0.82rem;
-                padding: 0.65rem;
-            }
-
-            .product-modal-header {
-                top: 0.5rem;
-                right: 0.5rem;
-            }
-
-            .product-modal-close,
-            .product-menu-button {
-                width: 34px;
-                height: 34px;
-                font-size: 1.1rem;
-            }
-
-            .product-thumbnail {
-                width: 46px;
-                height: 46px;
-            }
-
-            .product-buy-btn {
-                padding: 0.65rem 0.75rem;
-                font-size: 0.88rem;
-            }
-
-            .gallery-nav {
-                width: 32px;
-                height: 32px;
-                font-size: 1rem;
+                max-height: 300px;
             }
         }
 
-        .unselectable {
-            user-select: none;
-            -webkit-user-select: none;
+        /* ---- SCROLLBAR STYLING a termékmodálhoz ---- */
+        .product-modal-card ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .product-modal-card ::-webkit-scrollbar-track {
+            background: var(--scrollbar-track, #0a0a0a);
+            border-radius: 4px;
+        }
+
+        .product-modal-card ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb, rgba(255, 120, 0, 0.3));
+            border-radius: 4px;
+        }
+
+        .product-modal-card ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover, rgba(255, 140, 0, 0.5));
         }
     </style>
 </head>
 
 <body data-theme="dark">
-    <!-- ========== FELSŐ SÁV (TOP BAR) ========== -->
     <div class="top-bar">
         <div class="top-bar-left">
             <a href="main.php" class="back-btn unselectable">← Vissza</a>
             <?php if ($isAdmin): ?>
-                <a href="admin.php" class="admin-btn unselectable">
-                    <span class="shield-icon">🛡️</span>
-                    <span class="button-text">Admin</span>
-                </a>
+                <a href="admin.php" class="admin-btn unselectable"><span class="shield-icon">🛡️</span><span class="button-text">Admin</span></a>
             <?php endif; ?>
         </div>
         <div class="top-bar-right">
             <div class="account-menu">
-                <button type="button" class="account-menu-btn unselectable" id="accountMenuBtn">
-                    <span>⚙️</span>
-                    <span class="button-text">FIÓK</span>
-                </button>
+                <button type="button" class="account-menu-btn unselectable" id="accountMenuBtn"><span>⚙️</span><span class="button-text">FIÓK</span></button>
                 <div class="account-dropdown" id="accountDropdown">
                     <div class="account-dropdown-panel">
-                        <div class="dropdown-username unselectable">
-                            <?php echo htmlspecialchars($user['username']); ?>
-                        </div>
+                        <div class="dropdown-username unselectable"><?php echo htmlspecialchars($user['username']); ?></div>
                         <div class="dropdown-divider"></div>
                         <a href="account.php" class="dropdown-item unselectable">👤 Fiókom</a>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-theme-row">
                             <span class="dropdown-theme-label unselectable">☀️ Világos mód</span>
-                            <label class="theme-switch">
-                                <input type="checkbox" id="themeSwitchMain">
-                                <span class="theme-switch-track"></span>
-                                <span class="theme-switch-thumb"></span>
-                            </label>
+                            <label class="theme-switch"><input type="checkbox" id="themeSwitchMain"><span class="theme-switch-track"></span><span class="theme-switch-thumb"></span></label>
                         </div>
                         <div class="dropdown-divider"></div>
-                        <form method="post" class="logout-form">
-                            <button type="submit" name="logout" class="logout-form-btn dropdown-item logout unselectable">
-                                🚪 Kijelentkezés
-                            </button>
-                        </form>
+                        <form method="post" class="logout-form"><button type="submit" name="logout" class="logout-form-btn dropdown-item unselectable">🚪 Kijelentkezés</button></form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ========== FŐ TARTALOM (account.php eredeti) ========== -->
     <div class="container">
         <div class="info-grid">
             <div class="info-card">
                 <label class="unselectable">Felhasználónév</label>
-                <div class="val unselectable"><?= htmlspecialchars($user['username']) ?></div>
+                <div class="val unselectable" id="displayUsername"><?= htmlspecialchars($user['username']) ?></div>
             </div>
             <div class="info-card">
                 <label class="unselectable">E-mail cím</label>
-                <div class="val unselectable"><?= htmlspecialchars($user['email']) ?></div>
+                <div class="val unselectable" id="displayEmail"><?= htmlspecialchars($user['email']) ?></div>
             </div>
             <div class="info-card" style="display: flex; flex-direction: column; justify-content: center;">
-                <button class="edit-btn unselectable" onclick="openModal()">✏️ Fiók módosítása</button>
+                <button class="edit-btn unselectable" id="openAccountSettingsBtn">⚙️ Fiók módosítása</button>
+            </div>
+        </div>
+
+        <!-- Profilkép megjelenítés -->
+        <div class="info-card" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <label class="unselectable">Profilkép</label>
+            <div class="profile-pic-container">
+                <?php if ($profilePic && file_exists($profilePic)): ?>
+                    <img src="<?= htmlspecialchars($profilePic) ?>" class="profile-pic unselectable" id="profileImgPreview" alt="Profilkép">
+                <?php else: ?>
+                    <div class="no-profile-pic unselectable" id="profileImgPreview">📷</div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -1871,32 +1566,94 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         </div>
     </div>
 
-    <!-- Fiók módosító modal (eredeti) -->
-    <div class="modal-overlay" id="editModal">
+    <!-- ========== ÚJ MODÁLOK ========== -->
+    <!-- 1. FŐ MODÁL a 4 opcióval -->
+    <div class="modal-overlay" id="accountSettingsModal">
+        <div class="modal-card" style="max-width: 400px;">
+            <button class="modal-close unselectable" onclick="closeAccountSettingsModal()">✕</button>
+            <h3 class="modal-title unselectable">Fiók beállítások</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                <button class="submit-btn" id="changeProfilePicBtn">🖼️ Profilkép módosítás</button>
+                <button class="submit-btn" id="changeUsernameBtn">✏️ Felhasználónév módosítás</button>
+                <button class="submit-btn" id="changeEmailBtn">📧 E-mail cím módosítás</button>
+                <button class="submit-btn" id="changePasswordBtn">🔒 Jelszó módosítás</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. PROFILKÉP FELTÖLTÉS MODÁL -->
+    <div class="modal-overlay" id="profilePicModal">
         <div class="modal-card">
-            <button class="modal-close unselectable" onclick="closeModal()">✕</button>
-            <h3 class="modal-title unselectable">Adatok módosítása</h3>
-            <div id="modalStatus" class="status-msg"></div>
-            <form id="editForm" method="POST">
+            <button class="modal-close unselectable" onclick="closeProfilePicModal()">✕</button>
+            <h3 class="modal-title unselectable">Profilkép módosítása</h3>
+            <form id="profilePicForm" enctype="multipart/form-data">
                 <div class="form-group">
-                    <label for="username" class="unselectable">Felhasználónév</label>
-                    <input type="text" id="username" name="username" value="<?= htmlspecialchars($user['username']) ?>" required>
+                    <label>Válassz képet</label>
+                    <input type="file" name="profile_image" id="profileImageInput" accept="image/jpeg,image/png,image/gif,image/webp" required>
                 </div>
-                <div class="form-group">
-                    <label for="email" class="unselectable">E-mail cím</label>
-                    <input type="email" id="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required>
-                </div>
-                <div class="form-group">
-                    <label for="password" class="unselectable">Új jelszó <span style="opacity:0.6">(hagyd üresen, ha nem változtatod)</span></label>
-                    <input type="password" id="password" name="password" placeholder="••••••">
-                </div>
-                <input type="hidden" name="update_account" value="1">
-                <button type="submit" class="submit-btn unselectable" id="submitBtn">Mentés</button>
+                <div id="profilePicStatus" class="status-msg"></div>
+                <button type="submit" class="submit-btn" id="uploadProfilePicBtn">Feltöltés</button>
             </form>
         </div>
     </div>
 
-    <!-- Termék szerkesztő modal (account.php saját) -->
+    <!-- 3. FELHASZNÁLÓNÉV MÓDOSÍTÁS MODÁL -->
+    <div class="modal-overlay" id="usernameModal">
+        <div class="modal-card">
+            <button class="modal-close unselectable" onclick="closeUsernameModal()">✕</button>
+            <h3 class="modal-title unselectable">Felhasználónév módosítása</h3>
+            <form id="usernameForm">
+                <div class="form-group">
+                    <label>Új felhasználónév</label>
+                    <input type="text" name="username" id="newUsername" value="<?= htmlspecialchars($user['username']) ?>" required>
+                </div>
+                <div id="usernameStatus" class="status-msg"></div>
+                <button type="submit" class="submit-btn">Mentés</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. EMAIL MÓDOSÍTÁS MODÁL -->
+    <div class="modal-overlay" id="emailModal">
+        <div class="modal-card">
+            <button class="modal-close unselectable" onclick="closeEmailModal()">✕</button>
+            <h3 class="modal-title unselectable">E-mail cím módosítása</h3>
+            <form id="emailForm">
+                <div class="form-group">
+                    <label>Új e-mail cím</label>
+                    <input type="email" name="email" id="newEmail" value="<?= htmlspecialchars($user['email']) ?>" required>
+                </div>
+                <div id="emailStatus" class="status-msg"></div>
+                <button type="submit" class="submit-btn">Mentés</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. JELSZÓ MÓDOSÍTÁS MODÁL -->
+    <div class="modal-overlay" id="passwordModal">
+        <div class="modal-card">
+            <button class="modal-close unselectable" onclick="closePasswordModal()">✕</button>
+            <h3 class="modal-title unselectable">Jelszó módosítása</h3>
+            <form id="passwordForm">
+                <div class="form-group">
+                    <label>Régi jelszó</label>
+                    <input type="password" name="old_password" id="oldPassword" required>
+                </div>
+                <div class="form-group">
+                    <label>Új jelszó (legalább 6 karakter)</label>
+                    <input type="password" name="new_password" id="newPassword" required>
+                </div>
+                <div class="form-group">
+                    <label>Új jelszó megerősítése</label>
+                    <input type="password" name="confirm_password" id="confirmPassword" required>
+                </div>
+                <div id="passwordStatus" class="status-msg"></div>
+                <button type="submit" class="submit-btn">Jelszó megváltoztatása</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Termék szerkesztő modal (meglévő) -->
     <div class="edit-modal" id="editItemModal">
         <div class="edit-modal-content">
             <div class="edit-modal-header">
@@ -1904,24 +1661,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
                 <button class="edit-modal-close unselectable" onclick="closeEditItemModal()">✕</button>
             </div>
             <?php if ($editSuccess): ?>
-                <div class="edit-success-banner unselectable">
-                    ✓ Módosítás sikeresen mentve!
-                </div>
+                <div class="edit-success-banner">✓ Módosítás sikeresen mentve!</div>
             <?php endif; ?>
             <div class="edit-modal-body">
                 <form method="post" id="editItemForm">
                     <input type="hidden" name="item_id" id="editItemId">
                     <input type="hidden" name="edit_item" value="1">
                     <div class="edit-form-group">
-                        <label class="edit-form-label unselectable"><i>📌</i> Cím</label>
-                        <input class="edit-form-input" type="text" id="edit_title" name="edit_title" maxlength="255" autocomplete="off" required>
+                        <label class="edit-form-label unselectable">📌 Cím</label>
+                        <input class="edit-form-input" type="text" id="edit_title" name="edit_title" required>
                     </div>
                     <div class="edit-form-group">
-                        <label class="edit-form-label unselectable"><i>📄</i> Leírás</label>
+                        <label class="edit-form-label unselectable">📄 Leírás</label>
                         <textarea class="edit-form-textarea" id="edit_description" name="edit_description" rows="5" required></textarea>
                     </div>
                     <div class="edit-form-group">
-                        <label class="edit-form-label unselectable"><i>💰</i> Ár</label>
+                        <label class="edit-form-label unselectable">💰 Ár</label>
                         <div class="edit-price-wrapper">
                             <input class="edit-form-input" type="number" id="edit_price" name="edit_price" min="0" step="1" required>
                             <span class="edit-price-suffix unselectable">Ft</span>
@@ -1936,7 +1691,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         </div>
     </div>
 
-    <!-- Termék modal (részletek megjelenítése) -->
+    <!-- Termék modal (részletek) -->
     <div class="product-modal-overlay" id="productModal">
         <div class="product-modal-card">
             <div class="product-modal-header">
@@ -1944,7 +1699,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
                     <div class="product-menu-button unselectable" onclick="toggleProductMenu(this)">⋮</div>
                     <div class="product-menu-content" id="productMenuContent">
                         <button class="product-menu-item unselectable" id="productEditBtn" style="display:none;">✏️ Módosítás</button>
-                        <button class="product-menu-item delete unselectable" id="productDeleteBtn" style="display: none;">🗑️ Törlés</button>
+                        <button class="product-menu-item delete unselectable" id="productDeleteBtn" style="display:none;">🗑️ Törlés</button>
                     </div>
                 </div>
                 <button class="product-modal-close unselectable" id="closeProductModalBtn">✕</button>
@@ -1959,19 +1714,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
                 <div class="product-thumbnails" id="productThumbnails"></div>
             </div>
             <div class="product-details">
-                <div class="product-details-inner">
-                    <h2 class="product-title unselectable" id="productTitle"></h2>
-                    <div class="product-price unselectable" id="productPrice"></div>
-                    <div class="product-seller unselectable" id="productSeller"></div>
-                    <div class="product-date unselectable" id="productDate"></div>
-                    <div class="product-description selectable" id="productDescription"></div>
-                </div>
+                <h2 class="product-title unselectable" id="productTitle"></h2>
+                <div class="product-price unselectable" id="productPrice"></div>
+                <div class="product-seller unselectable" id="productSeller"></div>
+                <div class="product-date unselectable" id="productDate"></div>
+                <div class="product-description selectable" id="productDescription"></div>
                 <button class="product-buy-btn unselectable" id="productBuyBtn">🛒 Vásárlás</button>
             </div>
         </div>
     </div>
 
-    <!-- Lightbox a nagyított képhez -->
     <div class="lightbox-overlay" id="lightboxOverlay">
         <div class="lightbox-content">
             <img src="" alt="Nagyított kép" class="lightbox-image" id="lightboxImage">
@@ -1980,13 +1732,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
     </div>
 
     <script>
-        // Téma betöltése localStorage-ból (az account.php-ban is)
+        // Téma kezelés
         const themeLink = document.getElementById('themeStylesheet');
         const savedTheme = localStorage.getItem('theme') || 'dark';
         themeLink.href = savedTheme === 'light' ? 'theme-light.css' : 'theme-dark.css';
         document.body.setAttribute('data-theme', savedTheme);
-
-        // Témaváltó kapcsoló kezelése (a fiókmenüben lévő checkbox)
         const themeSwitch = document.getElementById('themeSwitchMain');
         if (themeSwitch) {
             themeSwitch.checked = (savedTheme === 'light');
@@ -1998,7 +1748,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             });
         }
 
-        // ==================== FIÓK DROPDOWN KATTINTÁSRA (nem hover) ====================
+        // Account dropdown
         const accountMenuBtn = document.getElementById('accountMenuBtn');
         const accountDropdown = document.getElementById('accountDropdown');
 
@@ -2010,70 +1760,241 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             e.stopPropagation();
             accountDropdown.classList.toggle('show');
         }
-
         if (accountMenuBtn && accountDropdown) {
             accountMenuBtn.addEventListener('click', toggleDropdown);
-            // Ha a felhasználó a dropdownon belülre kattint, ne zárjuk be
             accountDropdown.addEventListener('click', (e) => e.stopPropagation());
-            // Kattintás máshova -> bezár
             document.addEventListener('click', closeDropdown);
         }
 
-        // Fiók módosítás modal (eredeti script)
-        const modal = document.getElementById('editModal');
-        const statusBox = document.getElementById('modalStatus');
-        const form = document.getElementById('editForm');
-        const submitBtn = document.getElementById('submitBtn');
+        // ---- ÚJ MODÁLOK KEZELÉSE ----
+        const accountSettingsModal = document.getElementById('accountSettingsModal');
+        const profilePicModal = document.getElementById('profilePicModal');
+        const usernameModal = document.getElementById('usernameModal');
+        const emailModal = document.getElementById('emailModal');
+        const passwordModal = document.getElementById('passwordModal');
 
-        function openModal() {
-            statusBox.style.display = 'none';
-            statusBox.className = 'status-msg';
-            modal.classList.add('active');
+        function openAccountSettingsModal() {
+            accountSettingsModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
         }
 
-        function closeModal() {
-            modal.classList.remove('active');
+        function closeAccountSettingsModal() {
+            accountSettingsModal.classList.remove('active');
+            document.body.style.overflow = '';
         }
-        modal.addEventListener('click', e => {
-            if (e.target === modal) closeModal();
+
+        function closeProfilePicModal() {
+            profilePicModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function closeUsernameModal() {
+            usernameModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function closeEmailModal() {
+            emailModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function closePasswordModal() {
+            passwordModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('openAccountSettingsBtn').addEventListener('click', openAccountSettingsModal);
+        document.getElementById('changeProfilePicBtn').addEventListener('click', () => {
+            closeAccountSettingsModal();
+            profilePicModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        document.getElementById('changeUsernameBtn').addEventListener('click', () => {
+            closeAccountSettingsModal();
+            usernameModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        document.getElementById('changeEmailBtn').addEventListener('click', () => {
+            closeAccountSettingsModal();
+            emailModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        document.getElementById('changePasswordBtn').addEventListener('click', () => {
+            closeAccountSettingsModal();
+            passwordModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
         });
 
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            statusBox.style.display = 'none';
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Feldolgozás...';
-            const formData = new FormData(form);
-            fetch('account.php', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(res => res.json())
-                .then(data => {
-                    statusBox.textContent = data.message;
-                    statusBox.style.display = 'block';
-                    statusBox.classList.add(data.success ? 'success' : 'error');
-                    if (data.success) {
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 800);
-                    }
-                })
-                .catch(err => {
-                    statusBox.textContent = 'Váratlan hiba történt.';
-                    statusBox.style.display = 'block';
-                    statusBox.classList.add('error');
-                })
-                .finally(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Mentés';
+        // Modálok bezárása background kattintásra
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    this.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(m => {
+                    m.classList.remove('active');
+                    document.body.style.overflow = '';
                 });
+            }
         });
 
-        // ===================== TERMÉK MODAL ÉS SZERKESZTÉS (account.php saját) =====================
+        // --- Profilkép feltöltés AJAX ---
+        const profilePicForm = document.getElementById('profilePicForm');
+        const profilePicStatus = document.getElementById('profilePicStatus');
+        const profileImageInput = document.getElementById('profileImageInput');
+        const profileImgPreview = document.getElementById('profileImgPreview');
+
+        profilePicForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(profilePicForm);
+            formData.append('upload_profile_picture', '1');
+            profilePicStatus.style.display = 'block';
+            profilePicStatus.className = 'status-msg';
+            profilePicStatus.textContent = 'Feltöltés...';
+            try {
+                const res = await fetch('account.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    profilePicStatus.classList.add('success');
+                    profilePicStatus.textContent = data.message;
+                    // Frissítjük a profilképet az oldalon
+                    if (data.new_image) {
+                        if (profileImgPreview.tagName === 'IMG') {
+                            profileImgPreview.src = data.new_image + '?t=' + Date.now();
+                        } else {
+                            // A placeholder div lecserélése img-re
+                            const newImg = document.createElement('img');
+                            newImg.src = data.new_image + '?t=' + Date.now();
+                            newImg.className = 'profile-pic';
+                            newImg.id = 'profileImgPreview';
+                            profileImgPreview.parentNode.replaceChild(newImg, profileImgPreview);
+                        }
+                    }
+                    setTimeout(() => {
+                        closeProfilePicModal();
+                    }, 1500);
+                } else {
+                    profilePicStatus.classList.add('error');
+                    profilePicStatus.textContent = data.message;
+                }
+            } catch (err) {
+                profilePicStatus.classList.add('error');
+                profilePicStatus.textContent = 'Hálózati hiba.';
+            }
+        });
+
+        // --- Felhasználónév módosítás AJAX ---
+        const usernameForm = document.getElementById('usernameForm');
+        const usernameStatus = document.getElementById('usernameStatus');
+        usernameForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(usernameForm);
+            formData.append('update_username', '1');
+            usernameStatus.style.display = 'block';
+            usernameStatus.className = 'status-msg';
+            usernameStatus.textContent = 'Feldolgozás...';
+            try {
+                const res = await fetch('account.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    usernameStatus.classList.add('success');
+                    usernameStatus.textContent = data.message;
+                    document.getElementById('displayUsername').textContent = document.getElementById('newUsername').value;
+                    // Frissítjük a dropdownban is
+                    document.querySelector('.dropdown-username').textContent = document.getElementById('newUsername').value;
+                    setTimeout(() => {
+                        closeUsernameModal();
+                    }, 1500);
+                } else {
+                    usernameStatus.classList.add('error');
+                    usernameStatus.textContent = data.message;
+                }
+            } catch (err) {
+                usernameStatus.classList.add('error');
+                usernameStatus.textContent = 'Hálózati hiba.';
+            }
+        });
+
+        // --- E-mail módosítás AJAX ---
+        const emailForm = document.getElementById('emailForm');
+        const emailStatus = document.getElementById('emailStatus');
+        emailForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(emailForm);
+            formData.append('update_email', '1');
+            emailStatus.style.display = 'block';
+            emailStatus.className = 'status-msg';
+            emailStatus.textContent = 'Feldolgozás...';
+            try {
+                const res = await fetch('account.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    emailStatus.classList.add('success');
+                    emailStatus.textContent = data.message;
+                    document.getElementById('displayEmail').textContent = document.getElementById('newEmail').value;
+                    setTimeout(() => {
+                        closeEmailModal();
+                    }, 1500);
+                } else {
+                    emailStatus.classList.add('error');
+                    emailStatus.textContent = data.message;
+                }
+            } catch (err) {
+                emailStatus.classList.add('error');
+                emailStatus.textContent = 'Hálózati hiba.';
+            }
+        });
+
+        // --- Jelszó módosítás AJAX ---
+        const passwordForm = document.getElementById('passwordForm');
+        const passwordStatus = document.getElementById('passwordStatus');
+        passwordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(passwordForm);
+            formData.append('update_password', '1');
+            passwordStatus.style.display = 'block';
+            passwordStatus.className = 'status-msg';
+            passwordStatus.textContent = 'Feldolgozás...';
+            try {
+                const res = await fetch('account.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    passwordStatus.classList.add('success');
+                    passwordStatus.textContent = data.message;
+                    document.getElementById('oldPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    setTimeout(() => {
+                        closePasswordModal();
+                    }, 1500);
+                } else {
+                    passwordStatus.classList.add('error');
+                    passwordStatus.textContent = data.message;
+                }
+            } catch (err) {
+                passwordStatus.classList.add('error');
+                passwordStatus.textContent = 'Hálózati hiba.';
+            }
+        });
+
+        // --- Termék modal, szerkesztés, törlés (a meglévő scriptek) ---
         let currentProductImages = [];
         let currentImageIndex = 0;
         let currentProductId = null;
@@ -2086,13 +2007,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         const lightboxOverlay = document.getElementById('lightboxOverlay');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
-
-        // Edit modal elemek
         const editItemModal = document.getElementById('editItemModal');
         const editItemId = document.getElementById('editItemId');
         const editTitle = document.getElementById('edit_title');
         const editDesc = document.getElementById('edit_description');
         const editPrice = document.getElementById('edit_price');
+
+        function setMainImage(index) {
+            if (index >= 0 && index < currentProductImages.length && currentProductImages[index]) {
+                productMainImage.style.display = 'block';
+                productNoImagePlaceholder.style.display = 'none';
+                productMainImage.src = currentProductImages[index];
+                currentImageIndex = index;
+                document.querySelectorAll('.product-thumbnail').forEach((thumb, i) => thumb.classList.toggle('active', i === index));
+            } else {
+                productMainImage.style.display = 'none';
+                productNoImagePlaceholder.style.display = 'block';
+            }
+        }
+
+        function openProductModal() {
+            productModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeProductModal() {
+            if (lightboxOverlay.classList.contains('active')) lightboxOverlay.classList.remove('active');
+            productModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function closeLightbox() {
+            lightboxOverlay.classList.remove('active');
+        }
 
         function openEditItemModal(itemId, title, description, price) {
             editItemId.value = itemId;
@@ -2110,145 +2057,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         editItemModal.addEventListener('click', function(e) {
             if (e.target === editItemModal) closeEditItemModal();
         });
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && editItemModal.classList.contains('show')) closeEditItemModal();
-        });
-
-        function setMainImage(index) {
-            if (index >= 0 && index < currentProductImages.length && currentProductImages[index]) {
-                productMainImage.style.display = 'block';
-                productNoImagePlaceholder.style.display = 'none';
-                productMainImage.src = currentProductImages[index];
-                currentImageIndex = index;
-                productMainImage.onload = function() {
-                    adjustImageContainerHeight();
-                };
-                productMainImage.onerror = function() {
-                    productMainImage.style.display = 'none';
-                    productNoImagePlaceholder.style.display = 'block';
-                    adjustImageContainerHeight();
-                };
-                document.querySelectorAll('.product-thumbnail').forEach((thumb, i) => {
-                    thumb.classList.toggle('active', i === index);
-                });
-            } else {
-                productMainImage.style.display = 'none';
-                productNoImagePlaceholder.style.display = 'block';
-                adjustImageContainerHeight();
-            }
-        }
-
-        function adjustImageContainerHeight() {
-            const imageContainer = document.querySelector('.product-main-image-container');
-            const gallery = document.querySelector('.product-gallery');
-            if (imageContainer && gallery) {
-                imageContainer.style.height = 'auto';
-                const maxHeight = gallery.clientHeight - (document.querySelector('.product-thumbnails')?.offsetHeight || 80) - 20;
-                if (imageContainer.clientHeight > maxHeight) {
-                    imageContainer.style.height = maxHeight + 'px';
-                }
-            }
-        }
-
-        function openProductModal() {
-            productModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => adjustImageContainerHeight(), 100);
-        }
-
-        function closeProductModal() {
-            if (lightboxOverlay.classList.contains('active')) closeLightbox();
-            productModal.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-
-        function closeLightbox() {
-            lightboxOverlay.classList.remove('active');
-        }
 
         function fetchItemDetails(itemId) {
-            fetch(`?get_item=${itemId}`)
-                .then(response => response.json())
-                .then(item => {
-                    if (item.error) {
-                        console.error(item.error);
-                        return;
-                    }
-                    currentProductId = item.id;
-                    currentProductUserId = item.user_id;
-                    currentProductImages = item.images;
-                    currentImageIndex = 0;
+            fetch(`?get_item=${itemId}`).then(r => r.json()).then(item => {
+                if (item.error) return;
+                currentProductId = item.id;
+                currentProductUserId = item.user_id;
+                currentProductImages = item.images;
+                currentImageIndex = 0;
+                document.getElementById('productTitle').textContent = item.title;
+                document.getElementById('productPrice').textContent = `${Number(item.price).toLocaleString('hu-HU')} Ft`;
+                document.getElementById('productSeller').innerHTML = `Eladó: <strong>${escapeHtml(item.seller_name)}</strong>`;
+                document.getElementById('productSeller').setAttribute('data-seller-id', item.user_id);
+                document.getElementById('productDate').textContent = item.created_at.substring(0, 10);
+                document.getElementById('productDescription').textContent = item.description;
 
-                    document.getElementById('productTitle').textContent = item.title;
-                    document.getElementById('productPrice').textContent = `${Number(item.price).toLocaleString('hu-HU')} Ft`;
-                    document.getElementById('productSeller').innerHTML = `Eladó: <strong>${escapeHtml(item.seller_name)}</strong>`;
-                    document.getElementById('productSeller').setAttribute('data-seller-id', item.user_id);
-                    document.getElementById('productDate').textContent = item.created_at.substring(0, 10);
-                    document.getElementById('productDescription').textContent = item.description;
-
-                    const thumbnailsContainer = document.getElementById('productThumbnails');
-                    thumbnailsContainer.innerHTML = '';
-                    if (item.images && item.images.length > 0) {
-                        item.images.forEach((img, index) => {
-                            const thumbnail = document.createElement('div');
-                            thumbnail.className = `product-thumbnail ${index === 0 ? 'active' : ''}`;
-                            thumbnail.innerHTML = `<img src="${img}" alt="Thumbnail ${index+1}">`;
-                            thumbnail.addEventListener('click', (e) => {
-                                e.stopPropagation();
-                                setMainImage(index);
-                            });
-                            thumbnailsContainer.appendChild(thumbnail);
+                const thumbnailsContainer = document.getElementById('productThumbnails');
+                thumbnailsContainer.innerHTML = '';
+                if (item.images && item.images.length > 0) {
+                    item.images.forEach((img, index) => {
+                        const thumbnail = document.createElement('div');
+                        thumbnail.className = `product-thumbnail ${index === 0 ? 'active' : ''}`;
+                        thumbnail.innerHTML = `<img src="${img}" alt="Thumbnail">`;
+                        thumbnail.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            setMainImage(index);
                         });
-                        setMainImage(0);
-                    } else {
-                        setMainImage(-1);
-                    }
+                        thumbnailsContainer.appendChild(thumbnail);
+                    });
+                    setMainImage(0);
+                } else setMainImage(-1);
+                const prevBtn = document.getElementById('galleryPrev');
+                const nextBtn = document.getElementById('galleryNext');
+                prevBtn.classList.toggle('hidden', !item.images || item.images.length <= 1);
+                nextBtn.classList.toggle('hidden', !item.images || item.images.length <= 1);
 
-                    const prevBtn = document.getElementById('galleryPrev');
-                    const nextBtn = document.getElementById('galleryNext');
-                    prevBtn.classList.toggle('hidden', !item.images || item.images.length <= 1);
-                    nextBtn.classList.toggle('hidden', !item.images || item.images.length <= 1);
-
-                    const menuContainer = document.getElementById('productMenuContainer');
-                    const deleteBtn = document.getElementById('productDeleteBtn');
-                    const editBtn = document.getElementById('productEditBtn');
-                    const isOwner = (parseInt(item.user_id) === <?php echo (int)$_SESSION['user_id']; ?>);
-
-                    menuContainer.style.display = 'block';
-                    if (isOwner) {
-                        editBtn.style.display = 'block';
-                        editBtn.onclick = () => {
-                            closeProductModal();
-                            openEditItemModal(item.id, item.title, item.description, item.price);
-                        };
-                        deleteBtn.style.display = 'block';
-                        deleteBtn.onclick = () => {
-                            if (confirm('Biztosan törlöd ezt a terméket?')) {
-                                const form = document.createElement('form');
-                                form.method = 'POST';
-                                form.innerHTML = `<input type="hidden" name="item_id" value="${item.id}"><input type="hidden" name="delete_item" value="1">`;
-                                document.body.appendChild(form);
-                                form.submit();
-                            }
-                        };
-                    } else {
-                        editBtn.style.display = 'none';
-                        deleteBtn.style.display = 'none';
-                    }
-                    openProductModal();
-                })
-                .catch(err => console.error('Error fetching item details:', err));
+                const menuContainer = document.getElementById('productMenuContainer');
+                const deleteBtn = document.getElementById('productDeleteBtn');
+                const editBtn = document.getElementById('productEditBtn');
+                const isOwner = (parseInt(item.user_id) === <?php echo (int)$_SESSION['user_id']; ?>);
+                menuContainer.style.display = 'block';
+                if (isOwner) {
+                    editBtn.style.display = 'block';
+                    editBtn.onclick = () => {
+                        closeProductModal();
+                        openEditItemModal(item.id, item.title, item.description, item.price);
+                    };
+                    deleteBtn.style.display = 'block';
+                    deleteBtn.onclick = () => {
+                        if (confirm('Biztosan törlöd ezt a terméket?')) {
+                            const form = document.createElement('form');
+                            form.method = 'POST';
+                            form.innerHTML = `<input type="hidden" name="item_id" value="${item.id}"><input type="hidden" name="delete_item" value="1">`;
+                            document.body.appendChild(form);
+                            form.submit();
+                        }
+                    };
+                } else {
+                    editBtn.style.display = 'none';
+                    deleteBtn.style.display = 'none';
+                }
+                openProductModal();
+            }).catch(err => console.error(err));
         }
 
         function toggleProductMenu(button) {
             const menu = button.nextElementSibling;
             menu.classList.toggle('show');
-            document.querySelectorAll('.product-menu-content').forEach(m => {
-                if (m !== menu) m.classList.remove('show');
-            });
         }
-
-        // Eseménykezelők
         closeProductModalBtn.addEventListener('click', closeProductModal);
         productModal.addEventListener('click', (e) => {
             if (e.target === productModal) closeProductModal();
@@ -2258,17 +2134,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         });
         document.getElementById('galleryPrev').addEventListener('click', (e) => {
             e.stopPropagation();
-            const newIndex = currentImageIndex - 1;
-            setMainImage(newIndex >= 0 ? newIndex : currentProductImages.length - 1);
+            setMainImage(currentImageIndex - 1 >= 0 ? currentImageIndex - 1 : currentProductImages.length - 1);
         });
         document.getElementById('galleryNext').addEventListener('click', (e) => {
             e.stopPropagation();
-            const newIndex = currentImageIndex + 1;
-            setMainImage(newIndex < currentProductImages.length ? newIndex : 0);
+            setMainImage(currentImageIndex + 1 < currentProductImages.length ? currentImageIndex + 1 : 0);
         });
         productMainImage.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (productMainImage.src && productMainImage.style.display !== 'none' && !productMainImage.src.includes('svg')) {
+            if (productMainImage.src && productMainImage.style.display !== 'none') {
                 lightboxImage.src = productMainImage.src;
                 lightboxOverlay.classList.add('active');
             }
@@ -2276,12 +2149,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         lightboxClose.addEventListener('click', closeLightbox);
         lightboxOverlay.addEventListener('click', (e) => {
             if (e.target === lightboxOverlay) closeLightbox();
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lightboxOverlay.classList.contains('active')) closeLightbox();
-        });
-        window.addEventListener('resize', () => {
-            if (productModal.classList.contains('active')) adjustImageContainerHeight();
         });
         document.getElementById('productBuyBtn').addEventListener('click', () => alert('Vásárlás funkció még nem elérhető!'));
 
@@ -2295,7 +2162,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
             });
         }
 
-        // Kattintás a termékekre
         document.querySelectorAll('.mini-card').forEach(card => {
             card.addEventListener('click', function(e) {
                 const itemId = this.dataset.itemId;

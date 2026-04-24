@@ -34,6 +34,118 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 // Database connection
 require_once 'config.php';
 
+// === ÚJ: KÉP ÁTMÉRETEZŐ FÜGGVÉNY ===
+/**
+ * Átméretezi a képet, ha bármelyik oldala nagyobb a megadott maximumnál.
+ * A nagyobbik oldal a maxDim lesz, a másik arányosan változik.
+ * Ha a kép már kisebb vagy egyenlő, akkor csak másolja.
+ *
+ * @param string $source Forrásfájl elérési útja
+ * @param string $destination Célfájl elérési útja
+ * @param int $maxDim Maximális szélesség/magasság (alapértelmezett 1024)
+ * @return bool Sikeres volt-e a művelet
+ */
+function resizeImage($source, $destination, $maxDim = 1024)
+{
+    // Kép adatainak lekérése
+    $info = getimagesize($source);
+    if (!$info) return false;
+
+    $mime = $info['mime'];
+    $srcWidth = $info[0];
+    $srcHeight = $info[1];
+
+    // Ha a kép egyik oldala sem nagyobb a maximumnál, csak másoljuk
+    if ($srcWidth <= $maxDim && $srcHeight <= $maxDim) {
+        return copy($source, $destination);
+    }
+
+    // Új méretek számítása arányosan
+    $ratio = $srcWidth / $srcHeight;
+    if ($srcWidth > $srcHeight) {
+        $newWidth = $maxDim;
+        $newHeight = (int) round($maxDim / $ratio);
+    } else {
+        $newHeight = $maxDim;
+        $newWidth = (int) round($maxDim * $ratio);
+    }
+
+    // Kép betöltése a megfelelő GD függvénnyel
+    switch ($mime) {
+        case 'image/jpeg':
+            $srcImg = imagecreatefromjpeg($source);
+            break;
+        case 'image/png':
+            $srcImg = imagecreatefrompng($source);
+            break;
+        case 'image/gif':
+            $srcImg = imagecreatefromgif($source);
+            break;
+        case 'image/webp':
+            if (function_exists('imagecreatefromwebp')) {
+                $srcImg = imagecreatefromwebp($source);
+            } else {
+                // Ha nincs WebP támogatás, akkor marad az eredeti másolása
+                return copy($source, $destination);
+            }
+            break;
+        default:
+            return false;
+    }
+
+    if (!$srcImg) return false;
+
+    // Új, truecolor kép létrehozása
+    $dstImg = imagecreatetruecolor($newWidth, $newHeight);
+
+    // Átlátszóság megőrzése PNG és WebP esetén
+    if ($mime == 'image/png' || $mime == 'image/webp') {
+        imagealphablending($dstImg, false);
+        imagesavealpha($dstImg, true);
+        $transparent = imagecolorallocatealpha($dstImg, 0, 0, 0, 127);
+        imagefilledrectangle($dstImg, 0, 0, $newWidth, $newHeight, $transparent);
+    } elseif ($mime == 'image/gif') {
+        // GIF esetén az átlátszó szín kezelése
+        $transparentIndex = imagecolortransparent($srcImg);
+        if ($transparentIndex >= 0) {
+            $transparentColor = imagecolorsforindex($srcImg, $transparentIndex);
+            $transparentIndex = imagecolorallocate($dstImg, $transparentColor['red'], $transparentColor['green'], $transparentColor['blue']);
+            imagefill($dstImg, 0, 0, $transparentIndex);
+            imagecolortransparent($dstImg, $transparentIndex);
+        }
+    }
+
+    // Átméretezés és másolás
+    imagecopyresampled($dstImg, $srcImg, 0, 0, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
+
+    // Kép mentése a megfelelő formátumban
+    $success = false;
+    switch ($mime) {
+        case 'image/jpeg':
+            $success = imagejpeg($dstImg, $destination, 85);
+            break;
+        case 'image/png':
+            $success = imagepng($dstImg, $destination, 8);
+            break;
+        case 'image/gif':
+            $success = imagegif($dstImg, $destination);
+            break;
+        case 'image/webp':
+            if (function_exists('imagewebp')) {
+                $success = imagewebp($dstImg, $destination, 85);
+            } else {
+                $success = false;
+            }
+            break;
+    }
+
+    // Takarítás
+    imagedestroy($srcImg);
+    imagedestroy($dstImg);
+
+    return $success;
+}
+
 // Hibaüzenetek és űrlapadatok kiolvasása a session-ből
 $uploadError = $_SESSION['upload_error'] ?? '';
 $formData = $_SESSION['form_data'] ?? [];
@@ -163,14 +275,15 @@ try {
         try {
             $sellerId = (int)$_GET['get_seller'];
 
+            // --- MÓDOSÍTÁS: profile_picture lekérése ---
             $sellerStmt = $conn->prepare("
-                SELECT u.id, u.username, u.created_at,
+                SELECT u.id, u.username, u.created_at, u.profile_picture,
                        COUNT(DISTINCT i.id) AS item_count,
                        (SELECT COUNT(*) FROM admins WHERE user_id = u.id) AS is_admin
                 FROM users u
                 LEFT JOIN items i ON i.user_id = u.id
                 WHERE u.id = ?
-                GROUP BY u.id, u.username, u.created_at
+                GROUP BY u.id, u.username, u.created_at, u.profile_picture
             ");
             $sellerStmt->execute([$sellerId]);
             $seller = $sellerStmt->fetch(PDO::FETCH_ASSOC);
@@ -304,11 +417,11 @@ try {
                     $filename = uniqid() . '_' . $i . '.' . $extension;
                     $filepath = $uploadDir . $filename;
 
-                    // Move uploaded file
-                    if (!move_uploaded_file($files['tmp_name'][$i], $filepath)) {
+                    // === MÓDOSÍTÁS: Átméretezés a feltöltött képen ===
+                    if (!resizeImage($files['tmp_name'][$i], $filepath, 1024)) {
                         $lastError = error_get_last();
                         throw new Exception(
-                            'Nem sikerült áthelyezni a fájlt: ' . $files['name'][$i] .
+                            'Nem sikerült átméretezni/elmenteni a fájlt: ' . $files['name'][$i] .
                                 ' ide: ' . $filepath .
                                 ($lastError ? ' - Hiba: ' . $lastError['message'] : '')
                         );
@@ -447,14 +560,26 @@ try {
     $totalItems = $totalStmt->fetchColumn();
     $totalPages = ceil($totalItems / $itemsPerPage);
 
-    // Fetch items for current page with RANDOM ordering
+    // Új seed generálása ha:
+    // 1. Még nincs seed (első látogatás)
+    // 2. Oldalfrissítés történt (nincs ?page= a GET-ben, és a referer nem main.php lapozás)
+    // 3. Másik oldalról jött vissza (referer nem main.php)
+    $referer = $_SERVER['HTTP_REFERER'] ?? '';
+    $comingFromPagination = strpos($referer, 'main.php') !== false;
+    if (!isset($_SESSION['items_seed']) || !$comingFromPagination) {
+        $_SESSION['items_seed'] = mt_rand(1, 999999);
+    }
+    $seed = $_SESSION['items_seed'];
+
+    // Fetch items for current page with session-based RAND seed
     $stmt = $conn->prepare("
         SELECT i.*, u.username as seller_name
         FROM items i
         JOIN users u ON i.user_id = u.id
-        ORDER BY RAND()
+        ORDER BY RAND(:seed)
         LIMIT :offset, :itemsPerPage
     ");
+    $stmt->bindParam(':seed', $seed, PDO::PARAM_INT);
     $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
     $stmt->bindParam(':itemsPerPage', $itemsPerPage, PDO::PARAM_INT);
     $stmt->execute();
@@ -494,6 +619,7 @@ try {
     <title>Főoldal - Termékek</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css?v=2">
+    <link rel="icon" type="image/png" href="logo.png">
     <style>
         /* ═══════════════════════════════════════════════════════════════════
         MAIN STYLES (dark mode default)
@@ -2611,6 +2737,13 @@ try {
             color: #000;
             margin: 0 auto 1.2rem;
             box-shadow: 0 0 40px rgba(255, 140, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .seller-popup-avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .seller-popup-name {
@@ -3493,7 +3626,7 @@ try {
                     if (isOwner || isAdmin) {
                         deleteBtn.style.display = 'block';
                         deleteBtn.onclick = () => {
-                            if (confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) {
+                            if (confirm('Biztosan törlöd ezt a terméket?')) {
                                 const form = document.createElement('form');
                                 form.method = 'POST';
                                 form.innerHTML = `
@@ -3508,6 +3641,16 @@ try {
                         deleteBtn.style.display = 'none';
                     }
                 <?php endif; ?>
+
+                // --- VÁSÁRLÁS GOMB MŰKÖDÉSE ---
+                // A termék azonosító már be van állítva (currentProductId), így átirányít a vasarlas.php-ra
+                document.getElementById('productBuyBtn').onclick = function() {
+                    if (currentProductId) {
+                        window.location.href = 'vasarlas.php?item_id=' + encodeURIComponent(currentProductId);
+                    } else {
+                        alert('Hiba: nincs termék kiválasztva.');
+                    }
+                };
 
                 openProductModal();
             });
@@ -3549,8 +3692,15 @@ try {
             if (e.key === 'Escape' && productModal.classList.contains('active')) closeProductModal();
         });
 
-        document.getElementById('productBuyBtn').addEventListener('click', () => {
-            alert('Vásárlás funkció még nem elérhető!');
+        // A termékmodál alapértelmezett vásárlás gomb kezelő (ha nincs megnyitott termék, akkor a kártyaklikkel állítódik be)
+        // A fenti kártya kattintás felülírja, de ha a modált más módon (pl. keresésből) nyitjuk, akkor ott is be kell állítani.
+        // Az alábbi sor biztonsági tartalék, de az onClick a kártyákból már be van állítva.
+        document.getElementById('productBuyBtn').addEventListener('click', function() {
+            if (currentProductId) {
+                window.location.href = 'vasarlas.php?item_id=' + encodeURIComponent(currentProductId);
+            } else {
+                alert('Hiba: nincs termék kiválasztva.');
+            }
         });
 
         function toggleProductMenu(button) {
@@ -3781,6 +3931,11 @@ try {
                         deleteBtn.style.display = 'none';
                     }
 
+                    // Vásárlás gomb frissítése
+                    document.getElementById('productBuyBtn').onclick = function() {
+                        window.location.href = 'vasarlas.php?item_id=' + encodeURIComponent(item.id);
+                    };
+
                     openProductModal();
                 })
                 .catch(err => console.error('Error fetching item details:', err));
@@ -3853,6 +4008,14 @@ try {
                     // Update topbar title
                     document.querySelector('.seller-popup-topbar-title').textContent = '👤 ' + data.username;
 
+                    // Avatar: profilkép vagy kezdőbetű
+                    let avatarHtml;
+                    if (data.profile_picture && data.profile_picture.trim() !== '') {
+                        avatarHtml = `<img src="${escapeHtml(data.profile_picture)}" class="seller-popup-avatar-img" alt="${escapeHtml(data.username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                    } else {
+                        avatarHtml = `<div class="seller-popup-avatar unselectable">${initial}</div>`;
+                    }
+
                     let itemsHtml = '';
                     if (data.latest_items && data.latest_items.length > 0) {
                         itemsHtml = `<div class="seller-popup-items-title unselectable">Legutóbbi hirdetések</div>
@@ -3878,7 +4041,9 @@ try {
                         `<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem 0;" class="unselectable">Ez a saját profilod</div>`;
 
                     sellerContent.innerHTML = `
-                        <div class="seller-popup-avatar unselectable">${initial}</div>
+                        <div class="seller-popup-avatar unselectable" style="display: flex; align-items: center; justify-content: center;">
+                            ${avatarHtml}
+                        </div>
                         <div class="seller-popup-name unselectable">${escapeHtml(data.username)}${adminBadge}</div>
                         <div class="seller-popup-meta unselectable">Tag azóta: ${memberSince}</div>
                         <div class="seller-popup-stats">

@@ -11,13 +11,14 @@ CREATE TABLE
         UNIQUE KEY uniq_password_hash (password_hash)
     ) ENGINE = InnoDB;
 
--- Felhasználók tábla
+-- Felhasználók tábla (hozzáadva a profile_picture mező)
 CREATE TABLE
     IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         email VARCHAR(255) NOT NULL,
         username VARCHAR(100) NOT NULL,
         password_id INT NOT NULL,
+        profile_picture VARCHAR(255) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY uniq_email (email),
         UNIQUE KEY uniq_username (username),
@@ -58,6 +59,7 @@ CREATE TABLE
         CONSTRAINT fk_images_items FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
     ) ENGINE = InnoDB;
 
+-- Termék jelentések tábla
 CREATE TABLE
     IF NOT EXISTS reports (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -70,10 +72,7 @@ CREATE TABLE
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     ) ENGINE = InnoDB;
 
--- Uzenetek tabla
--- sender_id: az uzenetet kuldő felhasznalo
--- receiver_id: az uzenetet kapo felhasznalo
--- id: veletlenszeruen generalt 25 karakteres egyedi azonosito
+-- Üzenetek tábla
 CREATE TABLE
     IF NOT EXISTS uzenetek (
         id CHAR(25) PRIMARY KEY,
@@ -89,30 +88,18 @@ CREATE TABLE
         INDEX idx_sent_at (sent_at)
     ) ENGINE = InnoDB;
 
--- Admin felhasznalo keresese es beszurasa az adminok tablaba
-INSERT INTO
-    admins (user_id, assigned_at)
-SELECT
-    id,
-    CURRENT_TIMESTAMP
-FROM
-    users
-WHERE
-    username = 'admin'
-    AND id NOT IN (
-        SELECT
-            user_id
-        FROM
-            admins
-    )
-    AND EXISTS (
-        SELECT
-            1
-        FROM
-            users
-        WHERE
-            username = 'admin'
-    );
+-- Üzenet jelentések tábla
+CREATE TABLE
+    IF NOT EXISTS message_reports (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        message_id CHAR(25) NOT NULL,
+        reporter_user_id INT NOT NULL,
+        reason TEXT NOT NULL,
+        status ENUM ('pending', 'resolved', 'dismissed') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (message_id) REFERENCES uzenetek (id) ON DELETE CASCADE,
+        FOREIGN KEY (reporter_user_id) REFERENCES users (id) ON DELETE CASCADE
+    ) ENGINE = InnoDB;
 
 -- Admin felhasználó keresése és beszúrása az adminok táblába
 INSERT INTO

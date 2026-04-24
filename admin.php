@@ -110,17 +110,13 @@ try {
         }
         // ---- VIZSGAPURGE ----
         if (isset($_POST['purge_confirm'])) {
-            // Kivétel nevek listája
             $keeperNames = ['gabi', 'martin', 'cuci', 'admin'];
             $placeholders = implode(',', array_fill(0, count($keeperNames), '?'));
-            // Tranzakció indítása
             $conn->beginTransaction();
             try {
-                // Lekérjük a törlendő felhasználók ID-ját (akik nincsenek a kivételek között)
                 $stmt = $conn->prepare("SELECT id FROM users WHERE LOWER(username) NOT IN ($placeholders)");
                 $stmt->execute($keeperNames);
                 $userIdsToDelete = $stmt->fetchAll(PDO::FETCH_COLUMN);
-                // Lekérjük az ezen felhasználókhoz tartozó hirdetések ID-ját és a képek elérési útját
                 $itemsToDelete = [];
                 $imagePaths = [];
                 if (!empty($userIdsToDelete)) {
@@ -134,18 +130,15 @@ try {
                         $imgStmt->execute($itemIds);
                         $imagePaths = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
                     }
-                    // Felhasználók törlése (ON DELETE CASCADE törli az itemeket és az item_images rekordokat is)
                     $delUserStmt = $conn->prepare("DELETE FROM users WHERE id IN ($inUsers)");
                     $delUserStmt->execute($userIdsToDelete);
                 }
                 $conn->commit();
-                // Fájlok törlése a commit után
                 foreach ($imagePaths as $path) {
                     if (file_exists($path)) {
                         unlink($path);
                     }
                 }
-                // Üres mappák törlése (opcionális, de az item_id mappák törlése)
                 if (!empty($itemIds)) {
                     foreach ($itemIds as $itemId) {
                         $dir = 'uploads/' . $itemId . '/';
@@ -170,7 +163,6 @@ try {
         } catch (PDOException $e) {
         }
     }
-    // Report count: termék + üzenet reportok összege
     try {
         $cItem = $conn->query("SELECT COUNT(*) FROM reports")->fetchColumn();
     } catch (PDOException $e) {
@@ -202,7 +194,6 @@ try {
         $s->execute();
         $users = $s->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($view === 'reports') {
-        // Termék reportok
         $s = $conn->prepare("
             SELECT r.id, 'item' AS report_type,
                    r.item_id AS ref_id,
@@ -233,7 +224,6 @@ try {
         $s->execute();
         $reports = $s->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($view === 'conversations') {
-        // Beszélgetések listája (felhasználópárok)
         $convStmt = $conn->prepare("
             SELECT 
                 LEAST(u1.id, u2.id) AS user1_id,
@@ -268,7 +258,6 @@ try {
             ");
             $msgStmt->execute([$selectedUser1, $selectedUser2, $selectedUser2, $selectedUser1]);
             $messages = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
-            // Felhasználónevek kinyerése
             foreach ($conversations as $c) {
                 if ($c['user1_id'] == $selectedUser1 && $c['user2_id'] == $selectedUser2) {
                     $user1Name = $c['user1_name'];
@@ -298,7 +287,6 @@ try {
     $editItem = $editUser = null;
     $counts = ['users' => 0, 'items' => 0, 'reports' => 0];
 }
-// Segédfüggvény: lapozó link
 function pgLink($v, $p)
 {
     return "admin.php?view=$v&page=$p";
@@ -310,6 +298,7 @@ function pgLink($v, $p)
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="logo.png">
     <title>ADMIN TERMINAL // CUCI-SYS</title>
     <style>
         /* ═══════════════════════════════════════════════
@@ -345,8 +334,8 @@ function pgLink($v, $p)
             --font-vt: 'VT323', 'Courier New', monospace;
         }
 
-        /* LIGHT MODE — Amber CRT (VILÁGOSABB SZÍNEK) */
-        body.light-mode {
+        /* LIGHT MODE — Sárgás / borostyán, világosabb a sötét módnál, de nem fehér */
+        html.light-mode {
             --c-bg: #2a1a00;
             --c-panel: #3a2400;
             --c-border: #6a4500;
@@ -498,11 +487,6 @@ function pgLink($v, $p)
             gap: 0;
             padding: 0 8px;
             overflow-x: auto;
-            scrollbar-width: none;
-        }
-
-        .chrome-nav::-webkit-scrollbar {
-            display: none;
         }
 
         .nav-btn {
@@ -573,12 +557,12 @@ function pgLink($v, $p)
             box-shadow: 0 0 12px rgba(255, 0, 0, 0.5) !important;
         }
 
-        body.light-mode .nav-btn.purge-btn {
+        html.light-mode .nav-btn.purge-btn {
             color: #ff0000 !important;
             border-color: #ff0000 !important;
         }
 
-        body.light-mode .nav-btn.purge-btn:hover {
+        html.light-mode .nav-btn.purge-btn:hover {
             background: rgba(255, 0, 0, 0.15) !important;
             color: #ff4444 !important;
         }
@@ -1114,7 +1098,8 @@ function pgLink($v, $p)
         .purge-modal-card {
             width: 100%;
             max-width: 500px;
-            background: var(--c-panel);
+            /* 🔴 PIROS TÉMA, TÉMÁTÓL FÜGGETLEN */
+            background: #1a0505;
             border: 2px solid #ff3333;
             border-radius: 24px;
             padding: 2rem;
@@ -1145,7 +1130,7 @@ function pgLink($v, $p)
         }
 
         .purge-modal-text {
-            color: var(--c-text);
+            color: #f0c0c0;
             margin-bottom: 1.8rem;
             line-height: 1.6;
             font-size: 0.95rem;
@@ -1183,23 +1168,27 @@ function pgLink($v, $p)
             transform: scale(1.02);
         }
 
+        /* 🟢 MÉGSE GOMB – ZÖLD STÍLUS, MINT A VÉGREHAJT, CSAK ZÖLDBEN */
         .purge-btn-cancel {
             padding: 0.75rem 2rem;
-            background: transparent;
-            border: 1px solid var(--c-border2);
+            background: #00aa3a;
+            border: none;
             border-radius: 40px;
-            color: var(--c-muted);
+            color: #000;
             font-family: var(--font-mono);
+            font-weight: bold;
             font-size: 0.9rem;
             letter-spacing: 2px;
             text-transform: uppercase;
             cursor: pointer;
             transition: all 0.2s;
+            box-shadow: 0 0 15px #00ff66;
         }
 
         .purge-btn-cancel:hover {
-            border-color: var(--c-green);
-            color: var(--c-green);
+            background: #33cc66;
+            box-shadow: 0 0 25px #33ff77;
+            transform: scale(1.02);
         }
 
         /* ═══════════ PRODUCT MODAL ═══════════ */
@@ -1484,7 +1473,8 @@ function pgLink($v, $p)
             position: fixed;
             inset: 0;
             z-index: 5000;
-            background: rgba(0, 0, 0, 0.97);
+            background: rgba(0, 0, 0, 0.98);
+            backdrop-filter: blur(8px);
             display: none;
             align-items: center;
             justify-content: center;
@@ -1566,33 +1556,6 @@ function pgLink($v, $p)
             overflow-y: auto;
         }
 
-        /* ═══════════ CONVERSATION SIDEBAR SCROLLBAR ═══════════ */
-        .conversation-sidebar::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .conversation-sidebar::-webkit-scrollbar-track {
-            background: var(--c-panel);
-            border-left: 1px solid var(--c-border);
-        }
-
-        .conversation-sidebar::-webkit-scrollbar-thumb {
-            background: var(--c-border2);
-            border-radius: 4px;
-            border: 1px solid var(--c-green-dim);
-        }
-
-        .conversation-sidebar::-webkit-scrollbar-thumb:hover {
-            background: var(--c-green-mid);
-            border-color: var(--c-green);
-        }
-
-        /* Firefox scrollbar */
-        .conversation-sidebar {
-            scrollbar-width: thin;
-            scrollbar-color: var(--c-border2) var(--c-panel);
-        }
-
         .conversation-item {
             display: flex;
             align-items: center;
@@ -1610,7 +1573,6 @@ function pgLink($v, $p)
             color: var(--c-green);
         }
 
-        /* Ne legyen kattintható az aktív elem */
         .conversation-item.active {
             cursor: default;
             pointer-events: none;
@@ -1781,6 +1743,53 @@ function pgLink($v, $p)
                 display: none;
             }
         }
+
+        /* ═══════════════════════════════════════════════
+           SCROLLBAR STYLING – TERMINAL THEME
+           ═══════════════════════════════════════════════ */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--c-panel);
+            border: 1px solid var(--c-border);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--c-green-dim);
+            border: 1px solid var(--c-border2);
+            border-radius: 0;
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--c-green-mid);
+        }
+
+        ::-webkit-scrollbar-corner {
+            background: var(--c-panel);
+        }
+
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--c-green-dim) var(--c-panel);
+        }
+
+        /* Light mode overrides for scrollbar (variables already handle colors) */
+        html.light-mode * {
+            scrollbar-color: var(--c-green-dim) var(--c-panel);
+        }
+
+        html.light-mode ::-webkit-scrollbar-thumb {
+            background: var(--c-green-dim);
+            border-color: var(--c-border2);
+        }
+
+        html.light-mode ::-webkit-scrollbar-thumb:hover {
+            background: var(--c-green-mid);
+        }
     </style>
 </head>
 
@@ -1878,18 +1887,20 @@ function pgLink($v, $p)
                 <!-- ════════════ DASHBOARD ════════════ -->
             <?php elseif ($view === 'main'): ?>
                 <div class="dash-grid">
-                    <?php foreach (
-                        [
-                            ['REPORTOK', 'reports', '⚠', 'Bejelentett hirdetések'],
-                            ['FELHASZNÁLÓK', 'users', '◈', 'Regisztrált fiókok'],
-                            ['TERMÉKEK', 'items', '◧', 'Aktív hirdetések'],
-                        ] as [$label, $key, $icon, $sub]
-                    ): ?>
+                    <?php foreach (['REPORTOK' => 'reports', 'FELHASZNÁLÓK' => 'users', 'TERMÉKEK' => 'items'] as $label => $key): ?>
                         <a href="admin.php?view=<?= $key ?>" style="text-decoration:none">
                             <div class="dash-card">
-                                <div class="dash-label"><?= $icon ?> <?= $label ?></div>
+                                <div class="dash-label"><?= match ($key) {
+                                                            'reports' => '⚠',
+                                                            'users' => '◈',
+                                                            'items' => '◧'
+                                                        } ?> <?= $label ?></div>
                                 <div class="dash-number"><?= number_format($counts[$key]) ?></div>
-                                <div class="dash-sublabel"><?= $sub ?></div>
+                                <div class="dash-sublabel"><?= match ($key) {
+                                                                'reports' => 'Bejelentett hirdetések',
+                                                                'users' => 'Regisztrált fiókok',
+                                                                'items' => 'Aktív hirdetések'
+                                                            } ?></div>
                             </div>
                         </a>
                     <?php endforeach; ?>
@@ -2193,12 +2204,12 @@ function pgLink($v, $p)
                 btn = document.getElementById('themeToggleBtn');
 
             function apply(t) {
-                body.classList.toggle('light-mode', t === 'light');
+                document.documentElement.classList.toggle('light-mode', t === 'light');
                 localStorage.setItem(KEY, t);
                 btn.textContent = t === 'light' ? 'DARK' : 'LIGHT';
             }
             apply(localStorage.getItem(KEY) || 'dark');
-            btn.addEventListener('click', () => apply(body.classList.contains('light-mode') ? 'dark' : 'light'));
+            btn.addEventListener('click', () => apply(document.documentElement.classList.contains('light-mode') ? 'dark' : 'light'));
         })();
         // ── ÓRA ──
         (function clock() {
@@ -2331,7 +2342,6 @@ function pgLink($v, $p)
             document.body.style.overflow = '';
         }
 
-        // Eseménykezelő a view-item-btn gombokhoz (Reportok és Termékek táblában egyaránt)
         document.querySelectorAll('.view-item-btn').forEach(btn => btn.addEventListener('click', function(e) {
             e.preventDefault();
             fetch('admin.php?get_item_data=' + this.dataset.itemId).then(r => r.json()).then(d => {
@@ -2437,14 +2447,12 @@ function pgLink($v, $p)
             const sidebar = document.getElementById('conversationSidebar');
             if (!sidebar) return;
 
-            // Visszaállítás betöltés után
             const savedScroll = sessionStorage.getItem('convSidebarScroll');
             if (savedScroll !== null) {
                 sidebar.scrollTop = parseInt(savedScroll, 10);
                 sessionStorage.removeItem('convSidebarScroll');
             }
 
-            // Kattintás előtti mentés
             sidebar.addEventListener('click', function(e) {
                 const link = e.target.closest('.conversation-item');
                 if (link && link.tagName === 'A') {

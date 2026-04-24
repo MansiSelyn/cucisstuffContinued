@@ -145,6 +145,7 @@ try {
             SELECT
                 u.id,
                 u.username,
+                u.profile_picture,
                 u.created_at AS member_since,
                 MAX(m.sent_at) AS last_message_at,
                 SUM(CASE WHEN m.receiver_id = :me AND m.is_read = 0 THEN 1 ELSE 0 END) AS unread_count
@@ -155,7 +156,7 @@ try {
                 (m.receiver_id = u.id AND m.sender_id = :me3)
             )
             WHERE u.id != :me4
-            GROUP BY u.id, u.username, u.created_at
+            GROUP BY u.id, u.username, u.profile_picture, u.created_at
             ORDER BY last_message_at DESC
         ");
         $partnersStmt->execute([
@@ -232,6 +233,7 @@ try {
         SELECT
             u.id,
             u.username,
+            u.profile_picture,
             u.created_at AS member_since,
             MAX(m.sent_at) AS last_message_at,
             SUM(CASE WHEN m.receiver_id = :me AND m.is_read = 0 THEN 1 ELSE 0 END) AS unread_count
@@ -242,7 +244,7 @@ try {
             (m.receiver_id = u.id AND m.sender_id = :me3)
         )
         WHERE u.id != :me4
-        GROUP BY u.id, u.username, u.created_at
+        GROUP BY u.id, u.username, u.profile_picture, u.created_at
         ORDER BY last_message_at DESC
     ");
     $partnersStmt->execute([
@@ -256,7 +258,7 @@ try {
     $messages    = [];
     $withUser    = null;
     if ($withUserId > 0) {
-        $userStmt = $conn->prepare("SELECT id, username, created_at FROM users WHERE id = ?");
+        $userStmt = $conn->prepare("SELECT id, username, profile_picture, created_at FROM users WHERE id = ?");
         $userStmt->execute([$withUserId]);
         $withUser = $userStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -286,18 +288,18 @@ try {
     $adminCheck->execute([$currentUserId]);
     $isAdmin = $adminCheck->fetchColumn() > 0;
 
-    // Seller popup adatok lekérése AJAX kérésre (get_seller)
+    // Seller popup adatok lekérése AJAX kérésre (get_seller) – profilkép hozzáadva
     if (isset($_GET['get_seller']) && !empty($_GET['get_seller'])) {
         header('Content-Type: application/json');
         $sellerId = (int)$_GET['get_seller'];
         $sellerStmt = $conn->prepare("
-            SELECT u.id, u.username, u.created_at,
+            SELECT u.id, u.username, u.profile_picture, u.created_at,
                    COUNT(DISTINCT i.id) AS item_count,
                    (SELECT COUNT(*) FROM admins WHERE user_id = u.id) AS is_admin
             FROM users u
             LEFT JOIN items i ON i.user_id = u.id
             WHERE u.id = ?
-            GROUP BY u.id, u.username, u.created_at
+            GROUP BY u.id, u.username, u.profile_picture, u.created_at
         ");
         $sellerStmt->execute([$sellerId]);
         $seller = $sellerStmt->fetch(PDO::FETCH_ASSOC);
@@ -359,6 +361,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Üzenetek – Valós idejű</title>
     <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css">
+    <link rel="icon" type="image/png" href="logo.png">
     <style>
         * {
             box-sizing: border-box;
@@ -755,6 +758,13 @@ try {
             color: var(--avatar-color);
             flex-shrink: 0;
             position: relative;
+            overflow: hidden;
+        }
+
+        .partner-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .partner-info {
@@ -902,15 +912,24 @@ try {
         }
 
         .chat-partner-avatar {
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             background: var(--avatar-bg);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
+            font-size: 1.1rem;
             color: var(--avatar-color);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .chat-partner-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .chat-partner-name {
@@ -1504,6 +1523,13 @@ try {
             color: #000;
             margin: 0 auto 1.2rem;
             box-shadow: 0 0 40px rgba(255, 140, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .seller-popup-avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .seller-popup-name {
@@ -2126,7 +2152,13 @@ try {
                     <?php foreach ($partners as $p): ?>
                         <?php if ($withUserId == $p['id']): ?>
                             <div class="partner-item active" data-partner-id="<?php echo $p['id']; ?>">
-                                <div class="partner-avatar"><?php echo strtoupper(substr($p['username'], 0, 1)); ?></div>
+                                <div class="partner-avatar">
+                                    <?php if (!empty($p['profile_picture'])): ?>
+                                        <img src="<?php echo htmlspecialchars($p['profile_picture']); ?>" alt="<?php echo htmlspecialchars($p['username']); ?>">
+                                    <?php else: ?>
+                                        <?php echo strtoupper(substr($p['username'], 0, 1)); ?>
+                                    <?php endif; ?>
+                                </div>
                                 <div class="partner-info">
                                     <div class="partner-name"><?php echo htmlspecialchars($p['username']); ?></div>
                                     <div class="partner-time">
@@ -2146,7 +2178,13 @@ try {
                             </div>
                         <?php else: ?>
                             <a href="uzenetek.php?with=<?php echo $p['id']; ?>" class="partner-item" data-partner-id="<?php echo $p['id']; ?>">
-                                <div class="partner-avatar"><?php echo strtoupper(substr($p['username'], 0, 1)); ?></div>
+                                <div class="partner-avatar">
+                                    <?php if (!empty($p['profile_picture'])): ?>
+                                        <img src="<?php echo htmlspecialchars($p['profile_picture']); ?>" alt="<?php echo htmlspecialchars($p['username']); ?>">
+                                    <?php else: ?>
+                                        <?php echo strtoupper(substr($p['username'], 0, 1)); ?>
+                                    <?php endif; ?>
+                                </div>
                                 <div class="partner-info">
                                     <div class="partner-name"><?php echo htmlspecialchars($p['username']); ?></div>
                                     <div class="partner-time">
@@ -2174,7 +2212,11 @@ try {
             <?php if ($withUser): ?>
                 <div class="chat-header">
                     <div class="chat-partner-avatar">
-                        <?php echo strtoupper(substr($withUser['username'], 0, 1)); ?>
+                        <?php if (!empty($withUser['profile_picture'])): ?>
+                            <img src="<?php echo htmlspecialchars($withUser['profile_picture']); ?>" alt="<?php echo htmlspecialchars($withUser['username']); ?>">
+                        <?php else: ?>
+                            <?php echo strtoupper(substr($withUser['username'], 0, 1)); ?>
+                        <?php endif; ?>
                     </div>
                     <div>
                         <div class="chat-partner-name clickable" onclick="openSellerPopup(<?php echo $withUserId; ?>)">
@@ -2521,10 +2563,15 @@ try {
                 const avatarLetter = p.username.charAt(0).toUpperCase();
                 const unreadBadge = p.unread_count > 0 ? `<div class="unread-badge">${p.unread_count}</div>` : '';
 
+                // Avatar: profile picture or initial
+                const avatarHtml = (p.profile_picture && p.profile_picture.trim() !== '') ?
+                    `<div class="partner-avatar"><img src="${escapeHtml(p.profile_picture)}" alt="${escapeHtml(p.username)}"></div>` :
+                    `<div class="partner-avatar">${avatarLetter}</div>`;
+
                 if (isActive) {
                     html += `
                         <div class="partner-item active" data-partner-id="${p.id}">
-                            <div class="partner-avatar">${avatarLetter}</div>
+                            ${avatarHtml}
                             <div class="partner-info">
                                 <div class="partner-name">${escapeHtml(p.username)}</div>
                                 <div class="partner-time">${timeStr}</div>
@@ -2535,7 +2582,7 @@ try {
                 } else {
                     html += `
                         <a href="uzenetek.php?with=${p.id}" class="partner-item" data-partner-id="${p.id}">
-                            <div class="partner-avatar">${avatarLetter}</div>
+                            ${avatarHtml}
                             <div class="partner-info">
                                 <div class="partner-name">${escapeHtml(p.username)}</div>
                                 <div class="partner-time">${timeStr}</div>
@@ -2906,6 +2953,14 @@ try {
                     // Update topbar title
                     document.querySelector('.seller-popup-topbar-title').textContent = '👤 ' + data.username;
 
+                    // Avatar: profilkép vagy kezdőbetű
+                    let avatarHtml;
+                    if (data.profile_picture && data.profile_picture.trim() !== '') {
+                        avatarHtml = `<img src="${escapeHtml(data.profile_picture)}" class="seller-popup-avatar-img" alt="${escapeHtml(data.username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                    } else {
+                        avatarHtml = `<div class="seller-popup-avatar unselectable">${initial}</div>`;
+                    }
+
                     let itemsHtml = '';
                     if (data.latest_items && data.latest_items.length > 0) {
                         itemsHtml = `<div class="seller-popup-items-title unselectable">Legutóbbi hirdetések</div>
@@ -2931,7 +2986,9 @@ try {
                         `<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem 0;" class="unselectable">Ez a saját profilod</div>`;
 
                     sellerContent.innerHTML = `
-                        <div class="seller-popup-avatar unselectable">${initial}</div>
+                        <div class="seller-popup-avatar unselectable" style="display: flex; align-items: center; justify-content: center;">
+                            ${avatarHtml}
+                        </div>
                         <div class="seller-popup-name unselectable">${escapeHtml(data.username)}${adminBadge}</div>
                         <div class="seller-popup-meta unselectable">Tag azóta: ${memberSince}</div>
                         <div class="seller-popup-stats">
