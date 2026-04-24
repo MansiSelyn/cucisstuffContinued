@@ -340,6 +340,27 @@ try {
     $itemStmt->execute([$userId]);
     $userItems = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // =============================================
+    // FELHASZNÁLÓ RENDELÉSEINEK LEKÉRÉSE
+    // =============================================
+    $userOrders = [];
+    try {
+        $ordersStmt = $conn->prepare("
+            SELECT o.*, i.title AS item_title, i.price AS item_price, 
+                   u.username AS seller_name,
+                   (SELECT image_path FROM item_images WHERE item_id = o.item_id AND is_primary = 1 LIMIT 1) as item_image
+            FROM orders o
+            JOIN items i ON o.item_id = i.id
+            JOIN users u ON o.seller_id = u.id
+            WHERE o.buyer_id = ?
+            ORDER BY o.created_at DESC
+        ");
+        $ordersStmt->execute([$userId]);
+        $userOrders = $ordersStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $userOrders = [];
+    }
+
     $editSuccess = isset($_GET['edit']) && $_GET['edit'] === 'success';
 } catch (PDOException $e) {
     die("Adatbázis hiba: " . $e->getMessage());
@@ -673,12 +694,44 @@ try {
             color: var(--orange-bright);
             margin: 0 0 1rem 0;
             font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .section-toggle-btn {
+            padding: 0.3rem 0.8rem;
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--orange-bright);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .section-toggle-btn:hover {
+            background: var(--orange-subtle);
+            border-color: var(--orange-bright);
+        }
+
+        .section-toggle-btn.active {
+            background: var(--orange-bright);
+            color: #000;
+            border-color: var(--orange-bright);
         }
 
         .items-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 1rem;
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+        }
+
+        .items-grid.hidden {
+            display: none;
         }
 
         .mini-card {
@@ -721,6 +774,156 @@ try {
             font-size: 0.85rem;
             color: var(--text-primary);
             opacity: 0.8;
+        }
+
+        /* ---------- RENDELÉSEK STÍLUSAI ---------- */
+        .orders-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .orders-section h2 {
+            color: var(--orange-bright);
+            margin: 0 0 1rem 0;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            transition: opacity 0.3s ease;
+        }
+
+        .orders-grid.hidden {
+            display: none;
+        }
+
+        .order-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 1rem;
+            transition: 0.3s;
+        }
+
+        .order-card:hover {
+            border-color: var(--orange-bright);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .order-card .order-header {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .order-card .order-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: var(--placeholder-bg);
+            border: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        .order-card .order-image-placeholder {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            background: var(--placeholder-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--orange-bright);
+            border: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        .order-card .order-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .order-card .order-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--orange-bright);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .order-card .order-price {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .order-card .order-meta {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+        }
+
+        .order-card .order-details {
+            border-top: 1px solid var(--glass-border);
+            padding-top: 0.7rem;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.3rem;
+        }
+
+        .order-card .order-details span {
+            display: block;
+        }
+
+        .order-card .order-details .detail-label {
+            font-weight: 600;
+            color: var(--orange-bright);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffa500;
+            border: 1px solid rgba(255, 165, 0, 0.4);
+        }
+
+        .status-completed {
+            background: rgba(0, 200, 100, 0.2);
+            color: #00c864;
+            border: 1px solid rgba(0, 200, 100, 0.4);
+        }
+
+        .status-cancelled {
+            background: rgba(255, 50, 50, 0.2);
+            color: #ff5050;
+            border: 1px solid rgba(255, 50, 50, 0.4);
         }
 
         /* ---------- ÚJ MODÁLOK STÍLUSAI ---------- */
@@ -1537,12 +1740,18 @@ try {
             </div>
         </div>
 
+        <!-- ========== HIRDETÉSEIM SZEKCIÓ (TOGGLE-ELHETŐ) ========== -->
         <div class="items-section">
-            <h2 class="unselectable">Hirdetéseim (<?= count($userItems) ?>)</h2>
-            <?php if (empty($userItems)): ?>
-                <p class="unselectable" style="text-align:center; opacity:0.6; padding: 2rem 0;">Még nem adtál fel hirdetést.</p>
-            <?php else: ?>
-                <div class="items-grid">
+            <h2 class="unselectable">
+                📦 Hirdetéseim (<?= count($userItems) ?>)
+                <button class="section-toggle-btn" id="toggleItemsBtn" onclick="toggleItemsSection()" title="Hirdetések megjelenítése/elrejtése">
+                    👁️ Elrejt
+                </button>
+            </h2>
+            <div class="items-grid" id="itemsGrid">
+                <?php if (empty($userItems)): ?>
+                    <p class="unselectable" style="text-align:center; opacity:0.6; padding: 2rem 0; grid-column: 1 / -1;">Még nem adtál fel hirdetést.</p>
+                <?php else: ?>
                     <?php foreach ($userItems as $item): ?>
                         <div class="mini-card" data-item-id="<?= htmlspecialchars($item['id']) ?>">
                             <?php
@@ -1561,8 +1770,94 @@ try {
                             </div>
                         </div>
                     <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- ========== RENDELÉSEIM SZEKCIÓ (TOGGLE-ELHETŐ) ========== -->
+        <div class="orders-section" id="ordersSection" style="display: none;">
+            <h2 class="unselectable">
+                🛒 Rendeléseim (<?= count($userOrders) ?>)
+                <button class="section-toggle-btn" onclick="toggleOrdersSection()" title="Rendelések megjelenítése/elrejtése">
+                    👁️ Elrejt
+                </button>
+            </h2>
+            <div class="orders-grid" id="ordersGrid">
+                <?php if (empty($userOrders)): ?>
+                    <p class="unselectable" style="text-align:center; opacity:0.6; padding: 2rem 0; grid-column: 1 / -1;">Még nincsenek rendeléseid.</p>
+                <?php else: ?>
+                    <?php foreach ($userOrders as $order):
+                        $statusClass = 'status-pending';
+                        $statusText = 'Függőben';
+                        if ($order['status'] === 'completed') {
+                            $statusClass = 'status-completed';
+                            $statusText = 'Teljesítve';
+                        } elseif ($order['status'] === 'cancelled') {
+                            $statusClass = 'status-cancelled';
+                            $statusText = 'Törölve';
+                        }
+
+                        $paymentLabels = [
+                            'cod'      => 'Utánvétel',
+                            'transfer' => 'Banki átutalás',
+                            'pickup'   => 'Személyes átvétel'
+                        ];
+                        $paymentText = $paymentLabels[$order['payment_method']] ?? $order['payment_method'];
+                    ?>
+                        <div class="order-card">
+                            <div class="order-header">
+                                <?php if (!empty($order['item_image'])): ?>
+                                    <img src="<?= htmlspecialchars($order['item_image']) ?>" alt="Termék" class="order-image">
+                                <?php else: ?>
+                                    <div class="order-image-placeholder">📷</div>
+                                <?php endif; ?>
+                                <div class="order-info">
+                                    <div class="order-title"><?= htmlspecialchars($order['item_title']) ?></div>
+                                    <div class="order-price"><?= number_format($order['item_price'], 0, ',', ' ') ?> Ft</div>
+                                    <div class="order-meta">
+                                        Eladó: <strong><?= htmlspecialchars($order['seller_name']) ?></strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="order-details">
+                                <div>
+                                    <span class="detail-label">Rendelés ID</span>
+                                    <span><?= htmlspecialchars($order['id']) ?></span>
+                                </div>
+                                <div>
+                                    <span class="detail-label">Státusz</span>
+                                    <span class="status-badge <?= $statusClass ?>"><?= $statusText ?></span>
+                                </div>
+                                <div>
+                                    <span class="detail-label">Fizetési mód</span>
+                                    <span><?= $paymentText ?></span>
+                                </div>
+                                <div>
+                                    <span class="detail-label">Dátum</span>
+                                    <span><?= date('Y-m-d H:i', strtotime($order['created_at'])) ?></span>
+                                </div>
+                                <div style="grid-column: 1 / -1;">
+                                    <span class="detail-label">Szállítási cím</span>
+                                    <span><?= htmlspecialchars($order['shipping_zip'] . ' ' . $order['shipping_city'] . ', ' . $order['shipping_address']) ?></span>
+                                </div>
+                                <?php if (!empty($order['notes'])): ?>
+                                    <div style="grid-column: 1 / -1;">
+                                        <span class="detail-label">Megjegyzés</span>
+                                        <span><?= htmlspecialchars($order['notes']) ?></span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Rendeléseim megjelenítő gomb -->
+        <div style="text-align: center; margin-top: -0.5rem;">
+            <button class="edit-btn unselectable" id="toggleOrdersBtn" onclick="toggleOrdersSection()" style="min-width: 220px;">
+                🛒 Rendeléseim megtekintése (<?= count($userOrders) ?>)
+            </button>
         </div>
     </div>
 
@@ -1766,6 +2061,35 @@ try {
             document.addEventListener('click', closeDropdown);
         }
 
+        // ---- TOGGLE FUNKCIÓK ---- 
+        function toggleItemsSection() {
+            const grid = document.getElementById('itemsGrid');
+            const btn = document.getElementById('toggleItemsBtn');
+            if (grid.classList.contains('hidden')) {
+                grid.classList.remove('hidden');
+                btn.textContent = '👁️ Elrejt';
+                btn.classList.add('active');
+            } else {
+                grid.classList.add('hidden');
+                btn.textContent = '👁️ Megjelenít';
+                btn.classList.remove('active');
+            }
+        }
+
+        function toggleOrdersSection() {
+            const section = document.getElementById('ordersSection');
+            const btn = document.getElementById('toggleOrdersBtn');
+            if (section.style.display === 'none' || section.style.display === '') {
+                section.style.display = 'block';
+                btn.textContent = '🛒 Rendeléseim elrejtése (<?= count($userOrders) ?>)';
+                btn.classList.add('active');
+            } else {
+                section.style.display = 'none';
+                btn.textContent = '🛒 Rendeléseim megtekintése (<?= count($userOrders) ?>)';
+                btn.classList.remove('active');
+            }
+        }
+
         // ---- ÚJ MODÁLOK KEZELÉSE ----
         const accountSettingsModal = document.getElementById('accountSettingsModal');
         const profilePicModal = document.getElementById('profilePicModal');
@@ -1865,12 +2189,10 @@ try {
                 if (data.success) {
                     profilePicStatus.classList.add('success');
                     profilePicStatus.textContent = data.message;
-                    // Frissítjük a profilképet az oldalon
                     if (data.new_image) {
                         if (profileImgPreview.tagName === 'IMG') {
                             profileImgPreview.src = data.new_image + '?t=' + Date.now();
                         } else {
-                            // A placeholder div lecserélése img-re
                             const newImg = document.createElement('img');
                             newImg.src = data.new_image + '?t=' + Date.now();
                             newImg.className = 'profile-pic';
@@ -1911,7 +2233,6 @@ try {
                     usernameStatus.classList.add('success');
                     usernameStatus.textContent = data.message;
                     document.getElementById('displayUsername').textContent = document.getElementById('newUsername').value;
-                    // Frissítjük a dropdownban is
                     document.querySelector('.dropdown-username').textContent = document.getElementById('newUsername').value;
                     setTimeout(() => {
                         closeUsernameModal();

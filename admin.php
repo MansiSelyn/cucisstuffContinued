@@ -156,7 +156,7 @@ try {
         }
     }
     // Adatok lekérése
-    $counts = ['users' => 0, 'items' => 0, 'reports' => 0];
+    $counts = ['users' => 0, 'items' => 0, 'reports' => 0, 'orders' => 0];
     foreach (['users', 'items'] as $tbl) {
         try {
             $counts[$tbl] = $conn->query("SELECT COUNT(*) FROM $tbl")->fetchColumn();
@@ -175,10 +175,31 @@ try {
         $cMsg = 0;
         $conn->exec("CREATE TABLE IF NOT EXISTS message_reports (id INT AUTO_INCREMENT PRIMARY KEY, message_id CHAR(25) NOT NULL, reporter_user_id INT NOT NULL, reason TEXT NOT NULL, status ENUM('pending','resolved','dismissed') DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (message_id) REFERENCES uzenetek(id) ON DELETE CASCADE, FOREIGN KEY (reporter_user_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB");
     }
+    try {
+        $counts['orders'] = $conn->query("SELECT COUNT(*) FROM orders")->fetchColumn();
+    } catch (PDOException $e) {
+        $counts['orders'] = 0;
+        $conn->exec("CREATE TABLE IF NOT EXISTS orders (
+            id CHAR(12) PRIMARY KEY,
+            buyer_id INT NOT NULL,
+            seller_id INT NOT NULL,
+            item_id CHAR(12) NOT NULL,
+            status ENUM('pending', 'completed', 'cancelled') DEFAULT 'pending',
+            shipping_name VARCHAR(255) NOT NULL,
+            shipping_email VARCHAR(255) NOT NULL,
+            shipping_phone VARCHAR(50) NOT NULL,
+            shipping_zip VARCHAR(20) NOT NULL,
+            shipping_city VARCHAR(100) NOT NULL,
+            shipping_address VARCHAR(255) NOT NULL,
+            payment_method ENUM('cod', 'transfer', 'pickup') NOT NULL,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB");
+    }
     $counts['reports'] = (int)$cItem + (int)$cMsg;
     $totalItems = $counts[$view] ?? 0;
     $totalPages = $perPage ? (int)ceil($totalItems / $perPage) : 0;
-    $items = $users = $reports = $conversations = $messages = [];
+    $items = $users = $reports = $conversations = $messages = $orders = [];
     $selectedUser1 = $selectedUser2 = 0;
     $user1Name = $user2Name = '';
     if ($view === 'items' && !$editId) {
@@ -266,6 +287,22 @@ try {
                 }
             }
         }
+    } elseif ($view === 'orders') {
+        $totalPages = (int)ceil($counts['orders'] / $perPage);
+        $oStmt = $conn->prepare("
+            SELECT o.*, i.title AS item_title, i.price AS item_price,
+                   buyer.username AS buyer_name, seller.username AS seller_name
+            FROM orders o
+            JOIN items i ON o.item_id = i.id
+            JOIN users buyer ON o.buyer_id = buyer.id
+            JOIN users seller ON o.seller_id = seller.id
+            ORDER BY o.created_at DESC
+            LIMIT :o, :l
+        ");
+        $oStmt->bindValue(':o', $offset, PDO::PARAM_INT);
+        $oStmt->bindValue(':l', $perPage, PDO::PARAM_INT);
+        $oStmt->execute();
+        $orders = $oStmt->fetchAll(PDO::FETCH_ASSOC);
     }
     $editItem = $editUser = null;
     if ($editId) {
@@ -283,9 +320,9 @@ try {
     $error = "DB HIBA: " . $e->getMessage();
     $totalPages = 0;
     $view = 'main';
-    $items = $users = $reports = $conversations = $messages = [];
+    $items = $users = $reports = $conversations = $messages = $orders = [];
     $editItem = $editUser = null;
-    $counts = ['users' => 0, 'items' => 0, 'reports' => 0];
+    $counts = ['users' => 0, 'items' => 0, 'reports' => 0, 'orders' => 0];
 }
 function pgLink($v, $p)
 {
@@ -1824,6 +1861,9 @@ function pgLink($v, $p)
                 <a href="admin.php?view=conversations" class="nav-btn <?= $view === 'conversations' ? 'active' : '' ?>">
                     <span class="nav-label">BESZÉLGETÉSEK</span>
                 </a>
+                <a href="admin.php?view=orders" class="nav-btn <?= $view === 'orders' ? 'active' : '' ?>">
+                    <span class="nav-label">FELADÁSOK</span>
+                </a>
                 <button class="nav-btn purge-btn" id="purgeBtn">⚠ VIZSGAPURGE</button>
                 <a href="main.php" class="nav-btn nav-back">← KILÉPÉS</a>
             </nav>
@@ -1887,19 +1927,21 @@ function pgLink($v, $p)
                 <!-- ════════════ DASHBOARD ════════════ -->
             <?php elseif ($view === 'main'): ?>
                 <div class="dash-grid">
-                    <?php foreach (['REPORTOK' => 'reports', 'FELHASZNÁLÓK' => 'users', 'TERMÉKEK' => 'items'] as $label => $key): ?>
+                    <?php foreach (['REPORTOK' => 'reports', 'FELHASZNÁLÓK' => 'users', 'TERMÉKEK' => 'items', 'FELADÁSOK' => 'orders'] as $label => $key): ?>
                         <a href="admin.php?view=<?= $key ?>" style="text-decoration:none">
                             <div class="dash-card">
                                 <div class="dash-label"><?= match ($key) {
                                                             'reports' => '⚠',
                                                             'users' => '◈',
-                                                            'items' => '◧'
+                                                            'items' => '◧',
+                                                            'orders' => '📦'
                                                         } ?> <?= $label ?></div>
                                 <div class="dash-number"><?= number_format($counts[$key]) ?></div>
                                 <div class="dash-sublabel"><?= match ($key) {
                                                                 'reports' => 'Bejelentett hirdetések',
                                                                 'users' => 'Regisztrált fiókok',
-                                                                'items' => 'Aktív hirdetések'
+                                                                'items' => 'Aktív hirdetések',
+                                                                'orders' => 'Megrendelések'
                                                             } ?></div>
                             </div>
                         </a>
@@ -2115,6 +2157,50 @@ function pgLink($v, $p)
                         <?php endif; ?>
                     </div>
                 </div>
+            <!-- ════════════ ORDERS ════════════ -->
+            <?php elseif ($view === 'orders'): ?>
+                <div class="section-header">
+                    <h2>FELADÁSOK / RENDELÉSEK</h2>
+                    <span class="record-count">TOTAL: <?= $counts['orders'] ?? 0 ?> RECORD</span>
+                </div>
+                <?php if (empty($orders)): ?>
+                    <div class="empty-state">NINCS ADAT</div>
+                <?php else: ?>
+                    <div class="data-panel">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>TERMÉK</th>
+                                    <th>VEVŐ</th>
+                                    <th>ELADÓ</th>
+                                    <th>ÖSSZEG</th>
+                                    <th>ÁLLAPOT</th>
+                                    <th>FIZETÉS</th>
+                                    <th>DÁTUM</th>
+                                    <th>RÉSZLETEK</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($orders as $o): ?>
+                                    <tr>
+                                        <td class="mono"><?= htmlspecialchars($o['id']) ?></td>
+                                        <td><?= htmlspecialchars($o['item_title']) ?></td>
+                                        <td><?= htmlspecialchars($o['buyer_name']) ?></td>
+                                        <td><?= htmlspecialchars($o['seller_name']) ?></td>
+                                        <td class="mono"><?= number_format($o['item_price'], 0, ',', ' ') ?> FT</td>
+                                        <td><?= htmlspecialchars($o['status']) ?></td>
+                                        <td><?= htmlspecialchars($o['payment_method']) ?></td>
+                                        <td class="mono"><?= date('Y-m-d', strtotime($o['created_at'])) ?></td>
+                                        <td>
+                                            <button class="act act-view" onclick="alert('Rendelés ID: <?= htmlspecialchars($o['id']) ?>\nNév: <?= htmlspecialchars($o['shipping_name']) ?>\nEmail: <?= htmlspecialchars($o['shipping_email']) ?>\nTelefon: <?= htmlspecialchars($o['shipping_phone']) ?>\nCím: <?= htmlspecialchars($o['shipping_zip']) ?> <?= htmlspecialchars($o['shipping_city']) ?>, <?= htmlspecialchars($o['shipping_address']) ?>\nFizetés: <?= htmlspecialchars($o['payment_method']) ?>\nMegjegyzés: <?= htmlspecialchars($o['notes'] ?? '-') ?>')">INFO</button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
             <!-- LAPOZÁS -->
             <?php if ($totalPages > 1 && !in_array($view, ['main', 'conversations']) && !$editId): ?>
