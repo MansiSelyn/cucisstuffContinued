@@ -12,7 +12,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 require_once 'config.php';
 
 $userId = (int)$_SESSION['user_id'];
-$message = '';
 $error = '';
 $form_error = ''; // Űrlap validációs hibákhoz
 
@@ -31,7 +30,6 @@ try {
     );
 
     // --- RENDELÉSEK TÁBLA LÉTREHOZÁSA (ha még nem létezik) ---
-    // NINCSENEK KÜLSŐ KULCSOK, hogy elkerüljük a tárolómotor / típusegyezési hibákat
     $conn->exec("
         CREATE TABLE IF NOT EXISTS orders (
             id CHAR(12) PRIMARY KEY,
@@ -57,6 +55,12 @@ try {
         $conn->exec("ALTER TABLE items ADD COLUMN sold BOOLEAN DEFAULT FALSE");
     }
 
+    // updated_at oszlop hozzáadása az items táblához, ha még nincs
+    $colCheck2 = $conn->query("SHOW COLUMNS FROM items LIKE 'updated_at'");
+    if ($colCheck2->rowCount() === 0) {
+        $conn->exec("ALTER TABLE items ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+    }
+
     // =============================================
     // TERMÉK ADATAINAK LEKÉRÉSE
     // =============================================
@@ -73,9 +77,10 @@ try {
         $stmt->execute([$itemId]);
         $item = $stmt->fetch();
 
+        // --- JAVÍTÁS: SIKERES VÁSÁRLÁS UTÁN NE MUTASSA A "MÁR ELADVA" HIBÁT ---
         if (!$item) {
             $error = 'A termék nem található.';
-        } elseif ($item['sold']) {
+        } elseif ($item['sold'] && !isset($_GET['success'])) {   // ← itt a lényegi változás
             $error = 'Ezt a terméket már megvásárolták.';
         } elseif ($item['user_id'] == $userId) {
             $error = 'A saját termékedet nem vásárolhatod meg.';
@@ -188,7 +193,6 @@ try {
                 $error = 'Hiba történt a rendelés során: ' . $e->getMessage();
             }
         } else {
-            // Űrlap validációs hibák esetén a form_error változóba kerülnek
             $form_error = implode('<br>', $errors);
         }
     }
