@@ -2584,7 +2584,7 @@ function pgLink($v, $p)
                         <?php endif; ?>
                     </div>
                 </div>
-            <!-- ════════════ ORDERS ════════════ -->
+                <!-- ════════════ ORDERS ════════════ -->
             <?php elseif ($view === 'orders'): ?>
                 <div class="section-header">
                     <h2>RENDELÉSEK</h2>
@@ -2846,7 +2846,9 @@ function pgLink($v, $p)
                 else if (type === 'delete_order') body = 'delete_order=1&order_id=' + data.order_id;
                 fetch('admin.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
                     body: body
                 }).then(() => location.reload());
             });
@@ -3113,7 +3115,9 @@ function pgLink($v, $p)
                             pm.delBtn.style.display = 'block';
                             pm.editBtn.onclick = () => location.href = 'admin.php?view=items&id=' + prodId;
                             pm.delBtn.onclick = () => {
-                                confirmThenPost('delete_item', { item_id: prodId });
+                                confirmThenPost('delete_item', {
+                                    item_id: prodId
+                                });
                             };
                         } else if (!isOwner) {
                             pm.menuCont.style.display = 'block';
