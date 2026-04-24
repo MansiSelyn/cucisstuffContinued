@@ -14,6 +14,7 @@ require_once 'config.php';
 $userId = (int)$_SESSION['user_id'];
 $message = '';
 $error = '';
+$form_error = ''; // Űrlap validációs hibákhoz
 
 // =============================================
 // ADATBÁZIS KAPCSOLAT
@@ -30,6 +31,7 @@ try {
     );
 
     // --- RENDELÉSEK TÁBLA LÉTREHOZÁSA (ha még nem létezik) ---
+    // NINCSENEK KÜLSŐ KULCSOK, hogy elkerüljük a tárolómotor / típusegyezési hibákat
     $conn->exec("
         CREATE TABLE IF NOT EXISTS orders (
             id CHAR(12) PRIMARY KEY,
@@ -45,11 +47,8 @@ try {
             shipping_address VARCHAR(255) NOT NULL,
             payment_method ENUM('cod', 'transfer', 'pickup') NOT NULL,
             notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (buyer_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
 
     // Sold oszlop hozzáadása az items táblához, ha még nincs
@@ -189,7 +188,8 @@ try {
                 $error = 'Hiba történt a rendelés során: ' . $e->getMessage();
             }
         } else {
-            $error = implode('<br>', $errors);
+            // Űrlap validációs hibák esetén a form_error változóba kerülnek
+            $form_error = implode('<br>', $errors);
         }
     }
 
@@ -478,6 +478,18 @@ try {
             color: rgba(255, 255, 255, 0.2);
         }
 
+        /* Textarea nem átméretezhető */
+        textarea {
+            resize: none;
+        }
+
+        /* Readonly mezők halványabb háttérrel */
+        input[readonly] {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.08);
+            cursor: not-allowed;
+        }
+
         .form-group select {
             cursor: pointer;
         }
@@ -582,6 +594,31 @@ try {
             color: #5dffa0;
         }
 
+        /* Lebegő hibaüzenet */
+        .message-banner.error.floating {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            max-width: 600px;
+            width: 90%;
+            margin-bottom: 0;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
         /* ========== SIKEROLDAL ========== */
         .success-container {
             text-align: center;
@@ -676,12 +713,14 @@ try {
     <div class="main-container">
 
         <?php if (!empty($error)): ?>
+            <!-- Termék szintű hibák (pl. nem található, már eladott, saját termék) -->
             <div class="message-banner error unselectable"><?= $error ?></div>
             <div style="text-align:center;margin-top:1rem;">
                 <a href="main.php" class="back-btn unselectable" style="display:inline-block;">← Vissza a főoldalra</a>
             </div>
 
         <?php elseif ($success): ?>
+            <!-- Sikeres rendelés oldal -->
             <div class="form-card">
                 <div class="success-container">
                     <div class="success-icon">✅</div>
@@ -695,6 +734,23 @@ try {
             </div>
 
         <?php elseif ($item): ?>
+            <!-- Űrlap validációs hibák lebegő üzenetben -->
+            <?php if (!empty($form_error)): ?>
+                <div class="message-banner error floating unselectable"><?= $form_error ?></div>
+                <script>
+                    (function() {
+                        var floatingErrors = document.querySelectorAll('.message-banner.error.floating');
+                        floatingErrors.forEach(function(el) {
+                            setTimeout(function() {
+                                el.style.opacity = '0';
+                                el.style.transition = 'opacity 0.5s ease';
+                                setTimeout(function() { el.remove(); }, 500);
+                            }, 5000);
+                        });
+                    })();
+                </script>
+            <?php endif; ?>
+
             <!-- Termék összefoglaló -->
             <div class="product-summary">
                 <?php
@@ -724,13 +780,13 @@ try {
                             <label for="shipping_name">Teljes név *</label>
                             <input type="text" id="shipping_name" name="shipping_name"
                                 placeholder="Add meg a neved"
-                                value="<?= htmlspecialchars($_POST['shipping_name'] ?? $currentUser['username'] ?? '') ?>" required>
+                                value="<?= htmlspecialchars($_POST['shipping_name'] ?? '') ?>" required>
                         </div>
                         <div class="form-group">
                             <label for="shipping_email">E-mail cím *</label>
                             <input type="email" id="shipping_email" name="shipping_email"
-                                placeholder="pelda@email.hu"
-                                value="<?= htmlspecialchars($_POST['shipping_email'] ?? $currentUser['email'] ?? '') ?>" required>
+                                value="<?= htmlspecialchars($_POST['shipping_email'] ?? $currentUser['email'] ?? '') ?>"
+                                readonly required>
                         </div>
                         <div class="form-group">
                             <label for="shipping_phone">Telefonszám *</label>
