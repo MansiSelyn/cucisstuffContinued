@@ -35,10 +35,32 @@ try {
             'date' => date('Y-m-d', strtotime($item['created_at'])),
             'description' => $item['description'],
             'images' => $imgs->fetchAll(PDO::FETCH_COLUMN),
-            'user_id' => $item['user_id']
+            'user_id' => $item['user_id'],
+            'sold' => (bool)$item['sold']
         ]);
         exit;
     }
+
+    // AJAX: felhasználói profil adatok
+    if (isset($_GET['get_user_profile']) && !empty($_GET['get_user_profile'])) {
+        header('Content-Type: application/json');
+        $profileId = (int)$_GET['get_user_profile'];
+        $userStmt = $conn->prepare("SELECT id, username, email, created_at, profile_picture FROM users WHERE id = ?");
+        $userStmt->execute([$profileId]);
+        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user) {
+            echo json_encode(['error' => 'Felhasználó nem található']);
+            exit;
+        }
+        $itemsStmt = $conn->prepare("SELECT id, title, price, sold, (SELECT image_path FROM item_images WHERE item_id = items.id AND is_primary = 1 LIMIT 1) as thumb FROM items WHERE user_id = ? ORDER BY created_at DESC");
+        $itemsStmt->execute([$profileId]);
+        $items = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+        $user['items'] = $items;
+        $user['item_count'] = count($items);
+        echo json_encode($user);
+        exit;
+    }
+
     $view   = $_GET['view']   ?? 'main';
     $editId = $_GET['id']     ?? null;
     $page   = max(1, intval($_GET['page'] ?? 1));
@@ -107,6 +129,11 @@ try {
                     exit();
                 }
             }
+        }
+        // Rendelés törlése
+        if (isset($_POST['delete_order'], $_POST['order_id'])) {
+            $conn->prepare("DELETE FROM orders WHERE id=?")->execute([$_POST['order_id']]);
+            $message = "Rendelés törölve.";
         }
         // ---- VIZSGAPURGE ----
         if (isset($_POST['purge_confirm'])) {
@@ -289,7 +316,7 @@ try {
         }
     } elseif ($view === 'orders') {
         $totalPages = (int)ceil($counts['orders'] / $perPage);
-        // Javított lekérdezés: COLLATE használata a karakterkészlet- és kolláció-ütközés elkerülésére
+        // COLLATE használata a karakterkészlet- és kolláció-ütközés elkerülésére
         $oStmt = $conn->prepare("
             SELECT o.*, i.title AS item_title, i.price AS item_price,
                    buyer.username AS buyer_name, seller.username AS seller_name
@@ -372,13 +399,12 @@ function pgLink($v, $p)
             --font-vt: 'VT323', 'Courier New', monospace;
         }
 
-        /* LIGHT MODE — Sárgás / borostyán, világosabb a sötét módnál, de nem fehér */
         html.light-mode {
             --c-bg: #2a1a00;
             --c-panel: #3a2400;
             --c-border: #6a4500;
             --c-border2: #9a6500;
-            --c-green: #ffcc00;
+            --c-green: #ff8c00;
             --c-green-dim: #9a7000;
             --c-green-mid: #e69900;
             --c-amber: #ff8533;
@@ -386,8 +412,8 @@ function pgLink($v, $p)
             --c-text: #f0c080;
             --c-muted: #9a6a45;
             --c-scan: rgba(255, 204, 0, 0.05);
-            --c-glow: 0 0 10px rgba(255, 204, 0, 0.5);
-            --c-glow-strong: 0 0 25px rgba(255, 204, 0, 0.7);
+            --c-glow: 0 0 10px rgba(255, 140, 0, 0.5);
+            --c-glow-strong: 0 0 25px rgba(255, 140, 0, 0.7);
         }
 
         html {
@@ -414,7 +440,6 @@ function pgLink($v, $p)
             -webkit-user-select: text;
         }
 
-        /* CRT Scanlines */
         body::before {
             content: '';
             position: fixed;
@@ -428,7 +453,6 @@ function pgLink($v, $p)
             z-index: 9998;
         }
 
-        /* CRT vignette */
         body::after {
             content: '';
             position: fixed;
@@ -440,7 +464,6 @@ function pgLink($v, $p)
             z-index: 9997;
         }
 
-        /* CRT flicker */
         @keyframes flicker {
 
             0%,
@@ -467,7 +490,6 @@ function pgLink($v, $p)
             padding: 0 0 80px;
         }
 
-        /* Phosphor glow on text */
         .glow {
             text-shadow: var(--c-glow);
         }
@@ -476,7 +498,6 @@ function pgLink($v, $p)
             text-shadow: var(--c-glow-strong);
         }
 
-        /* ═══════════ TOP CHROME ═══════════ */
         .terminal-chrome {
             background: var(--c-panel);
             border-bottom: 2px solid var(--c-border2);
@@ -583,7 +604,6 @@ function pgLink($v, $p)
             color: var(--c-amber);
         }
 
-        /* VIZSGAPURGE gomb – PIROS, témától függetlenül */
         .nav-btn.purge-btn {
             color: #ff3333 !important;
             border-color: #ff3333 !important;
@@ -605,7 +625,6 @@ function pgLink($v, $p)
             color: #ff4444 !important;
         }
 
-        /* Theme toggle */
         .theme-btn {
             position: fixed;
             top: 10px;
@@ -629,14 +648,12 @@ function pgLink($v, $p)
             box-shadow: var(--c-glow);
         }
 
-        /* ═══════════ MAIN LAYOUT ═══════════ */
         .terminal-body {
             max-width: 1700px;
             margin: 0 auto;
             padding: 20px 16px;
         }
 
-        /* Section header */
         .section-header {
             display: flex;
             align-items: center;
@@ -669,7 +686,6 @@ function pgLink($v, $p)
             letter-spacing: 1px;
         }
 
-        /* ═══════════ BANNERS ═══════════ */
         .banner {
             padding: 10px 16px;
             margin-bottom: 14px;
@@ -717,7 +733,6 @@ function pgLink($v, $p)
             content: '[ERR]';
         }
 
-        /* ═══════════ DATA TABLE ═══════════ */
         .data-panel {
             border: 1px solid var(--c-border2);
             background: var(--c-panel);
@@ -791,7 +806,6 @@ function pgLink($v, $p)
             color: var(--c-muted);
         }
 
-        /* ═══════════ ACTION BUTTONS ═══════════ */
         .act {
             display: inline-block;
             padding: 3px 10px;
@@ -839,7 +853,6 @@ function pgLink($v, $p)
             border-color: var(--c-green-mid);
         }
 
-        /* ═══════════ EMPTY STATE ═══════════ */
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -858,7 +871,6 @@ function pgLink($v, $p)
             margin-bottom: 8px;
         }
 
-        /* ═══════════ EDIT FORM ═══════════ */
         .edit-terminal {
             max-width: 640px;
             margin: 0 auto 20px;
@@ -981,7 +993,6 @@ function pgLink($v, $p)
             color: var(--c-amber);
         }
 
-        /* ═══════════ MAIN DASHBOARD ═══════════ */
         .dash-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -1065,7 +1076,6 @@ function pgLink($v, $p)
             color: var(--c-green-mid);
         }
 
-        /* ═══════════ PAGINATION ═══════════ */
         .pagination {
             position: fixed;
             bottom: 0;
@@ -1114,7 +1124,119 @@ function pgLink($v, $p)
             letter-spacing: 2px;
         }
 
-        /* ═══════════ PURGE MODAL ═══════════ */
+        /* MEGERŐSÍTŐ MODAL (TÖRLÉSHEZ) */
+        .confirm-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .confirm-modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .confirm-modal-card {
+            width: 100%;
+            max-width: 450px;
+            background: var(--c-panel);
+            border: 2px solid var(--c-red);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 0 40px rgba(255, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.7);
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s;
+            opacity: 0;
+            text-align: center;
+        }
+
+        .confirm-modal-overlay.active .confirm-modal-card {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        .confirm-modal-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .confirm-modal-title {
+            font-family: var(--font-vt);
+            font-size: 1.8rem;
+            color: var(--c-red);
+            text-shadow: 0 0 10px #ff0000;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+        }
+
+        .confirm-modal-text {
+            color: var(--c-text);
+            margin-bottom: 1.8rem;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .confirm-modal-text strong {
+            color: var(--c-red);
+        }
+
+        .confirm-modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .confirm-btn-yes {
+            padding: 0.65rem 2rem;
+            background: var(--c-red);
+            border: none;
+            border-radius: 40px;
+            color: #000;
+            font-family: var(--font-mono);
+            font-weight: bold;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 0 15px #ff0000;
+        }
+
+        .confirm-btn-yes:hover {
+            background: #ff5555;
+            box-shadow: 0 0 25px #ff4444;
+            transform: scale(1.02);
+        }
+
+        .confirm-btn-no {
+            padding: 0.65rem 2rem;
+            background: var(--c-green-dim);
+            border: none;
+            border-radius: 40px;
+            color: #000;
+            font-family: var(--font-mono);
+            font-weight: bold;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 0 15px var(--c-green);
+        }
+
+        .confirm-btn-no:hover {
+            background: var(--c-green-mid);
+            box-shadow: 0 0 25px var(--c-green);
+            transform: scale(1.02);
+        }
+
         .purge-modal-overlay {
             position: fixed;
             inset: 0;
@@ -1136,7 +1258,6 @@ function pgLink($v, $p)
         .purge-modal-card {
             width: 100%;
             max-width: 500px;
-            /* 🔴 PIROS TÉMA, TÉMÁTÓL FÜGGETLEN */
             background: #1a0505;
             border: 2px solid #ff3333;
             border-radius: 24px;
@@ -1206,7 +1327,6 @@ function pgLink($v, $p)
             transform: scale(1.02);
         }
 
-        /* 🟢 MÉGSE GOMB – ZÖLD STÍLUS, MINT A VÉGREHAJT, CSAK ZÖLDBEN */
         .purge-btn-cancel {
             padding: 0.75rem 2rem;
             background: #00aa3a;
@@ -1229,11 +1349,10 @@ function pgLink($v, $p)
             transform: scale(1.02);
         }
 
-        /* ═══════════ PRODUCT MODAL ═══════════ */
         .product-modal-overlay {
             position: fixed;
             inset: 0;
-            z-index: 4000;
+            z-index: 6000;
             background: rgba(0, 5, 0, 0.97);
             display: none;
             align-items: center;
@@ -1257,6 +1376,11 @@ function pgLink($v, $p)
             border: 1px solid var(--c-border2);
             overflow: hidden;
             position: relative;
+        }
+
+        .product-modal-card * {
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .product-modal-header {
@@ -1506,11 +1630,17 @@ function pgLink($v, $p)
             box-shadow: 0 0 20px rgba(0, 180, 60, 0.3);
         }
 
-        /* Lightbox */
+        .product-buy-btn.sold {
+            background: #555 !important;
+            border-color: #777 !important;
+            color: #aaa !important;
+            cursor: not-allowed;
+        }
+
         .lightbox-overlay {
             position: fixed;
             inset: 0;
-            z-index: 5000;
+            z-index: 7000;
             background: rgba(0, 0, 0, 0.98);
             backdrop-filter: blur(8px);
             display: none;
@@ -1560,7 +1690,6 @@ function pgLink($v, $p)
             color: var(--c-bg);
         }
 
-        /* view-item-btn (report táblában) */
         .view-item-btn {
             background: none;
             border: none;
@@ -1579,7 +1708,6 @@ function pgLink($v, $p)
             color: var(--c-green);
         }
 
-        /* ═══════════ CONVERSATIONS VIEW ═══════════ */
         .conversations-container {
             display: flex;
             gap: 1rem;
@@ -1738,7 +1866,267 @@ function pgLink($v, $p)
             letter-spacing: 2px;
         }
 
-        /* Responsive */
+        /* Order details row */
+        .order-details-row td {
+            padding: 16px !important;
+            background: rgba(0, 0, 0, 0.3) !important;
+            white-space: normal !important;
+        }
+
+        .order-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .order-details-grid strong {
+            color: var(--c-green-mid);
+        }
+
+        /* User popup overlay */
+        .user-popup-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            background: rgba(0, 0, 0, 0.98);
+            backdrop-filter: blur(16px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .user-popup-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .user-popup-card {
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 5, 5, 0.99);
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+            transform: scale(0.98);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-popup-overlay.active .user-popup-card {
+            transform: scale(1);
+        }
+
+        .user-popup-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.5rem;
+            background: rgba(5, 5, 5, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--c-border2);
+            flex-shrink: 0;
+        }
+
+        .user-popup-close {
+            background: rgba(57, 255, 20, 0.1);
+            border: 1px solid var(--c-border2);
+            color: var(--c-green);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .user-popup-close:hover {
+            background: var(--c-green);
+            color: #000;
+        }
+
+        .user-popup-topbar-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--c-green);
+        }
+
+        .user-popup-body {
+            flex: 1;
+            max-width: 560px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            overflow-y: auto;
+        }
+
+        .user-popup-avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--c-green), #0a4a00);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #000;
+            margin: 0 auto 1.2rem;
+            box-shadow: 0 0 40px rgba(57, 255, 20, 0.3);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .user-popup-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-popup-name {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--c-green);
+            margin-bottom: 0.35rem;
+        }
+
+        .user-popup-meta {
+            text-align: center;
+            font-size: 0.88rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 2rem;
+        }
+
+        .user-popup-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .user-stat {
+            flex: 1;
+            background: rgba(57, 255, 20, 0.07);
+            border: 1px solid rgba(57, 255, 20, 0.15);
+            border-radius: 16px;
+            padding: 1.1rem;
+            text-align: center;
+        }
+
+        .user-stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--c-green);
+        }
+
+        .user-stat-label {
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 3px;
+        }
+
+        .user-popup-items-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 0.9rem;
+        }
+
+        .user-popup-items-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
+            margin-bottom: 2rem;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .user-item-thumb {
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(57, 255, 20, 0.12);
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .user-item-thumb:hover {
+            border-color: var(--c-green);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(57, 255, 20, 0.2);
+        }
+
+        .user-item-thumb.sold {
+            opacity: 0.5;
+            border-color: rgba(255, 50, 50, 0.5);
+        }
+
+        .user-item-thumb.sold:hover {
+            border-color: var(--c-red);
+            box-shadow: 0 8px 24px rgba(255, 0, 0, 0.2);
+        }
+
+        .user-item-thumb img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .user-item-thumb-placeholder {
+            width: 100%;
+            height: 110px;
+            background: rgba(57, 255, 20, 0.07);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(57, 255, 20, 0.35);
+            font-size: 1.8rem;
+        }
+
+        .user-item-info {
+            padding: 0.6rem 0.75rem;
+        }
+
+        .user-item-title {
+            font-size: 0.82rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .user-item-price {
+            font-size: 0.8rem;
+            color: var(--c-green);
+            font-weight: 600;
+            margin-top: 3px;
+        }
+
+        .user-item-sold-badge {
+            font-size: 0.7rem;
+            color: var(--c-red);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
         @media (max-width: 1100px) {
             .product-modal-card {
                 grid-template-columns: 1fr;
@@ -1782,9 +2170,6 @@ function pgLink($v, $p)
             }
         }
 
-        /* ═══════════════════════════════════════════════
-           SCROLLBAR STYLING – TERMINAL THEME
-           ═══════════════════════════════════════════════ */
         ::-webkit-scrollbar {
             width: 10px;
             height: 10px;
@@ -1815,7 +2200,6 @@ function pgLink($v, $p)
             scrollbar-color: var(--c-green-dim) var(--c-panel);
         }
 
-        /* Light mode overrides for scrollbar (variables already handle colors) */
         html.light-mode * {
             scrollbar-color: var(--c-green-dim) var(--c-panel);
         }
@@ -1827,6 +2211,38 @@ function pgLink($v, $p)
 
         html.light-mode ::-webkit-scrollbar-thumb:hover {
             background: var(--c-green-mid);
+        }
+
+        /* Light mode fix: user popup narancs színek */
+        html.light-mode .user-popup-avatar {
+            background: linear-gradient(135deg, #ff8c00, #cc4400) !important;
+        }
+
+        html.light-mode .user-popup-name,
+        html.light-mode .user-popup-topbar-title,
+        html.light-mode .user-stat-value,
+        html.light-mode .user-item-price {
+            color: #ff8c00 !important;
+        }
+
+        html.light-mode .user-item-thumb {
+            border-color: rgba(255, 140, 0, 0.2) !important;
+        }
+
+        html.light-mode .user-item-thumb:hover {
+            border-color: #ff8c00 !important;
+            box-shadow: 0 8px 24px rgba(255, 140, 0, 0.3) !important;
+        }
+
+        html.light-mode .user-popup-close {
+            background: rgba(255, 140, 0, 0.15) !important;
+            border-color: rgba(255, 140, 0, 0.4) !important;
+            color: #ff8c00 !important;
+        }
+
+        html.light-mode .user-popup-close:hover {
+            background: #ff8c00 !important;
+            color: #000 !important;
         }
     </style>
 </head>
@@ -1863,7 +2279,7 @@ function pgLink($v, $p)
                     <span class="nav-label">BESZÉLGETÉSEK</span>
                 </a>
                 <a href="admin.php?view=orders" class="nav-btn <?= $view === 'orders' ? 'active' : '' ?>">
-                    <span class="nav-label">FELADÁSOK</span>
+                    <span class="nav-label">RENDELÉSEK</span>
                 </a>
                 <button class="nav-btn purge-btn" id="purgeBtn">⚠ VIZSGAPURGE</button>
                 <a href="main.php" class="nav-btn nav-back">← KILÉPÉS</a>
@@ -1928,7 +2344,7 @@ function pgLink($v, $p)
                 <!-- ════════════ DASHBOARD ════════════ -->
             <?php elseif ($view === 'main'): ?>
                 <div class="dash-grid">
-                    <?php foreach (['REPORTOK' => 'reports', 'FELHASZNÁLÓK' => 'users', 'TERMÉKEK' => 'items', 'FELADÁSOK' => 'orders'] as $label => $key): ?>
+                    <?php foreach (['REPORTOK' => 'reports', 'FELHASZNÁLÓK' => 'users', 'TERMÉKEK' => 'items', 'RENDELÉSEK' => 'orders'] as $label => $key): ?>
                         <a href="admin.php?view=<?= $key ?>" style="text-decoration:none">
                             <div class="dash-card">
                                 <div class="dash-label"><?= match ($key) {
@@ -2003,7 +2419,7 @@ function pgLink($v, $p)
                                             <?php if ($r['report_type'] === 'item'): ?>
                                                 <a href="admin.php?view=items&id=<?= $r['ref_id'] ?>" class="act act-view">TERMÉK</a>
                                             <?php endif; ?>
-                                            <button class="act act-del" onclick="doDelete('report',<?= $r['id'] ?>,'<?= $r['report_type'] ?>')">TÖRL</button>
+                                            <button class="act act-del" onclick="confirmThenPost('delete_report', { report_id: <?= $r['id'] ?>, report_type: '<?= $r['report_type'] ?>' })">TÖRL</button>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -2045,7 +2461,7 @@ function pgLink($v, $p)
                                         <td>
                                             <a href="admin.php?view=users&id=<?= $u['id'] ?>&page=<?= $page ?>" class="act act-edit">EDIT</a>
                                             <?php if ($u['id'] != $_SESSION['user_id']): ?>
-                                                <button class="act act-del" onclick="doDelete('user',<?= $u['id'] ?>)">TÖRL</button>
+                                                <button class="act act-del" onclick="confirmThenPost('delete_user', { user_id: <?= $u['id'] ?> })">TÖRL</button>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -2091,7 +2507,7 @@ function pgLink($v, $p)
                                         <td class="mono"><?= date('Y-m-d', strtotime($it['created_at'])) ?></td>
                                         <td>
                                             <a href="admin.php?view=items&id=<?= $it['id'] ?>&page=<?= $page ?>" class="act act-edit">EDIT</a>
-                                            <button class="act act-del" onclick="doDelete('item','<?= $it['id'] ?>')">TÖRL</button>
+                                            <button class="act act-del" onclick="confirmThenPost('delete_item', { item_id: '<?= $it['id'] ?>' })">TÖRL</button>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -2161,14 +2577,14 @@ function pgLink($v, $p)
             <!-- ════════════ ORDERS ════════════ -->
             <?php elseif ($view === 'orders'): ?>
                 <div class="section-header">
-                    <h2>FELADÁSOK / RENDELÉSEK</h2>
+                    <h2>RENDELÉSEK</h2>
                     <span class="record-count">TOTAL: <?= $counts['orders'] ?? 0 ?> RECORD</span>
                 </div>
                 <?php if (empty($orders)): ?>
                     <div class="empty-state">NINCS ADAT</div>
                 <?php else: ?>
                     <div class="data-panel">
-                        <table class="data-table">
+                        <table class="data-table" style="min-width: 1000px;">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -2179,22 +2595,51 @@ function pgLink($v, $p)
                                     <th>ÁLLAPOT</th>
                                     <th>FIZETÉS</th>
                                     <th>DÁTUM</th>
-                                    <th>RÉSZLETEK</th>
+                                    <th>MŰVELETEK</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($orders as $o): ?>
                                     <tr>
                                         <td class="mono"><?= htmlspecialchars($o['id']) ?></td>
-                                        <td><?= htmlspecialchars($o['item_title']) ?></td>
-                                        <td><?= htmlspecialchars($o['buyer_name']) ?></td>
-                                        <td><?= htmlspecialchars($o['seller_name']) ?></td>
+                                        <td>
+                                            <a href="#" onclick="fetchItemDetailsAndOpen('<?= htmlspecialchars($o['item_id']) ?>'); return false;" style="color: var(--c-green-mid); text-decoration: underline;">
+                                                <?= htmlspecialchars($o['item_title']) ?>
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <a href="#" onclick="openUserProfile(<?= $o['buyer_id'] ?>); return false;" style="color: var(--c-green-mid); text-decoration: underline;">
+                                                <?= htmlspecialchars($o['buyer_name']) ?>
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <a href="#" onclick="openUserProfile(<?= $o['seller_id'] ?>); return false;" style="color: var(--c-green-mid); text-decoration: underline;">
+                                                <?= htmlspecialchars($o['seller_name']) ?>
+                                            </a>
+                                        </td>
                                         <td class="mono"><?= number_format($o['item_price'], 0, ',', ' ') ?> FT</td>
                                         <td><?= htmlspecialchars($o['status']) ?></td>
                                         <td><?= htmlspecialchars($o['payment_method']) ?></td>
                                         <td class="mono"><?= date('Y-m-d', strtotime($o['created_at'])) ?></td>
                                         <td>
-                                            <button class="act act-view" onclick="alert('Rendelés ID: <?= htmlspecialchars($o['id']) ?>\nNév: <?= htmlspecialchars($o['shipping_name']) ?>\nEmail: <?= htmlspecialchars($o['shipping_email']) ?>\nTelefon: <?= htmlspecialchars($o['shipping_phone']) ?>\nCím: <?= htmlspecialchars($o['shipping_zip']) ?> <?= htmlspecialchars($o['shipping_city']) ?>, <?= htmlspecialchars($o['shipping_address']) ?>\nFizetés: <?= htmlspecialchars($o['payment_method']) ?>\nMegjegyzés: <?= htmlspecialchars($o['notes'] ?? '-') ?>')">INFO</button>
+                                            <button class="act act-view" onclick="toggleOrderDetails('<?= htmlspecialchars($o['id']) ?>')">INFO</button>
+                                            <button class="act act-del" onclick="confirmThenPost('delete_order', { order_id: '<?= htmlspecialchars($o['id']) ?>' })">TÖRL</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="order-details-row" id="details-<?= htmlspecialchars($o['id']) ?>" style="display: none;">
+                                        <td colspan="9">
+                                            <div class="order-details-grid">
+                                                <div>
+                                                    <strong>Címzett:</strong> <?= htmlspecialchars($o['shipping_name']) ?><br>
+                                                    <strong>Email:</strong> <?= htmlspecialchars($o['shipping_email']) ?><br>
+                                                    <strong>Telefon:</strong> <?= htmlspecialchars($o['shipping_phone']) ?>
+                                                </div>
+                                                <div>
+                                                    <strong>Cím:</strong> <?= htmlspecialchars($o['shipping_zip']) ?> <?= htmlspecialchars($o['shipping_city']) ?>, <?= htmlspecialchars($o['shipping_address']) ?><br>
+                                                    <strong>Fizetési mód:</strong> <?= htmlspecialchars($o['payment_method']) ?><br>
+                                                    <strong>Megjegyzés:</strong> <?= nl2br(htmlspecialchars($o['notes'] ?? '-')) ?>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -2221,6 +2666,19 @@ function pgLink($v, $p)
             <?php endif; ?>
         </div><!-- /terminal-body -->
     </div><!-- /crt-wrap -->
+
+    <!-- TÖRLÉSI MEGERŐSÍTŐ MODAL -->
+    <div class="confirm-modal-overlay" id="confirmModal">
+        <div class="confirm-modal-card">
+            <div class="confirm-modal-icon">⚠️</div>
+            <div class="confirm-modal-title">MEGERŐSÍTÉS</div>
+            <div class="confirm-modal-text" id="confirmModalText">Biztosan törlöd?</div>
+            <div class="confirm-modal-actions">
+                <button class="confirm-btn-no" id="confirmNoBtn">MÉGSE</button>
+                <button class="confirm-btn-yes" id="confirmYesBtn">TÖRLÉS</button>
+            </div>
+        </div>
+    </div>
 
     <!-- PURGE MODAL -->
     <div class="purge-modal-overlay" id="purgeModal">
@@ -2272,7 +2730,7 @@ function pgLink($v, $p)
                 <div class="product-price" id="productPrice"></div>
                 <div class="product-seller" id="productSeller"></div>
                 <div class="product-date" id="productDate"></div>
-                <div class="product-description selectable" id="productDescription"></div>
+                <div class="product-description" id="productDescription"></div>
                 <button class="product-buy-btn" id="productBuyBtn">[ VÁSÁRLÁS ]</button>
             </div>
         </div>
@@ -2283,6 +2741,20 @@ function pgLink($v, $p)
             <button class="lightbox-close" id="lightboxClose">✕</button>
         </div>
     </div>
+
+    <!-- USER PROFILE POPUP -->
+    <div class="user-popup-overlay" id="userProfilePopup">
+        <div class="user-popup-card">
+            <div class="user-popup-topbar">
+                <div class="user-popup-topbar-title">👤 Felhasználói profil</div>
+                <button class="user-popup-close" id="userPopupClose">✕</button>
+            </div>
+            <div class="user-popup-body" id="userPopupContent">
+                <div style="text-align: center; padding: 4rem 2rem; color: rgba(255,255,255,0.3);">⏳ Betöltés...</div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ── TÉMA ──
         (function() {
@@ -2313,29 +2785,69 @@ function pgLink($v, $p)
             el.style.transition = 'opacity .5s';
             setTimeout(() => el.remove(), 500);
         }), 5000);
-        // ── TÖRLÉSEK ──
-        const CONFIRM_MSG = {
-            user: 'Biztosan törlöd a felhasználót? Minden adata elvész!',
-            item: 'Biztosan törlöd a terméket?',
-            report: 'Biztosan törlöd a reportot?'
-        };
-        const POST_KEY = {
-            user: 'delete_user=1&user_id=',
-            item: 'delete_item=1&item_id=',
-            report: 'delete_report=1&report_id='
-        };
 
-        function doDelete(type, id, subtype) {
-            if (!confirm(CONFIRM_MSG[type] || 'Biztosan törlöd?')) return;
-            let body = POST_KEY[type] + id;
-            if (type === 'report' && subtype) body += '&report_type=' + subtype;
-            fetch('admin.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: body
-            }).then(() => location.reload());
+        // ── MEGERŐSÍTŐ MODAL ──
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmModalText = document.getElementById('confirmModalText');
+        const confirmYesBtn = document.getElementById('confirmYesBtn');
+        const confirmNoBtn = document.getElementById('confirmNoBtn');
+        let pendingConfirmAction = null;
+
+        function openConfirmModal(message, action) {
+            confirmModalText.textContent = message || 'Biztosan törlöd?';
+            pendingConfirmAction = action;
+            confirmModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeConfirmModal() {
+            confirmModal.classList.remove('active');
+            document.body.style.overflow = '';
+            pendingConfirmAction = null;
+        }
+
+        confirmYesBtn.addEventListener('click', () => {
+            if (pendingConfirmAction) {
+                pendingConfirmAction();
+            }
+            closeConfirmModal();
+        });
+        confirmNoBtn.addEventListener('click', closeConfirmModal);
+        confirmModal.addEventListener('click', (e) => {
+            if (e.target === confirmModal) closeConfirmModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && confirmModal.classList.contains('active')) closeConfirmModal();
+        });
+
+        // Általános törlés megerősítéssel
+        function confirmThenPost(type, data) {
+            const messages = {
+                'delete_user': 'Biztosan törlöd ezt a felhasználót? Minden adata elvész!',
+                'delete_item': 'Biztosan törlöd ezt a terméket?',
+                'delete_report': 'Biztosan törlöd ezt a reportot?',
+                'delete_order': 'Biztosan törlöd ezt a rendelést?'
+            };
+            openConfirmModal(messages[type] || 'Biztosan törlöd?', () => {
+                let body = '';
+                if (type === 'delete_user') body = 'delete_user=1&user_id=' + data.user_id;
+                else if (type === 'delete_item') body = 'delete_item=1&item_id=' + data.item_id;
+                else if (type === 'delete_report') body = 'delete_report=1&report_id=' + data.report_id + '&report_type=' + (data.report_type || 'item');
+                else if (type === 'delete_order') body = 'delete_order=1&order_id=' + data.order_id;
+                fetch('admin.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body
+                }).then(() => location.reload());
+            });
+        }
+
+        // Order details toggle
+        function toggleOrderDetails(orderId) {
+            const row = document.getElementById('details-' + orderId);
+            if (row) {
+                row.style.display = row.style.display === 'none' ? '' : 'none';
+            }
         }
 
         // ── PURGE MODAL ──
@@ -2359,8 +2871,114 @@ function pgLink($v, $p)
             if (e.target === purgeModal) closePurgeModal();
         });
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && purgeModal.classList.contains('active')) closePurgeModal();
+            if (e.key === 'Escape') {
+                if (purgeModal.classList.contains('active')) closePurgeModal();
+                else if (confirmModal.classList.contains('active')) closeConfirmModal();
+                else if (pm.lbOver.classList.contains('active')) pm.lbOver.classList.remove('active');
+                else if (pm.modal.classList.contains('active')) closePM();
+                else if (userPopup.classList.contains('active')) closeUserProfile();
+            }
         });
+
+        // ── USER PROFILE POPUP ──
+        const userPopup = document.getElementById('userProfilePopup');
+        const userPopupContent = document.getElementById('userPopupContent');
+        const userPopupClose = document.getElementById('userPopupClose');
+
+        function openUserProfile(userId) {
+            userPopupContent.innerHTML = '<div style="text-align: center; padding: 4rem 2rem; color: rgba(255,255,255,0.3);">⏳ Betöltés...</div>';
+            userPopup.style.display = 'flex';
+            userPopup.offsetHeight;
+            userPopup.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            fetch('?get_user_profile=' + userId)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        userPopupContent.innerHTML = '<p style="color:red;text-align:center;padding:2rem;">' + escapeHtml(data.error) + '</p>';
+                        return;
+                    }
+                    const memberSince = data.created_at ? data.created_at.substring(0, 10) : '—';
+                    const initial = data.username ? data.username.charAt(0).toUpperCase() : '?';
+
+                    let avatarHtml;
+                    if (data.profile_picture && data.profile_picture.trim() !== '') {
+                        avatarHtml = `<img src="${escapeHtml(data.profile_picture)}" alt="${escapeHtml(data.username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                    } else {
+                        avatarHtml = initial;
+                    }
+
+                    let itemsHtml = '';
+                    if (data.items && data.items.length > 0) {
+                        itemsHtml = `<div class="user-popup-items-title">Termékek (${data.item_count})</div>
+                        <div class="user-popup-items-grid">`;
+                        data.items.forEach(item => {
+                            const soldClass = item.sold == 1 ? ' sold' : '';
+                            const soldBadge = item.sold == 1 ? '<div class="user-item-sold-badge">[ELKELT]</div>' : '';
+                            const imgHtml = item.thumb ?
+                                `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="user-item-thumb-placeholder" style="display:none;">📷</div>` :
+                                `<div class="user-item-thumb-placeholder">📷</div>`;
+                            itemsHtml += `
+                                <div class="user-item-thumb${soldClass}" onclick="fetchItemDetailsAndOpen('${escapeHtml(item.id)}');">
+                                    ${imgHtml}
+                                    ${soldBadge}
+                                    <div class="user-item-info">
+                                        <div class="user-item-title">${escapeHtml(item.title)}</div>
+                                        <div class="user-item-price">${Number(item.price).toLocaleString('hu-HU')} Ft</div>
+                                    </div>
+                                </div>`;
+                        });
+                        itemsHtml += '</div>';
+                    } else {
+                        itemsHtml = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem;">Nincsenek termékek.</div>';
+                    }
+
+                    userPopupContent.innerHTML = `
+                        <div class="user-popup-avatar" style="display: flex; align-items: center; justify-content: center;">
+                            ${avatarHtml}
+                        </div>
+                        <div class="user-popup-name">${escapeHtml(data.username)}</div>
+                        <div class="user-popup-meta">
+                            Email: ${escapeHtml(data.email)}<br>
+                            Regisztráció: ${memberSince} &nbsp; | &nbsp; ID: ${data.id}
+                        </div>
+                        <div class="user-popup-stats">
+                            <div class="user-stat">
+                                <div class="user-stat-value">${data.item_count}</div>
+                                <div class="user-stat-label">Hirdetés</div>
+                            </div>
+                        </div>
+                        ${itemsHtml}
+                    `;
+                })
+                .catch(() => {
+                    userPopupContent.innerHTML = '<p style="color:red;text-align:center;padding:2rem;">Hálózati hiba.</p>';
+                });
+        }
+
+        function closeUserProfile() {
+            userPopup.classList.remove('active');
+            document.body.style.overflow = '';
+            setTimeout(() => {
+                userPopup.style.display = 'none';
+            }, 300);
+        }
+
+        userPopupClose.addEventListener('click', closeUserProfile);
+        userPopup.addEventListener('click', e => {
+            if (e.target === userPopup) closeUserProfile();
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
 
         // ── TERMÉKMODÁL ──
         const pm = {
@@ -2383,6 +3001,7 @@ function pgLink($v, $p)
             reportBtn: document.getElementById('productReportBtn'),
             editBtn: document.getElementById('productEditBtn'),
             delBtn: document.getElementById('productDeleteBtn'),
+            buyBtn: document.getElementById('productBuyBtn'),
         };
         let imgs = [],
             imgIdx = 0,
@@ -2429,64 +3048,78 @@ function pgLink($v, $p)
             document.body.style.overflow = '';
         }
 
+        // Fetch item details and open modal (user popup stays open)
+        function fetchItemDetailsAndOpen(itemId) {
+            fetch('admin.php?get_item_data=' + itemId)
+                .then(r => r.json())
+                .then(d => {
+                    if (d.error) {
+                        alert(d.error);
+                        return;
+                    }
+                    prodId = d.id;
+                    prodUid = d.user_id;
+                    imgs = d.images;
+                    imgIdx = 0;
+                    pm.title.textContent = d.title;
+                    pm.price.textContent = d.price;
+                    pm.seller.innerHTML = 'Eladó: <strong>' + d.seller + '</strong>';
+                    pm.date.textContent = d.date;
+                    pm.desc.textContent = d.description;
+                    pm.thumbs.innerHTML = '';
+                    if (imgs.length) {
+                        imgs.forEach((src, i) => {
+                            const t = document.createElement('div');
+                            t.className = 'product-thumbnail' + (i === 0 ? ' active' : '');
+                            t.innerHTML = '<img src="' + src + '" alt="">';
+                            t.onclick = e => {
+                                e.stopPropagation();
+                                setImg(i);
+                            };
+                            pm.thumbs.appendChild(t);
+                        });
+                        setImg(0);
+                    } else setImg(-1);
+                    pm.prev.classList.toggle('hidden', imgs.length < 2);
+                    pm.next.classList.toggle('hidden', imgs.length < 2);
+
+                    if (d.sold) {
+                        pm.buyBtn.textContent = '[ ELKELT ]';
+                        pm.buyBtn.classList.add('sold');
+                        pm.buyBtn.disabled = true;
+                    } else {
+                        pm.buyBtn.textContent = '[ VÁSÁRLÁS ]';
+                        pm.buyBtn.classList.remove('sold');
+                        pm.buyBtn.disabled = false;
+                    }
+
+                    // Menu
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        const isOwner = parseInt(d.user_id) === <?= (int)$_SESSION['user_id'] ?>;
+                        if (<?= $isAdmin ? 'true' : 'false' ?>) {
+                            pm.menuCont.style.display = 'block';
+                            pm.reportBtn.style.display = 'none';
+                            pm.editBtn.style.display = 'block';
+                            pm.delBtn.style.display = 'block';
+                            pm.editBtn.onclick = () => location.href = 'admin.php?view=items&id=' + prodId;
+                            pm.delBtn.onclick = () => {
+                                confirmThenPost('delete_item', { item_id: prodId });
+                            };
+                        } else if (!isOwner) {
+                            pm.menuCont.style.display = 'block';
+                            pm.reportBtn.style.display = 'block';
+                            pm.editBtn.style.display = 'none';
+                            pm.delBtn.style.display = 'none';
+                        } else pm.menuCont.style.display = 'none';
+                    <?php endif; ?>
+                    openPM();
+                })
+                .catch(() => alert('Betöltési hiba!'));
+        }
+
         document.querySelectorAll('.view-item-btn').forEach(btn => btn.addEventListener('click', function(e) {
             e.preventDefault();
-            fetch('admin.php?get_item_data=' + this.dataset.itemId).then(r => r.json()).then(d => {
-                if (d.error) {
-                    alert(d.error);
-                    return;
-                }
-                prodId = d.id;
-                prodUid = d.user_id;
-                imgs = d.images;
-                imgIdx = 0;
-                pm.title.textContent = d.title;
-                pm.price.textContent = d.price;
-                pm.seller.innerHTML = 'Eladó: <strong>' + d.seller + '</strong>';
-                pm.date.textContent = d.date;
-                pm.desc.textContent = d.description;
-                pm.thumbs.innerHTML = '';
-                if (imgs.length) {
-                    imgs.forEach((src, i) => {
-                        const t = document.createElement('div');
-                        t.className = 'product-thumbnail' + (i === 0 ? ' active' : '');
-                        t.innerHTML = '<img src="' + src + '" alt="">';
-                        t.onclick = e => {
-                            e.stopPropagation();
-                            setImg(i);
-                        };
-                        pm.thumbs.appendChild(t);
-                    });
-                    setImg(0);
-                } else setImg(-1);
-                pm.prev.classList.toggle('hidden', imgs.length < 2);
-                pm.next.classList.toggle('hidden', imgs.length < 2);
-                <?php if (isset($_SESSION['user_id'])): ?>
-                    const isOwner = parseInt(d.user_id) === <?= (int)$_SESSION['user_id'] ?>;
-                    if (<?= $isAdmin ? 'true' : 'false' ?>) {
-                        pm.menuCont.style.display = 'block';
-                        pm.reportBtn.style.display = 'none';
-                        pm.editBtn.style.display = 'block';
-                        pm.delBtn.style.display = 'block';
-                        pm.editBtn.onclick = () => location.href = 'admin.php?view=items&id=' + prodId;
-                        pm.delBtn.onclick = () => {
-                            if (confirm('Biztosan törlöd ezt a terméket?')) {
-                                const f = document.createElement('form');
-                                f.method = 'POST';
-                                f.innerHTML = '<input type="hidden" name="item_id" value="' + d.id + '"><input type="hidden" name="delete_item" value="1">';
-                                document.body.appendChild(f);
-                                f.submit();
-                            }
-                        };
-                    } else if (!isOwner) {
-                        pm.menuCont.style.display = 'block';
-                        pm.reportBtn.style.display = 'block';
-                        pm.editBtn.style.display = 'none';
-                        pm.delBtn.style.display = 'none';
-                    } else pm.menuCont.style.display = 'none';
-                <?php endif; ?>
-                openPM();
-            }).catch(() => alert('Betöltési hiba!'));
+            fetchItemDetailsAndOpen(this.dataset.itemId);
         }));
 
         function toggleProductMenu(btn) {
@@ -2518,16 +3151,14 @@ function pgLink($v, $p)
         pm.lbOver.addEventListener('click', e => {
             if (e.target === pm.lbOver) pm.lbOver.classList.remove('active');
         });
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') {
-                if (pm.lbOver.classList.contains('active')) pm.lbOver.classList.remove('active');
-                else if (pm.modal.classList.contains('active')) closePM();
-            }
-        });
         window.addEventListener('resize', () => {
             if (pm.modal.classList.contains('active')) adjustH();
         });
-        document.getElementById('productBuyBtn').addEventListener('click', () => alert('Vásárlás funkció még nem elérhető!'));
+        pm.buyBtn.addEventListener('click', () => {
+            if (!pm.buyBtn.classList.contains('sold')) {
+                alert('Vásárlás funkció admin felületről nem elérhető.');
+            }
+        });
 
         // ========== SCROLL MEGŐRZÉSE A SIDEBARBAN ==========
         (function() {

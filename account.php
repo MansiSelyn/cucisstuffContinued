@@ -376,7 +376,7 @@ try {
     <link rel="stylesheet" id="themeStylesheet" href="theme-dark.css">
     <link rel="icon" type="image/png" href="logo.png">
     <style>
-        /* ========== GLOBÁLIS RESET (a meglévőből) ========== */
+        /* ========== GLOBÁLIS RESET ========== */
         *,
         *::before,
         *::after {
@@ -404,7 +404,7 @@ try {
             padding: 0 1rem;
         }
 
-        /* top-bar (a meglévőből) */
+        /* top-bar */
         .top-bar {
             position: fixed;
             top: 0;
@@ -472,7 +472,7 @@ try {
             transform: translateY(-1px);
         }
 
-        /* Account dropdown (a meglévőből) */
+        /* Account dropdown */
         .account-menu {
             position: relative;
             display: inline-block;
@@ -633,7 +633,7 @@ try {
             border-color: #B0CB1F;
         }
 
-        /* info-grid, items-section stb. (a meglévőből) */
+        /* info-grid, items-section stb. */
         .info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -680,58 +680,80 @@ try {
             box-shadow: 0 0 20px var(--orange-glow);
         }
 
-        .items-section {
+        .items-section,
+        .orders-section {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
             padding: 1.2rem;
-            max-height: 65vh;
-            overflow-y: auto;
             backdrop-filter: blur(10px);
         }
 
-        .items-section h2 {
+        .items-section h2,
+        .orders-section h2 {
             color: var(--orange-bright);
             margin: 0 0 1rem 0;
             font-size: 1.3rem;
+        }
+
+        /* Toggle gombok konténere */
+        .toggle-buttons-row {
             display: flex;
-            align-items: center;
-            gap: 0.8rem;
+            gap: 1rem;
+            justify-content: center;
+            margin: 0 0 0.5rem 0;
+            flex-wrap: wrap;
         }
 
         .section-toggle-btn {
-            padding: 0.3rem 0.8rem;
+            padding: 0.55rem 1.3rem;
             background: transparent;
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
+            border-radius: 25px;
             color: var(--orange-bright);
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s ease;
             font-weight: 600;
             white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            backdrop-filter: blur(8px);
         }
 
         .section-toggle-btn:hover {
             background: var(--orange-subtle);
             border-color: var(--orange-bright);
+            transform: translateY(-1px);
+            box-shadow: 0 0 12px var(--orange-glow);
         }
 
         .section-toggle-btn.active {
             background: var(--orange-bright);
             color: #000;
             border-color: var(--orange-bright);
+            box-shadow: 0 0 18px var(--orange-glow);
         }
 
-        .items-grid {
+        @media (max-width: 500px) {
+            .toggle-buttons-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+
+            .section-toggle-btn {
+                justify-content: center;
+            }
+        }
+
+        .items-grid,
+        .orders-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 1rem;
             transition: opacity 0.3s ease, max-height 0.3s ease;
-        }
-
-        .items-grid.hidden {
-            display: none;
         }
 
         .mini-card {
@@ -777,34 +799,6 @@ try {
         }
 
         /* ---------- RENDELÉSEK STÍLUSAI ---------- */
-        .orders-section {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 1.2rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .orders-section h2 {
-            color: var(--orange-bright);
-            margin: 0 0 1rem 0;
-            font-size: 1.3rem;
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-        }
-
-        .orders-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1rem;
-            transition: opacity 0.3s ease;
-        }
-
-        .orders-grid.hidden {
-            display: none;
-        }
-
         .order-card {
             background: rgba(0, 0, 0, 0.2);
             border: 1px solid var(--glass-border);
@@ -1093,7 +1087,7 @@ try {
             color: #1a1f00;
         }
 
-        /* Edit modal (termék szerkesztő) - a meglévőből */
+        /* Edit modal (termék szerkesztő) */
         .edit-modal {
             position: fixed;
             top: 0;
@@ -1227,7 +1221,7 @@ try {
             color: #0a0500;
         }
 
-        /* ========== TERMÉKMODÁL TELJES STÍLUSOK (JAVÍTVA) ========== */
+        /* ========== TERMÉKMODÁL TELJES STÍLUSOK ========== */
         .product-modal-overlay {
             position: fixed;
             inset: 0;
@@ -1662,7 +1656,7 @@ try {
             }
         }
 
-        /* ---- SCROLLBAR STYLING a termékmodálhoz ---- */
+        /* ---- SCROLLBAR STYLING ---- */
         .product-modal-card ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -1740,14 +1734,19 @@ try {
             </div>
         </div>
 
-        <!-- ========== HIRDETÉSEIM SZEKCIÓ (TOGGLE-ELHETŐ) ========== -->
-        <div class="items-section">
-            <h2 class="unselectable">
+        <!-- ========== TOGGLE GOMBOK SORA ========== -->
+        <div class="toggle-buttons-row">
+            <button class="section-toggle-btn" id="toggleItemsMainBtn" onclick="toggleItemsSection()">
                 📦 Hirdetéseim (<?= count($userItems) ?>)
-                <button class="section-toggle-btn" id="toggleItemsBtn" onclick="toggleItemsSection()" title="Hirdetések megjelenítése/elrejtése">
-                    👁️ Elrejt
-                </button>
-            </h2>
+            </button>
+            <button class="section-toggle-btn" id="toggleOrdersMainBtn" onclick="toggleOrdersSection()">
+                🛒 Rendeléseim (<?= count($userOrders) ?>)
+            </button>
+        </div>
+
+        <!-- ========== HIRDETÉSEIM SZEKCIÓ ========== -->
+        <div class="items-section" id="itemsSection" style="display: none;">
+            <h2 class="unselectable">📦 Hirdetéseim</h2>
             <div class="items-grid" id="itemsGrid">
                 <?php if (empty($userItems)): ?>
                     <p class="unselectable" style="text-align:center; opacity:0.6; padding: 2rem 0; grid-column: 1 / -1;">Még nem adtál fel hirdetést.</p>
@@ -1774,14 +1773,9 @@ try {
             </div>
         </div>
 
-        <!-- ========== RENDELÉSEIM SZEKCIÓ (TOGGLE-ELHETŐ) ========== -->
+        <!-- ========== RENDELÉSEIM SZEKCIÓ ========== -->
         <div class="orders-section" id="ordersSection" style="display: none;">
-            <h2 class="unselectable">
-                🛒 Rendeléseim (<?= count($userOrders) ?>)
-                <button class="section-toggle-btn" onclick="toggleOrdersSection()" title="Rendelések megjelenítése/elrejtése">
-                    👁️ Elrejt
-                </button>
-            </h2>
+            <h2 class="unselectable">🛒 Rendeléseim</h2>
             <div class="orders-grid" id="ordersGrid">
                 <?php if (empty($userOrders)): ?>
                     <p class="unselectable" style="text-align:center; opacity:0.6; padding: 2rem 0; grid-column: 1 / -1;">Még nincsenek rendeléseid.</p>
@@ -1851,13 +1845,6 @@ try {
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
-        </div>
-
-        <!-- Rendeléseim megjelenítő gomb -->
-        <div style="text-align: center; margin-top: -0.5rem;">
-            <button class="edit-btn unselectable" id="toggleOrdersBtn" onclick="toggleOrdersSection()" style="min-width: 220px;">
-                🛒 Rendeléseim megtekintése (<?= count($userOrders) ?>)
-            </button>
         </div>
     </div>
 
@@ -1948,7 +1935,7 @@ try {
         </div>
     </div>
 
-    <!-- Termék szerkesztő modal (meglévő) -->
+    <!-- Termék szerkesztő modal -->
     <div class="edit-modal" id="editItemModal">
         <div class="edit-modal-content">
             <div class="edit-modal-header">
@@ -2061,31 +2048,27 @@ try {
             document.addEventListener('click', closeDropdown);
         }
 
-        // ---- TOGGLE FUNKCIÓK ---- 
+        // ---- TOGGLE FUNKCIÓK ----
         function toggleItemsSection() {
-            const grid = document.getElementById('itemsGrid');
-            const btn = document.getElementById('toggleItemsBtn');
-            if (grid.classList.contains('hidden')) {
-                grid.classList.remove('hidden');
-                btn.textContent = '👁️ Elrejt';
+            const section = document.getElementById('itemsSection');
+            const btn = document.getElementById('toggleItemsMainBtn');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
                 btn.classList.add('active');
             } else {
-                grid.classList.add('hidden');
-                btn.textContent = '👁️ Megjelenít';
+                section.style.display = 'none';
                 btn.classList.remove('active');
             }
         }
 
         function toggleOrdersSection() {
             const section = document.getElementById('ordersSection');
-            const btn = document.getElementById('toggleOrdersBtn');
+            const btn = document.getElementById('toggleOrdersMainBtn');
             if (section.style.display === 'none' || section.style.display === '') {
                 section.style.display = 'block';
-                btn.textContent = '🛒 Rendeléseim elrejtése (<?= count($userOrders) ?>)';
                 btn.classList.add('active');
             } else {
                 section.style.display = 'none';
-                btn.textContent = '🛒 Rendeléseim megtekintése (<?= count($userOrders) ?>)';
                 btn.classList.remove('active');
             }
         }
@@ -2315,7 +2298,7 @@ try {
             }
         });
 
-        // --- Termék modal, szerkesztés, törlés (a meglévő scriptek) ---
+        // --- Termék modal, szerkesztés, törlés ---
         let currentProductImages = [];
         let currentImageIndex = 0;
         let currentProductId = null;
