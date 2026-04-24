@@ -289,11 +289,12 @@ try {
         }
     } elseif ($view === 'orders') {
         $totalPages = (int)ceil($counts['orders'] / $perPage);
+        // Javított lekérdezés: COLLATE használata a karakterkészlet- és kolláció-ütközés elkerülésére
         $oStmt = $conn->prepare("
             SELECT o.*, i.title AS item_title, i.price AS item_price,
                    buyer.username AS buyer_name, seller.username AS seller_name
             FROM orders o
-            JOIN items i ON o.item_id = i.id
+            JOIN items i ON o.item_id COLLATE utf8mb4_unicode_ci = i.id COLLATE utf8mb4_unicode_ci
             JOIN users buyer ON o.buyer_id = buyer.id
             JOIN users seller ON o.seller_id = seller.id
             ORDER BY o.created_at DESC
