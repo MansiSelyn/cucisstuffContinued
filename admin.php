@@ -1059,7 +1059,7 @@ function pgLink($v, $p, $search = '')
         /* ═══════════ VIZSGALOCK PANEL (MINDIG PIROS) ═══════════ */
         .vizsgalock-panel {
             border: 1px solid #ff3333 !important;
-            background: var(--c-panel) !important;
+            background: #1a0505 !important;
             overflow-x: auto;
             margin-bottom: 16px;
             position: relative;

@@ -862,23 +862,6 @@ body[data-theme="light"] h1 {
     text-shadow: 0 0 10px rgba(176, 203, 31, 0.6), 0 0 30px rgba(140, 180, 10, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
-body[data-theme="light"] ::-webkit-scrollbar-track {
-    background: #e8f0c0;
-}
-
-body[data-theme="light"] ::-webkit-scrollbar-thumb {
-    background: rgba(140, 170, 10, 0.35);
-}
-
-body[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-    background: rgba(140, 170, 10, 0.6);
-}
-
-body[data-theme="light"] ::selection {
-    background: rgba(176, 203, 31, 0.35);
-    color: #fff;
-}
-
 /* ============================================
    HIÁNYZÓ LIGHT MODE FIXEK (main.php + account.php)
    ============================================ */
@@ -1006,4 +989,42 @@ body[data-theme="dark"] .report-modal .form-textarea {
 body[data-theme="light"] .edit-form-textarea,
 body[data-theme="dark"] .edit-form-textarea {
     resize: none !important;
+}
+
+/* ============================================
+   GLOBÁLIS SCROLLBAR - LIGHT MODE
+   ============================================ */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #e8f0c0;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(140, 170, 10, 0.35);
+    border-radius: 4px;
+    border: 1px solid rgba(140, 170, 10, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(140, 170, 10, 0.6);
+}
+
+::-webkit-scrollbar-corner {
+    background: #e8f0c0;
+}
+
+/* Firefox scrollbar */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(140, 170, 10, 0.35) #e8f0c0;
+}
+
+::selection {
+    background: rgba(176, 203, 31, 0.35);
+    color: #000;
 }
