@@ -41,6 +41,72 @@ try {
         exit;
     }
 
+    // AJAX: VIZSGALOCK állapot lekérése
+    if (isset($_GET['vizsgalock_status'])) {
+        header('Content-Type: application/json');
+        try {
+            $conn->exec("CREATE TABLE IF NOT EXISTS vizsgalock_settings (id INT PRIMARY KEY DEFAULT 1, is_locked BOOLEAN DEFAULT FALSE, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB");
+            $conn->exec("INSERT IGNORE INTO vizsgalock_settings (id, is_locked) VALUES (1, FALSE)");
+            $conn->exec("CREATE TABLE IF NOT EXISTS vizsgalock_exceptions (user_id INT PRIMARY KEY, added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_vle_users FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB");
+            $ls = $conn->query("SELECT is_locked FROM vizsgalock_settings WHERE id=1")->fetch(PDO::FETCH_ASSOC);
+            $exStmt = $conn->query("SELECT u.id, u.username FROM vizsgalock_exceptions ve JOIN users u ON ve.user_id = u.id ORDER BY u.username");
+            $exceptions = $exStmt->fetchAll(PDO::FETCH_ASSOC);
+            $allUsersStmt = $conn->query("SELECT u.id, u.username FROM users u WHERE u.id NOT IN (SELECT user_id FROM admins) AND u.id NOT IN (SELECT user_id FROM vizsgalock_exceptions) ORDER BY u.username");
+            $availableUsers = $allUsersStmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['locked' => (bool)$ls['is_locked'], 'exceptions' => $exceptions, 'available_users' => $availableUsers]);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // AJAX: VIZSGALOCK toggle
+    if (isset($_POST['vizsgalock_toggle'])) {
+        header('Content-Type: application/json');
+        try {
+            $conn->exec("CREATE TABLE IF NOT EXISTS vizsgalock_settings (id INT PRIMARY KEY DEFAULT 1, is_locked BOOLEAN DEFAULT FALSE, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB");
+            $conn->exec("INSERT IGNORE INTO vizsgalock_settings (id, is_locked) VALUES (1, FALSE)");
+            $cur = $conn->query("SELECT is_locked FROM vizsgalock_settings WHERE id=1")->fetch(PDO::FETCH_ASSOC);
+            $newVal = $cur['is_locked'] ? 0 : 1;
+            $conn->exec("UPDATE vizsgalock_settings SET is_locked=$newVal WHERE id=1");
+            echo json_encode(['locked' => (bool)$newVal]);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // AJAX: VIZSGALOCK kivétel hozzáadása
+    if (isset($_POST['vizsgalock_add_exception'])) {
+        header('Content-Type: application/json');
+        $uid = (int)($_POST['user_id'] ?? 0);
+        try {
+            $conn->exec("CREATE TABLE IF NOT EXISTS vizsgalock_exceptions (user_id INT PRIMARY KEY, added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_vle_users2 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB");
+            if ($uid > 0) {
+                $conn->prepare("INSERT IGNORE INTO vizsgalock_exceptions (user_id) VALUES (?)")->execute([$uid]);
+            }
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // AJAX: VIZSGALOCK kivétel eltávolítása
+    if (isset($_POST['vizsgalock_remove_exception'])) {
+        header('Content-Type: application/json');
+        $uid = (int)($_POST['user_id'] ?? 0);
+        try {
+            if ($uid > 0) {
+                $conn->prepare("DELETE FROM vizsgalock_exceptions WHERE user_id=?")->execute([$uid]);
+            }
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
     // AJAX: felhasználói profil adatok
     if (isset($_GET['get_user_profile']) && !empty($_GET['get_user_profile'])) {
         header('Content-Type: application/json');
@@ -64,6 +130,7 @@ try {
     $view   = $_GET['view']   ?? 'main';
     $editId = $_GET['id']     ?? null;
     $page   = max(1, intval($_GET['page'] ?? 1));
+    $search = trim($_GET['search'] ?? '');
     $perPage = 25;
     $offset = ($page - 1) * $perPage;
     $message = $error = '';
@@ -99,14 +166,46 @@ try {
             $t = trim($_POST['item_title'] ?? '');
             $d = trim($_POST['item_description'] ?? '');
             $p = trim($_POST['item_price'] ?? '');
+            $sold = isset($_POST['item_sold']) ? 1 : 0;
+
             if (!$t || !$d || !$p) {
                 $error = 'Minden mező kötelező!';
             } elseif (!is_numeric($p) || $p < 0) {
                 $error = 'Az ár csak pozitív szám lehet!';
             } else {
-                $conn->prepare("UPDATE items SET title=?,description=?,price=? WHERE id=?")->execute([$t, $d, (float)$p, $_POST['item_id']]);
+                // Lekérjük a régi sold értéket az adatbázisból
+                $oldSoldStmt = $conn->prepare("SELECT sold FROM items WHERE id = ?");
+                $oldSoldStmt->execute([$_POST['item_id']]);
+                $oldSold = (int)$oldSoldStmt->fetchColumn();
+
+                // Frissítjük a termék adatait
+                $conn->prepare("UPDATE items SET title=?, description=?, price=?, sold=? WHERE id=?")
+                     ->execute([$t, $d, (float)$p, $sold, $_POST['item_id']]);
+
+                // Ha a státusz „elkelt”-ről „nem elkelt”-re változott, töröljük a kapcsolódó rendeléseket
+                if ($oldSold === 1 && $sold === 0) {
+                    $conn->prepare("DELETE FROM orders WHERE item_id = ?")
+                         ->execute([$_POST['item_id']]);
+                }
+
                 $message = "Termék módosítva.";
-                header("Location: admin.php?view=items&page=$page");
+
+                // AJAX válasz (a modális szerkesztőhöz)
+                if (isset($_POST['ajax'])) {
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success'     => true,
+                        'title'       => $t,
+                        'description' => $d,
+                        'price'       => number_format((float)$p, 0, ',', ' ') . ' Ft',
+                        'sold'        => (bool)$sold
+                    ]);
+                    exit();
+                }
+
+                // Normál űrlapos módosítás után átirányítás
+                header("Location: admin.php?view=items&page=$page"
+                      . ($search ? '&search=' . urlencode($search) : ''));
                 exit();
             }
         }
@@ -125,15 +224,22 @@ try {
                 } else {
                     $conn->prepare("UPDATE users SET username=?,email=? WHERE id=?")->execute([$u, $e, $_POST['user_id']]);
                     $message = "Felhasználó módosítva.";
-                    header("Location: admin.php?view=users&page=$page");
+                    header("Location: admin.php?view=users&page=$page" . ($search ? '&search=' . urlencode($search) : ''));
                     exit();
                 }
             }
         }
         // Rendelés törlése
         if (isset($_POST['delete_order'], $_POST['order_id'])) {
+            // Először visszaállítjuk a termék sold állapotát
+            $orderStmt = $conn->prepare("SELECT item_id FROM orders WHERE id = ?");
+            $orderStmt->execute([$_POST['order_id']]);
+            if ($orderData = $orderStmt->fetch(PDO::FETCH_ASSOC)) {
+                $conn->prepare("UPDATE items SET sold = FALSE WHERE id = ?")->execute([$orderData['item_id']]);
+            }
+            // Majd töröljük a rendelést
             $conn->prepare("DELETE FROM orders WHERE id=?")->execute([$_POST['order_id']]);
-            $message = "Rendelés törölve.";
+            $message = "Rendelés törölve. A termék ismét megvásárolható.";
         }
         // ---- VIZSGAPURGE ----
         if (isset($_POST['purge_confirm'])) {
@@ -230,24 +336,56 @@ try {
     $selectedUser1 = $selectedUser2 = 0;
     $user1Name = $user2Name = '';
     if ($view === 'items' && !$editId) {
-        $s = $conn->prepare("SELECT i.*,u.username AS seller_name FROM items i JOIN users u ON i.user_id=u.id ORDER BY i.created_at DESC LIMIT :o,:l");
+        $searchSql = '';
+        $params = [];
+        if ($search !== '') {
+            $searchSql = " AND (i.title LIKE :search OR i.description LIKE :search)";
+            $params[':search'] = '%' . $search . '%';
+        }
+        $countSql = "SELECT COUNT(*) FROM items i WHERE 1=1" . $searchSql;
+        $countStmt = $conn->prepare($countSql);
+        $countStmt->execute($params);
+        $totalItems = $countStmt->fetchColumn();
+        $totalPages = (int)ceil($totalItems / $perPage);
+        $s = $conn->prepare("SELECT i.*,u.username AS seller_name FROM items i JOIN users u ON i.user_id=u.id WHERE 1=1 $searchSql ORDER BY i.created_at DESC LIMIT :o,:l");
+        foreach ($params as $key => $val) {
+            $s->bindValue($key, $val);
+        }
         $s->bindValue(':o', $offset, PDO::PARAM_INT);
         $s->bindValue(':l', $perPage, PDO::PARAM_INT);
         $s->execute();
         $items = $s->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($view === 'users' && !$editId) {
-        $s = $conn->prepare("SELECT u.*,(SELECT COUNT(*) FROM admins WHERE user_id=u.id) AS is_admin,(SELECT COUNT(*) FROM items WHERE user_id=u.id) AS item_count FROM users u ORDER BY u.created_at DESC LIMIT :o,:l");
+        $searchSql = '';
+        $params = [];
+        if ($search !== '') {
+            $searchSql = " AND (u.username LIKE :search OR u.email LIKE :search)";
+            $params[':search'] = '%' . $search . '%';
+        }
+        $countSql = "SELECT COUNT(*) FROM users u WHERE 1=1" . $searchSql;
+        $countStmt = $conn->prepare($countSql);
+        $countStmt->execute($params);
+        $totalItems = $countStmt->fetchColumn();
+        $totalPages = (int)ceil($totalItems / $perPage);
+        $s = $conn->prepare("SELECT u.*,(SELECT COUNT(*) FROM admins WHERE user_id=u.id) AS is_admin,(SELECT COUNT(*) FROM items WHERE user_id=u.id) AS item_count FROM users u WHERE 1=1 $searchSql ORDER BY u.created_at DESC LIMIT :o,:l");
+        foreach ($params as $key => $val) {
+            $s->bindValue($key, $val);
+        }
         $s->bindValue(':o', $offset, PDO::PARAM_INT);
         $s->bindValue(':l', $perPage, PDO::PARAM_INT);
         $s->execute();
         $users = $s->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($view === 'reports') {
+        $totalItems = $counts['reports'];
+        $totalPages = (int)ceil($totalItems / $perPage);
         $s = $conn->prepare("
             SELECT r.id, 'item' AS report_type,
                    r.item_id AS ref_id,
                    i.title AS ref_title,
                    u.username AS reporter_name,
+                   u.id AS reporter_id,
                    owner.username AS target_name,
+                   owner.id AS target_id,
                    r.reason, r.status, r.created_at
             FROM reports r
             JOIN items i ON r.item_id = i.id
@@ -258,7 +396,9 @@ try {
                    mr.message_id AS ref_id,
                    CONCAT('Üzenet: ', LEFT(uz.message, 40)) AS ref_title,
                    reporter.username AS reporter_name,
+                   reporter.id AS reporter_id,
                    sender.username AS target_name,
+                   sender.id AS target_id,
                    mr.reason, mr.status, mr.created_at
             FROM message_reports mr
             JOIN uzenetek uz ON mr.message_id = uz.id
@@ -315,8 +455,19 @@ try {
             }
         }
     } elseif ($view === 'orders') {
-        $totalPages = (int)ceil($counts['orders'] / $perPage);
-        // COLLATE használata a karakterkészlet- és kolláció-ütközés elkerülésére
+        $searchSql = '';
+        $params = [];
+        if ($search !== '') {
+            $searchSql = " AND (i.title LIKE :search OR o.id LIKE :search OR buyer.username LIKE :search2 OR seller.username LIKE :search3)";
+            $params[':search'] = '%' . $search . '%';
+            $params[':search2'] = '%' . $search . '%';
+            $params[':search3'] = '%' . $search . '%';
+        }
+        $countSql = "SELECT COUNT(*) FROM orders o JOIN items i ON o.item_id COLLATE utf8mb4_unicode_ci = i.id COLLATE utf8mb4_unicode_ci JOIN users buyer ON o.buyer_id = buyer.id JOIN users seller ON o.seller_id = seller.id WHERE 1=1" . $searchSql;
+        $countStmt = $conn->prepare($countSql);
+        $countStmt->execute($params);
+        $totalItems = $countStmt->fetchColumn();
+        $totalPages = (int)ceil($totalItems / $perPage);
         $oStmt = $conn->prepare("
             SELECT o.*, i.title AS item_title, i.price AS item_price,
                    buyer.username AS buyer_name, seller.username AS seller_name
@@ -324,9 +475,13 @@ try {
             JOIN items i ON o.item_id COLLATE utf8mb4_unicode_ci = i.id COLLATE utf8mb4_unicode_ci
             JOIN users buyer ON o.buyer_id = buyer.id
             JOIN users seller ON o.seller_id = seller.id
+            WHERE 1=1 $searchSql
             ORDER BY o.created_at DESC
             LIMIT :o, :l
         ");
+        foreach ($params as $key => $val) {
+            $oStmt->bindValue($key, $val);
+        }
         $oStmt->bindValue(':o', $offset, PDO::PARAM_INT);
         $oStmt->bindValue(':l', $perPage, PDO::PARAM_INT);
         $oStmt->execute();
@@ -352,9 +507,13 @@ try {
     $editItem = $editUser = null;
     $counts = ['users' => 0, 'items' => 0, 'reports' => 0, 'orders' => 0];
 }
-function pgLink($v, $p)
+function pgLink($v, $p, $search = '')
 {
-    return "admin.php?view=$v&page=$p";
+    $link = "admin.php?view=$v&page=$p";
+    if ($search !== '') {
+        $link .= '&search=' . urlencode($search);
+    }
+    return $link;
 }
 ?>
 <!DOCTYPE html>
@@ -521,6 +680,9 @@ function pgLink($v, $p)
         .chrome-top-left {
             color: var(--c-green);
             letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .chrome-top-left span {
@@ -536,8 +698,12 @@ function pgLink($v, $p)
         }
 
         .chrome-top-right .live-clock {
-            color: var(--c-green);
+            color: #66ff66;
             letter-spacing: 1px;
+        }
+
+        html.light-mode .chrome-top-right .live-clock {
+            color: #ffbb44;
         }
 
         .chrome-nav {
@@ -625,11 +791,80 @@ function pgLink($v, $p)
             color: #ff4444 !important;
         }
 
+        /* ═══════════ VIZSGALOCK GOMB - FENYEGETŐ STÍLUS ═══════════ */
+        .nav-btn.vizsgalock-btn {
+            color: #ff3333 !important;
+            border-color: #ff3333 !important;
+            background: rgba(255, 0, 0, 0.08) !important;
+            text-shadow: 0 0 8px rgba(255, 0, 0, 0.6) !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .nav-btn.vizsgalock-btn:hover {
+            background: rgba(255, 0, 0, 0.25) !important;
+            color: #ff5555 !important;
+            border-color: #ff4444 !important;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.7), inset 0 0 20px rgba(255, 0, 0, 0.1) !important;
+            text-shadow: 0 0 15px rgba(255, 50, 50, 0.9) !important;
+            transform: translateY(-1px);
+        }
+
+        .nav-btn.vizsgalock-btn.active {
+            color: #ff0000 !important;
+            background: rgba(255, 0, 0, 0.15) !important;
+            box-shadow: inset 0 -2px 0 #ff0000, 0 0 15px rgba(255, 0, 0, 0.6) !important;
+            text-shadow: 0 0 15px rgba(255, 0, 0, 0.9) !important;
+        }
+
+        #vizsgalockNavBtn.locked {
+            color: #ff0000 !important;
+            border-color: #ff0000 !important;
+            background: rgba(255, 0, 0, 0.2) !important;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.4), inset 0 0 20px rgba(255, 0, 0, 0.15) !important;
+            animation: vlPulseDanger 1.2s infinite;
+            text-shadow: 0 0 15px rgba(255, 0, 0, 0.9) !important;
+        }
+
+        @keyframes vlPulseDanger {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(255, 0, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.4);
+                text-shadow: 0 0 15px rgba(255, 0, 0, 0.9);
+            }
+            50% {
+                box-shadow: 0 0 35px rgba(255, 0, 0, 1), 0 0 70px rgba(255, 0, 0, 0.6), 0 0 100px rgba(255, 0, 0, 0.4);
+                text-shadow: 0 0 25px rgba(255, 0, 0, 1), 0 0 50px rgba(255, 0, 0, 0.8);
+            }
+        }
+
+        html.light-mode .nav-btn.vizsgalock-btn {
+            color: #dd0000 !important;
+            border-color: #dd0000 !important;
+            background: rgba(220, 0, 0, 0.06) !important;
+            text-shadow: 0 0 6px rgba(220, 0, 0, 0.5) !important;
+        }
+
+        html.light-mode .nav-btn.vizsgalock-btn:hover {
+            background: rgba(220, 0, 0, 0.2) !important;
+            color: #ff2222 !important;
+            border-color: #ee1111 !important;
+            box-shadow: 0 0 18px rgba(220, 0, 0, 0.6), inset 0 0 15px rgba(220, 0, 0, 0.08) !important;
+        }
+
+        html.light-mode .nav-btn.vizsgalock-btn.active {
+            color: #cc0000 !important;
+            background: rgba(200, 0, 0, 0.12) !important;
+            box-shadow: inset 0 -2px 0 #cc0000, 0 0 12px rgba(200, 0, 0, 0.5) !important;
+        }
+
+        html.light-mode #vizsgalockNavBtn.locked {
+            color: #cc0000 !important;
+            border-color: #cc0000 !important;
+            background: rgba(200, 0, 0, 0.15) !important;
+            box-shadow: 0 0 15px rgba(200, 0, 0, 0.6), 0 0 30px rgba(200, 0, 0, 0.3) !important;
+            text-shadow: 0 0 12px rgba(200, 0, 0, 0.8) !important;
+        }
+
         .theme-btn {
-            position: fixed;
-            top: 10px;
-            right: 12px;
-            z-index: 9999;
             background: var(--c-panel);
             border: 1px solid var(--c-border2);
             color: var(--c-green);
@@ -640,6 +875,7 @@ function pgLink($v, $p)
             cursor: pointer;
             text-transform: uppercase;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         .theme-btn:hover {
@@ -733,6 +969,75 @@ function pgLink($v, $p)
             content: '[ERR]';
         }
 
+        /* ═══════════ SEARCH FORM ═══════════ */
+        .search-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            max-width: 400px;
+            padding: 0.5rem 0.9rem;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--c-border2);
+            color: var(--c-green);
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            letter-spacing: 1px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--c-green);
+            box-shadow: var(--c-glow);
+        }
+
+        .search-input::placeholder {
+            color: var(--c-green-dim);
+        }
+
+        .search-btn {
+            padding: 0.5rem 1.2rem;
+            background: transparent;
+            border: 1px solid var(--c-border2);
+            color: var(--c-green-mid);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .search-btn:hover {
+            background: rgba(57, 255, 20, 0.07);
+            border-color: var(--c-green);
+            color: var(--c-green);
+            box-shadow: var(--c-glow);
+        }
+
+        .search-clear {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--c-border);
+            color: var(--c-muted);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            text-decoration: none;
+            letter-spacing: 1px;
+            transition: all 0.15s;
+        }
+
+        .search-clear:hover {
+            border-color: var(--c-amber);
+            color: var(--c-amber);
+        }
+
         .data-panel {
             border: 1px solid var(--c-border2);
             background: var(--c-panel);
@@ -749,6 +1054,191 @@ function pgLink($v, $p)
             right: 0;
             height: 1px;
             background: linear-gradient(90deg, transparent, var(--c-green-dim), transparent);
+        }
+
+        /* ═══════════ VIZSGALOCK PANEL (MINDIG PIROS) ═══════════ */
+        .vizsgalock-panel {
+            border: 1px solid #ff3333 !important;
+            background: var(--c-panel) !important;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            position: relative;
+            padding: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        .vizsgalock-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #ff3333, transparent) !important;
+        }
+
+        .vizsgalock-header {
+            font-family: var(--font-vt);
+            font-size: 1.6rem;
+            color: #ff3333 !important;
+            text-shadow: 0 0 12px #ff0000 !important;
+            letter-spacing: 4px;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .vizsgalock-toggle-btn {
+            display: block;
+            width: 100%;
+            padding: 0.8rem 1.5rem;
+            font-family: var(--font-vt);
+            font-size: 1.4rem;
+            letter-spacing: 3px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid;
+            border-radius: 0;
+            background: transparent;
+            transition: all 0.2s;
+            margin-bottom: 1.5rem;
+        }
+
+        .vizsgalock-toggle-btn.off {
+            color: #888 !important;
+            border-color: #444 !important;
+        }
+
+        .vizsgalock-toggle-btn.off:hover {
+            color: #ff3333 !important;
+            border-color: #ff3333 !important;
+            background: rgba(255, 0, 0, 0.07) !important;
+            box-shadow: 0 0 12px rgba(255, 0, 0, 0.3) !important;
+        }
+
+        .vizsgalock-toggle-btn.on {
+            color: #ff3333 !important;
+            border-color: #ff3333 !important;
+            background: rgba(255, 0, 0, 0.1) !important;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5) !important;
+        }
+
+        .vizsgalock-toggle-btn.on:hover {
+            color: #ff5555 !important;
+            border-color: #ff5555 !important;
+            background: rgba(255, 0, 0, 0.15) !important;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.7) !important;
+        }
+
+        .vizsgalock-exceptions-section {
+            display: none;
+            margin-top: 0.5rem;
+        }
+
+        .vizsgalock-exceptions-section.visible {
+            display: block;
+        }
+
+        .vizsgalock-exceptions-title {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            color: #ff6666 !important;
+            text-transform: uppercase;
+            margin-bottom: 0.7rem;
+            border-bottom: 1px solid rgba(255, 0, 0, 0.25) !important;
+            padding-bottom: 0.4rem;
+        }
+
+        .vizsgalock-exceptions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0.8rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        .vizsgalock-exceptions-table th {
+            color: #ff6666 !important;
+            text-align: left;
+            padding: 5px 8px;
+            border-bottom: 1px solid rgba(255, 0, 0, 0.2) !important;
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+        }
+
+        .vizsgalock-exceptions-table td {
+            padding: 5px 8px;
+            border-bottom: 1px solid rgba(255, 0, 0, 0.1) !important;
+            color: #d0a0a0 !important;
+        }
+
+        .vizsgalock-exceptions-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .vizsgalock-exceptions-table .vl-remove-btn {
+            background: transparent;
+            border: 1px solid #ff4400 !important;
+            color: #ff4400 !important;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            letter-spacing: 1px;
+            transition: all 0.15s;
+        }
+
+        .vizsgalock-exceptions-table .vl-remove-btn:hover {
+            background: rgba(255, 68, 0, 0.1) !important;
+        }
+
+        .vizsgalock-add-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .vizsgalock-add-select {
+            flex: 1;
+            background: rgba(255, 0, 0, 0.07) !important;
+            border: 1px solid rgba(255, 0, 0, 0.35) !important;
+            color: #d0a0a0 !important;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            padding: 5px 8px;
+        }
+
+        .vizsgalock-add-select option {
+            background: #1a1000 !important;
+            color: #d0a0a0 !important;
+        }
+
+        .vizsgalock-add-btn {
+            background: rgba(255, 0, 0, 0.1) !important;
+            border: 1px solid #ff3333 !important;
+            color: #ff3333 !important;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            padding: 5px 14px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.15s;
+        }
+
+        .vizsgalock-add-btn:hover {
+            background: rgba(255, 0, 0, 0.2) !important;
+        }
+
+        .vizsgalock-empty {
+            color: rgba(255, 0, 0, 0.4) !important;
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+            text-align: center;
+            padding: 10px 0;
+            letter-spacing: 1px;
         }
 
         .data-table {
@@ -947,6 +1437,29 @@ function pgLink($v, $p)
         .field-input::placeholder,
         .field-textarea::placeholder {
             color: var(--c-green-dim);
+        }
+
+        /* Sold checkbox */
+        .field-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-top: 0.3rem;
+        }
+
+        .field-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--c-red);
+            cursor: pointer;
+        }
+
+        .field-checkbox label {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--c-text);
+            cursor: pointer;
+            letter-spacing: 1px;
         }
 
         .edit-actions {
@@ -1148,7 +1661,7 @@ function pgLink($v, $p)
             max-width: 450px;
             background: var(--c-panel);
             border: 2px solid var(--c-red);
-            border-radius: 24px;
+            border-radius: 0;
             padding: 2rem;
             box-shadow: 0 0 40px rgba(255, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.7);
             transform: scale(0.9) translateY(20px);
@@ -1197,7 +1710,7 @@ function pgLink($v, $p)
             padding: 0.65rem 2rem;
             background: var(--c-red);
             border: none;
-            border-radius: 40px;
+            border-radius: 0;
             color: #000;
             font-family: var(--font-mono);
             font-weight: bold;
@@ -1219,7 +1732,7 @@ function pgLink($v, $p)
             padding: 0.65rem 2rem;
             background: var(--c-green-dim);
             border: none;
-            border-radius: 40px;
+            border-radius: 0;
             color: #000;
             font-family: var(--font-mono);
             font-weight: bold;
@@ -1260,7 +1773,7 @@ function pgLink($v, $p)
             max-width: 500px;
             background: #1a0505;
             border: 2px solid #ff3333;
-            border-radius: 24px;
+            border-radius: 0;
             padding: 2rem;
             box-shadow: 0 0 40px rgba(255, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.7);
             transform: scale(0.9) translateY(20px);
@@ -1309,7 +1822,7 @@ function pgLink($v, $p)
             padding: 0.75rem 2rem;
             background: #ff3333;
             border: none;
-            border-radius: 40px;
+            border-radius: 0;
             color: #000;
             font-family: var(--font-mono);
             font-weight: bold;
@@ -1331,7 +1844,7 @@ function pgLink($v, $p)
             padding: 0.75rem 2rem;
             background: #00aa3a;
             border: none;
-            border-radius: 40px;
+            border-radius: 0;
             color: #000;
             font-family: var(--font-mono);
             font-weight: bold;
@@ -1349,6 +1862,7 @@ function pgLink($v, $p)
             transform: scale(1.02);
         }
 
+        /* ═══════════ KATONAI TERMÉKMODÁL ═══════════ */
         .product-modal-overlay {
             position: fixed;
             inset: 0;
@@ -1367,20 +1881,32 @@ function pgLink($v, $p)
         }
 
         .product-modal-card {
-            width: 100vw;
-            height: 100vh;
+            width: 96vw;
+            height: 94vh;
             display: grid;
             grid-template-columns: 1.5fr 1fr;
             gap: 0;
-            background: #030a02;
-            border: 1px solid var(--c-border2);
+            background: var(--c-panel);
+            border: 2px solid var(--c-border2);
             overflow: hidden;
             position: relative;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 80px rgba(57, 255, 20, 0.1);
+        }
+
+        .product-modal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--c-green-dim), transparent);
+            z-index: 10;
+            pointer-events: none;
         }
 
         .product-modal-card * {
-            user-select: none;
-            -webkit-user-select: none;
+            font-family: var(--font-mono);
         }
 
         .product-modal-header {
@@ -1396,7 +1922,7 @@ function pgLink($v, $p)
             width: 36px;
             height: 36px;
             background: rgba(0, 0, 0, 0.8);
-            border: 1px solid var(--c-green-mid);
+            border: 1px solid var(--c-border2);
             color: var(--c-green);
             font-family: var(--font-mono);
             font-size: 1.1rem;
@@ -1421,8 +1947,8 @@ function pgLink($v, $p)
             top: 42px;
             right: 0;
             min-width: 160px;
-            background: rgba(3, 10, 2, 0.98);
-            border: 1px solid var(--c-green-mid);
+            background: var(--c-panel);
+            border: 1px solid var(--c-border2);
             padding: 4px;
             display: none;
             z-index: 101;
@@ -1461,7 +1987,7 @@ function pgLink($v, $p)
             display: flex;
             flex-direction: column;
             border-right: 1px solid var(--c-border2);
-            background: #020802;
+            background: rgba(0, 0, 0, 0.3);
             padding: 16px;
             min-height: 0;
         }
@@ -1499,7 +2025,7 @@ function pgLink($v, $p)
             transform: translateY(-50%);
             background: rgba(0, 0, 0, 0.8);
             color: var(--c-green);
-            border: 1px solid var(--c-green-mid);
+            border: 1px solid var(--c-border2);
             width: 36px;
             height: 36px;
             cursor: pointer;
@@ -1544,6 +2070,7 @@ function pgLink($v, $p)
             cursor: pointer;
             transition: all 0.15s;
             overflow: hidden;
+            background: rgba(0, 0, 0, 0.5);
         }
 
         .product-thumbnail:hover,
@@ -1558,13 +2085,24 @@ function pgLink($v, $p)
             object-fit: cover;
         }
 
-        .product-details {
+        .product-detail-view {
             display: flex;
             flex-direction: column;
             gap: 16px;
             padding: 20px;
             overflow-y: auto;
-            background: #020802;
+            background: rgba(0, 0, 0, 0.2);
+            height: 100%;
+        }
+
+        .product-edit-view {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            padding: 20px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            height: 100%;
         }
 
         .product-title {
@@ -1587,6 +2125,7 @@ function pgLink($v, $p)
         .product-seller {
             font-size: 0.85rem;
             color: var(--c-muted);
+            font-family: var(--font-mono);
         }
 
         .product-seller strong {
@@ -1597,6 +2136,7 @@ function pgLink($v, $p)
             font-size: 0.75rem;
             color: var(--c-green-dim);
             letter-spacing: 1px;
+            font-family: var(--font-mono);
         }
 
         .product-description {
@@ -1609,6 +2149,7 @@ function pgLink($v, $p)
             max-height: 260px;
             overflow-y: auto;
             white-space: pre-wrap;
+            font-family: var(--font-mono);
         }
 
         .product-buy-btn {
@@ -1630,11 +2171,173 @@ function pgLink($v, $p)
             box-shadow: 0 0 20px rgba(0, 180, 60, 0.3);
         }
 
-        .product-buy-btn.sold {
+        /* ELKELT GOMB – MINDIG SZÜRKE GLOW */
+        .product-buy-btn.sold,
+        .product-buy-btn.sold:hover,
+        html.light-mode .product-buy-btn.sold,
+        html.light-mode .product-buy-btn.sold:hover {
             background: #555 !important;
             border-color: #777 !important;
             color: #aaa !important;
             cursor: not-allowed;
+            box-shadow: 0 0 12px rgba(128, 128, 128, 0.5) !important;
+            transform: none !important;
+        }
+
+        .product-edit-view .edit-form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .product-edit-view .edit-form-label {
+            display: block;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--c-muted);
+            margin-bottom: 5px;
+        }
+
+        .product-edit-view .edit-form-input,
+        .product-edit-view .edit-form-textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--c-border2);
+            color: var(--c-green);
+            font-family: var(--font-mono);
+            font-size: 0.88rem;
+            padding: 8px 12px;
+            outline: none;
+            transition: all 0.15s;
+        }
+
+        .product-edit-view .edit-form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .product-edit-view .edit-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .product-edit-view .btn-edit-save {
+            padding: 8px 24px;
+            background: rgba(57, 255, 20, 0.1);
+            border: 1px solid var(--c-green-mid);
+            color: var(--c-green);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .product-edit-view .btn-edit-save:hover {
+            background: rgba(57, 255, 20, 0.2);
+            box-shadow: var(--c-glow-strong);
+        }
+
+        .product-edit-view .btn-edit-cancel {
+            padding: 8px 20px;
+            background: transparent;
+            border: 1px solid var(--c-border2);
+            color: var(--c-muted);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .product-edit-view .btn-edit-cancel:hover {
+            border-color: var(--c-amber);
+            color: var(--c-amber);
+        }
+
+        html.light-mode .product-modal-overlay {
+            background: rgba(20, 10, 0, 0.97) !important;
+        }
+
+        html.light-mode .product-modal-card {
+            background: #3a1a00 !important;
+            border-color: #9a6500 !important;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 80px rgba(255, 140, 0, 0.15) !important;
+        }
+
+        html.light-mode .product-modal-card::before {
+            background: linear-gradient(90deg, transparent, #9a7000, transparent) !important;
+        }
+
+        html.light-mode .product-title,
+        html.light-mode .product-price {
+            color: #ff8c00 !important;
+            text-shadow: 0 0 10px rgba(255, 140, 0, 0.5) !important;
+        }
+
+        html.light-mode .product-seller strong {
+            color: #e69900 !important;
+        }
+
+        html.light-mode .product-date {
+            color: #9a7000 !important;
+        }
+
+        html.light-mode .product-description {
+            color: #f0c080 !important;
+            border-color: #6a4500 !important;
+        }
+
+        html.light-mode .gallery-nav {
+            background: rgba(20, 10, 0, 0.8) !important;
+            border-color: #9a6500 !important;
+            color: #ff8c00 !important;
+        }
+
+        html.light-mode .gallery-nav:hover {
+            background: #e69900 !important;
+            color: #000 !important;
+        }
+
+        html.light-mode .product-thumbnail {
+            border-color: #9a6500 !important;
+        }
+
+        html.light-mode .product-thumbnail:hover,
+        html.light-mode .product-thumbnail.active {
+            border-color: #ff8c00 !important;
+            box-shadow: 0 0 10px rgba(255, 140, 0, 0.5) !important;
+        }
+
+        html.light-mode .pm-btn {
+            border-color: #9a6500 !important;
+            color: #ff8c00 !important;
+        }
+
+        html.light-mode .pm-btn:hover {
+            background: #e69900 !important;
+            color: #000 !important;
+        }
+
+        html.light-mode .product-menu-content {
+            border-color: #9a6500 !important;
+            background: #3a2400 !important;
+        }
+
+        html.light-mode .product-menu-item {
+            color: #f0c080 !important;
+        }
+
+        html.light-mode .product-menu-item:hover {
+            color: #ff8c00 !important;
+            background: rgba(255, 140, 0, 0.1) !important;
+        }
+
+        html.light-mode .product-menu-item.delete:hover {
+            color: #ff4433 !important;
+            background: rgba(255, 50, 50, 0.1) !important;
         }
 
         .lightbox-overlay {
@@ -1752,7 +2455,7 @@ function pgLink($v, $p)
         .conv-avatars span {
             width: 32px;
             height: 32px;
-            border-radius: 50%;
+            border-radius: 0;
             background: var(--c-border2);
             color: var(--c-green);
             display: flex;
@@ -1831,7 +2534,7 @@ function pgLink($v, $p)
             max-width: 70%;
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid var(--c-border);
-            border-radius: 8px;
+            border-radius: 0;
             padding: 0.6rem 0.9rem;
         }
 
@@ -1885,7 +2588,7 @@ function pgLink($v, $p)
             color: var(--c-green-mid);
         }
 
-        /* User popup overlay */
+        /* ═══════════ KATONAI USER POPUP ═══════════ */
         .user-popup-overlay {
             position: fixed;
             inset: 0;
@@ -1907,8 +2610,8 @@ function pgLink($v, $p)
         .user-popup-card {
             width: 100vw;
             height: 100vh;
-            background: rgba(5, 5, 5, 0.99);
-            border: none;
+            background: var(--c-panel);
+            border: 2px solid var(--c-border2);
             border-radius: 0;
             padding: 0;
             overflow: hidden;
@@ -1917,6 +2620,19 @@ function pgLink($v, $p)
             transition: transform 0.3s ease;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.9), 0 0 100px rgba(57, 255, 20, 0.15);
+        }
+
+        .user-popup-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--c-green-dim), transparent);
+            z-index: 10;
+            pointer-events: none;
         }
 
         .user-popup-overlay.active .user-popup-card {
@@ -1931,7 +2647,7 @@ function pgLink($v, $p)
             align-items: center;
             justify-content: space-between;
             padding: 0.75rem 1.5rem;
-            background: rgba(5, 5, 5, 0.92);
+            background: var(--c-panel);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--c-border2);
             flex-shrink: 0;
@@ -1943,7 +2659,7 @@ function pgLink($v, $p)
             color: var(--c-green);
             width: 42px;
             height: 42px;
-            border-radius: 50%;
+            border-radius: 0;
             cursor: pointer;
             font-size: 1.2rem;
             display: flex;
@@ -1962,6 +2678,8 @@ function pgLink($v, $p)
             font-size: 1rem;
             font-weight: 700;
             color: var(--c-green);
+            font-family: var(--font-vt);
+            letter-spacing: 2px;
         }
 
         .user-popup-body {
@@ -1979,7 +2697,7 @@ function pgLink($v, $p)
         .user-popup-avatar {
             width: 90px;
             height: 90px;
-            border-radius: 50%;
+            border-radius: 0;
             background: linear-gradient(135deg, var(--c-green), #0a4a00);
             display: flex;
             align-items: center;
@@ -2004,6 +2722,8 @@ function pgLink($v, $p)
             font-size: 1.8rem;
             font-weight: 700;
             color: var(--c-green);
+            font-family: var(--font-vt);
+            letter-spacing: 2px;
             margin-bottom: 0.35rem;
         }
 
@@ -2024,7 +2744,7 @@ function pgLink($v, $p)
             flex: 1;
             background: rgba(57, 255, 20, 0.07);
             border: 1px solid rgba(57, 255, 20, 0.15);
-            border-radius: 16px;
+            border-radius: 0;
             padding: 1.1rem;
             text-align: center;
         }
@@ -2033,6 +2753,7 @@ function pgLink($v, $p)
             font-size: 1.6rem;
             font-weight: 700;
             color: var(--c-green);
+            font-family: var(--font-vt);
         }
 
         .user-stat-label {
@@ -2059,7 +2780,7 @@ function pgLink($v, $p)
         }
 
         .user-item-thumb {
-            border-radius: 14px;
+            border-radius: 0;
             overflow: hidden;
             border: 1px solid rgba(57, 255, 20, 0.12);
             cursor: pointer;
@@ -2235,8 +2956,8 @@ function pgLink($v, $p)
         }
 
         html.light-mode .user-popup-close {
-            background: rgba(255, 170, 51, 0.2) !important;
-            border-color: rgba(255, 170, 51, 0.5) !important;
+            background: rgba(255, 170, 33, 0.2) !important;
+            border-color: rgba(255, 170, 33, 0.5) !important;
             color: #ffaa33 !important;
         }
 
@@ -2259,12 +2980,14 @@ function pgLink($v, $p)
 
 <body>
     <div class="crt-wrap">
-        <button class="theme-btn" id="themeToggleBtn">MODE</button>
         <!-- CHROME -->
         <div class="terminal-chrome">
             <div class="chrome-top">
-                <div class="chrome-top-left">CUCI-SYS <span>// ADMIN TERMINAL // SECURITY LEVEL: A1</span></div>
+                <div class="chrome-top-left">
+                    CUCI-SYS <span>// ADMIN TERMINAL // SECURITY LEVEL: A1</span>
+                </div>
                 <div class="chrome-top-right">
+                    <button class="theme-btn" id="themeToggleBtn">MODE</button>
                     <span>OP: <strong style="color:var(--c-green)"><?php echo htmlspecialchars($_SESSION['username'] ?? 'UNKNOWN'); ?></strong></span>
                     <span class="live-clock" id="liveClock">--:--:--</span>
                 </div>
@@ -2291,6 +3014,7 @@ function pgLink($v, $p)
                 <a href="admin.php?view=orders" class="nav-btn <?= $view === 'orders' ? 'active' : '' ?>">
                     <span class="nav-label">RENDELÉSEK</span>
                 </a>
+                <a href="admin.php?view=vizsgalock" class="nav-btn vizsgalock-btn <?= $view === 'vizsgalock' ? 'active' : '' ?>" id="vizsgalockNavBtn">⚠️ VIZSGALOCK</a>
                 <button class="nav-btn purge-btn" id="purgeBtn">⚠ VIZSGAPURGE</button>
                 <a href="main.php" class="nav-btn nav-back">← KILÉPÉS</a>
             </nav>
@@ -2303,6 +3027,34 @@ function pgLink($v, $p)
             <?php if ($error): ?>
                 <div class="banner banner-err"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
+
+            <!-- ════════════ VIZSGALOCK ════════════ -->
+            <?php if ($view === 'vizsgalock'): ?>
+                <div class="vizsgalock-panel" id="vizsgalockPanelInline">
+                    <div class="vizsgalock-header">⚠️ VIZSGALOCK</div>
+                    <button class="vizsgalock-toggle-btn off" id="vizsgalockToggleBtn" onclick="doVizsgalockToggle()">
+                        VIZSGALOCK: OFF
+                    </button>
+                    <div class="vizsgalock-exceptions-section" id="vizsgalockExceptionsSection">
+                        <div class="vizsgalock-exceptions-title">Kivételek</div>
+                        <table class="vizsgalock-exceptions-table">
+                            <thead>
+                                <tr><th>FELHASZNÁLÓ</th><th>HOZZÁADVA</th><th></th></tr>
+                            </thead>
+                            <tbody id="vizsgalockExceptionsBody">
+                                <tr><td colspan="3" class="vizsgalock-empty">[ NINCS KIVÉTEL ]</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="vizsgalock-add-row">
+                            <select class="vizsgalock-add-select" id="vizsgalockUserSelect">
+                                <option value="">-- Felhasználó kiválasztása --</option>
+                            </select>
+                            <button class="vizsgalock-add-btn" onclick="doVizsgalockAddException()">+ HOZZÁAD</button>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- ════════════ EDIT ITEM ════════════ -->
             <?php if ($editItem && $view === 'items'): ?>
                 <div class="edit-terminal">
@@ -2322,9 +3074,15 @@ function pgLink($v, $p)
                                 <label class="field-label">Ár (Ft)</label>
                                 <input type="number" name="item_price" class="field-input" value="<?= $editItem['price'] ?>" min="0" step="1" required>
                             </div>
+                            <div class="field-row">
+                                <div class="field-checkbox">
+                                    <input type="checkbox" name="item_sold" id="item_sold" value="1" <?= $editItem['sold'] ? 'checked' : '' ?>>
+                                    <label for="item_sold">🔴 TERMÉK ELKELT (NEM VÁSÁROLHATÓ MEG)</label>
+                                </div>
+                            </div>
                             <div class="edit-actions">
                                 <button type="submit" name="update_item" class="btn-save">[ MENTÉS ]</button>
-                                <a href="admin.php?view=items&page=<?= $page ?>" class="btn-cancel">[ MÉGSE ]</a>
+                                <a href="admin.php?view=items&page=<?= $page ?><?= $search ? '&search=' . urlencode($search) : '' ?>" class="btn-cancel">[ MÉGSE ]</a>
                             </div>
                         </form>
                     </div>
@@ -2346,7 +3104,7 @@ function pgLink($v, $p)
                             </div>
                             <div class="edit-actions">
                                 <button type="submit" name="update_user" class="btn-save">[ MENTÉS ]</button>
-                                <a href="admin.php?view=users&page=<?= $page ?>" class="btn-cancel">[ MÉGSE ]</a>
+                                <a href="admin.php?view=users&page=<?= $page ?><?= $search ? '&search=' . urlencode($search) : '' ?>" class="btn-cancel">[ MÉGSE ]</a>
                             </div>
                         </form>
                     </div>
@@ -2421,13 +3179,17 @@ function pgLink($v, $p)
                                                 <span style="color:var(--c-text);font-size:0.8rem;"><?= htmlspecialchars($r['ref_title']) ?></span>
                                             <?php endif; ?>
                                         </td>
-                                        <td><?= htmlspecialchars($r['reporter_name']) ?></td>
-                                        <td><?= htmlspecialchars($r['target_name']) ?></td>
+                                        <td>
+                                            <a href="#" onclick="openUserProfile(<?= $r['reporter_id'] ?>); return false;" style="color: var(--c-green-mid); text-decoration: underline;"><?= htmlspecialchars($r['reporter_name']) ?></a>
+                                        </td>
+                                        <td>
+                                            <a href="#" onclick="openUserProfile(<?= $r['target_id'] ?>); return false;" style="color: var(--c-green-mid); text-decoration: underline;"><?= htmlspecialchars($r['target_name']) ?></a>
+                                        </td>
                                         <td class="wrap"><?= htmlspecialchars($r['reason']) ?></td>
                                         <td class="mono"><?= date('Y-m-d', strtotime($r['created_at'])) ?></td>
                                         <td>
                                             <?php if ($r['report_type'] === 'item'): ?>
-                                                <a href="admin.php?view=items&id=<?= $r['ref_id'] ?>" class="act act-view">TERMÉK</a>
+                                                <button class="act act-view" onclick="fetchItemDetailsAndOpen('<?= $r['ref_id'] ?>'); return false;">TERMÉK</button>
                                             <?php endif; ?>
                                             <button class="act act-del" onclick="confirmThenPost('delete_report', { report_id: <?= $r['id'] ?>, report_type: '<?= $r['report_type'] ?>' })">TÖRL</button>
                                         </td>
@@ -2441,8 +3203,18 @@ function pgLink($v, $p)
             <?php elseif ($view === 'users'): ?>
                 <div class="section-header">
                     <h2>FELHASZNÁLÓK</h2>
-                    <span class="record-count">TOTAL: <?= $counts['users'] ?> RECORD</span>
+                    <span class="record-count">TOTAL: <?= $totalItems ?> RECORD</span>
                 </div>
+                <!-- KERESŐ -->
+                <form method="get" class="search-form">
+                    <input type="hidden" name="view" value="users">
+                    <input type="hidden" name="page" value="1">
+                    <input type="text" name="search" class="search-input" value="<?= htmlspecialchars($search) ?>" placeholder="Keresés felhasználónév vagy email alapján...">
+                    <button type="submit" class="search-btn">KERESÉS</button>
+                    <?php if ($search): ?>
+                        <a href="admin.php?view=users" class="search-clear">✕ TÖRLÉS</a>
+                    <?php endif; ?>
+                </form>
                 <?php if (empty($users)): ?>
                     <div class="empty-state">NINCS ADAT</div>
                 <?php else: ?>
@@ -2463,13 +3235,15 @@ function pgLink($v, $p)
                                 <?php foreach ($users as $u): ?>
                                     <tr>
                                         <td class="mono"><?= $u['id'] ?></td>
-                                        <td><?= htmlspecialchars($u['username']) ?></td>
+                                        <td>
+                                            <a href="#" onclick="openUserProfile(<?= $u['id'] ?>); return false;" style="color: var(--c-green-mid); text-decoration: underline;"><?= htmlspecialchars($u['username']) ?></a>
+                                        </td>
                                         <td class="mono"><?= htmlspecialchars($u['email']) ?></td>
                                         <td><?= $u['is_admin'] ? '<span style="color:var(--c-amber)">■ ADMIN</span>' : '<span style="color:var(--c-muted)">○ USER</span>' ?></td>
                                         <td><?= $u['item_count'] ?></td>
                                         <td class="mono"><?= date('Y-m-d', strtotime($u['created_at'])) ?></td>
                                         <td>
-                                            <a href="admin.php?view=users&id=<?= $u['id'] ?>&page=<?= $page ?>" class="act act-edit">EDIT</a>
+                                            <a href="admin.php?view=users&id=<?= $u['id'] ?>&page=<?= $page ?><?= $search ? '&search=' . urlencode($search) : '' ?>" class="act act-edit">EDIT</a>
                                             <?php if ($u['id'] != $_SESSION['user_id']): ?>
                                                 <button class="act act-del" onclick="confirmThenPost('delete_user', { user_id: <?= $u['id'] ?> })">TÖRL</button>
                                             <?php endif; ?>
@@ -2484,8 +3258,18 @@ function pgLink($v, $p)
             <?php elseif ($view === 'items'): ?>
                 <div class="section-header">
                     <h2>TERMÉKEK</h2>
-                    <span class="record-count">TOTAL: <?= $counts['items'] ?> RECORD</span>
+                    <span class="record-count">TOTAL: <?= $totalItems ?> RECORD</span>
                 </div>
+                <!-- KERESŐ -->
+                <form method="get" class="search-form">
+                    <input type="hidden" name="view" value="items">
+                    <input type="hidden" name="page" value="1">
+                    <input type="text" name="search" class="search-input" value="<?= htmlspecialchars($search) ?>" placeholder="Keresés cím vagy leírás alapján...">
+                    <button type="submit" class="search-btn">KERESÉS</button>
+                    <?php if ($search): ?>
+                        <a href="admin.php?view=items" class="search-clear">✕ TÖRLÉS</a>
+                    <?php endif; ?>
+                </form>
                 <?php if (empty($items)): ?>
                     <div class="empty-state">NINCS ADAT</div>
                 <?php else: ?>
@@ -2497,6 +3281,7 @@ function pgLink($v, $p)
                                     <th>CÍM</th>
                                     <th>ELADÓ</th>
                                     <th>ÁR</th>
+                                    <th>STÁTUSZ</th>
                                     <th>LEÍRÁS</th>
                                     <th>DÁTUM</th>
                                     <th>OPS</th>
@@ -2511,12 +3296,21 @@ function pgLink($v, $p)
                                                 <?= htmlspecialchars($it['title']) ?>
                                             </button>
                                         </td>
-                                        <td><?= htmlspecialchars($it['seller_name']) ?></td>
+                                        <td>
+                                            <a href="#" onclick="openUserProfile(<?= $it['user_id'] ?>); return false;" style="color: var(--c-green-mid); text-decoration: underline;"><?= htmlspecialchars($it['seller_name']) ?></a>
+                                        </td>
                                         <td class="mono"><?= number_format($it['price'], 0, ',', ' ') ?> FT</td>
+                                        <td>
+                                            <?php if ($it['sold']): ?>
+                                                <span style="color:var(--c-red);letter-spacing:1px;">🔴 ELKELT</span>
+                                            <?php else: ?>
+                                                <span style="color:var(--c-green-mid);letter-spacing:1px;">🟢 AKTÍV</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td class="wrap"><?= htmlspecialchars(mb_substr($it['description'], 0, 50)) ?>...</td>
                                         <td class="mono"><?= date('Y-m-d', strtotime($it['created_at'])) ?></td>
                                         <td>
-                                            <a href="admin.php?view=items&id=<?= $it['id'] ?>&page=<?= $page ?>" class="act act-edit">EDIT</a>
+                                            <a href="admin.php?view=items&id=<?= $it['id'] ?>&page=<?= $page ?><?= $search ? '&search=' . urlencode($search) : '' ?>" class="act act-edit">EDIT</a>
                                             <button class="act act-del" onclick="confirmThenPost('delete_item', { item_id: '<?= $it['id'] ?>' })">TÖRL</button>
                                         </td>
                                     </tr>
@@ -2568,7 +3362,7 @@ function pgLink($v, $p)
                             <div class="chat-header">
                                 <span><?= htmlspecialchars($user1Name) ?> ↔ <?= htmlspecialchars($user2Name) ?></span>
                             </div>
-                            <div class="chat-messages">
+                            <div class="chat-messages" id="chatMessages">
                                 <?php foreach ($messages as $msg): ?>
                                     <div class="message-row <?= $msg['sender_id'] == $selectedUser1 ? 'left' : 'right' ?>">
                                         <div class="message-bubble">
@@ -2588,8 +3382,18 @@ function pgLink($v, $p)
             <?php elseif ($view === 'orders'): ?>
                 <div class="section-header">
                     <h2>RENDELÉSEK</h2>
-                    <span class="record-count">TOTAL: <?= $counts['orders'] ?? 0 ?> RECORD</span>
+                    <span class="record-count">TOTAL: <?= $totalItems ?> RECORD</span>
                 </div>
+                <!-- KERESŐ -->
+                <form method="get" class="search-form">
+                    <input type="hidden" name="view" value="orders">
+                    <input type="hidden" name="page" value="1">
+                    <input type="text" name="search" class="search-input" value="<?= htmlspecialchars($search) ?>" placeholder="Keresés rendelés ID, termék, vevő vagy eladó alapján...">
+                    <button type="submit" class="search-btn">KERESÉS</button>
+                    <?php if ($search): ?>
+                        <a href="admin.php?view=orders" class="search-clear">✕ TÖRLÉS</a>
+                    <?php endif; ?>
+                </form>
                 <?php if (empty($orders)): ?>
                     <div class="empty-state">NINCS ADAT</div>
                 <?php else: ?>
@@ -2659,16 +3463,16 @@ function pgLink($v, $p)
                 <?php endif; ?>
             <?php endif; ?>
             <!-- LAPOZÁS -->
-            <?php if ($totalPages > 1 && !in_array($view, ['main', 'conversations']) && !$editId): ?>
+            <?php if ($totalPages > 1 && !in_array($view, ['main', 'conversations', 'vizsgalock']) && !$editId): ?>
                 <div class="pagination">
                     <?php if ($page > 1): ?>
-                        <a href="<?= pgLink($view, $page - 1) ?>" class="pg-btn">◄ ELŐZŐ</a>
+                        <a href="<?= pgLink($view, $page - 1, $search) ?>" class="pg-btn">◄ ELŐZŐ</a>
                     <?php else: ?>
                         <span class="pg-btn disabled">◄ ELŐZŐ</span>
                     <?php endif; ?>
                     <span class="pg-info"><?= $page ?> / <?= $totalPages ?></span>
                     <?php if ($page < $totalPages): ?>
-                        <a href="<?= pgLink($view, $page + 1) ?>" class="pg-btn">KÖVETKEZŐ ►</a>
+                        <a href="<?= pgLink($view, $page + 1, $search) ?>" class="pg-btn">KÖVETKEZŐ ►</a>
                     <?php else: ?>
                         <span class="pg-btn disabled">KÖVETKEZŐ ►</span>
                     <?php endif; ?>
@@ -2735,13 +3539,43 @@ function pgLink($v, $p)
                 </div>
                 <div class="product-thumbnails" id="productThumbnails"></div>
             </div>
-            <div class="product-details">
+            <!-- Részletes nézet -->
+            <div class="product-detail-view" id="productDetailView">
                 <h2 class="product-title" id="productTitle"></h2>
                 <div class="product-price" id="productPrice"></div>
                 <div class="product-seller" id="productSeller"></div>
                 <div class="product-date" id="productDate"></div>
                 <div class="product-description" id="productDescription"></div>
                 <button class="product-buy-btn" id="productBuyBtn">[ VÁSÁRLÁS ]</button>
+            </div>
+            <!-- Szerkesztő nézet -->
+            <div class="product-edit-view" id="productEditView">
+                <h3 style="font-family: var(--font-vt); color: var(--c-green); letter-spacing: 2px; margin-bottom: 1rem;">[ TERMÉK SZERKESZTÉSE ]</h3>
+                <form id="productEditForm" onsubmit="saveProductEdit(event)">
+                    <input type="hidden" name="item_id" id="edit_product_id">
+                    <div class="edit-form-group">
+                        <label class="edit-form-label">Cím</label>
+                        <input type="text" name="item_title" id="edit_product_title" class="edit-form-input" required>
+                    </div>
+                    <div class="edit-form-group">
+                        <label class="edit-form-label">Leírás</label>
+                        <textarea name="item_description" id="edit_product_description" class="edit-form-textarea" required></textarea>
+                    </div>
+                    <div class="edit-form-group">
+                        <label class="edit-form-label">Ár (Ft)</label>
+                        <input type="number" name="item_price" id="edit_product_price" class="edit-form-input" min="0" step="1" required>
+                    </div>
+                    <div class="edit-form-group">
+                        <div class="field-checkbox">
+                            <input type="checkbox" name="item_sold" id="edit_product_sold" value="1">
+                            <label for="edit_product_sold">🔴 TERMÉK ELKELT (NEM VÁSÁROLHATÓ MEG)</label>
+                        </div>
+                    </div>
+                    <div class="edit-actions">
+                        <button type="button" class="btn-edit-cancel" onclick="cancelProductEdit()">[ MÉGSE ]</button>
+                        <button type="submit" class="btn-edit-save">[ MENTÉS ]</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -2836,7 +3670,7 @@ function pgLink($v, $p)
                 'delete_user': 'Biztosan törlöd ezt a felhasználót? Minden adata elvész!',
                 'delete_item': 'Biztosan törlöd ezt a terméket?',
                 'delete_report': 'Biztosan törlöd ezt a reportot?',
-                'delete_order': 'Biztosan törlöd ezt a rendelést?'
+                'delete_order': 'Biztosan törlöd ezt a rendelést? A termék ismét elérhető lesz.'
             };
             openConfirmModal(messages[type] || 'Biztosan törlöd?', () => {
                 let body = '';
@@ -2892,6 +3726,17 @@ function pgLink($v, $p)
             }
         });
 
+        // ── BESZÉLGETÉSEK SCROLL ALULRA ──
+        function scrollChatToBottom() {
+            const chatMessages = document.getElementById('chatMessages');
+            if (chatMessages) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            scrollChatToBottom();
+        });
+
         // ── USER PROFILE POPUP ──
         const userPopup = document.getElementById('userProfilePopup');
         const userPopupContent = document.getElementById('userPopupContent');
@@ -2916,7 +3761,7 @@ function pgLink($v, $p)
 
                     let avatarHtml;
                     if (data.profile_picture && data.profile_picture.trim() !== '') {
-                        avatarHtml = `<img src="${escapeHtml(data.profile_picture)}" alt="${escapeHtml(data.username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                        avatarHtml = `<img src="${escapeHtml(data.profile_picture)}" alt="${escapeHtml(data.username)}" style="width:100%;height:100%;object-fit:cover;">`;
                     } else {
                         avatarHtml = initial;
                     }
@@ -2932,7 +3777,7 @@ function pgLink($v, $p)
                                 `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="user-item-thumb-placeholder" style="display:none;">📷</div>` :
                                 `<div class="user-item-thumb-placeholder" style="display: flex;">📷</div>`;
                             itemsHtml += `
-                                <div class="user-item-thumb${soldClass}" onclick="fetchItemDetailsAndOpen('${escapeHtml(item.id)}');">
+                                <div class="user-item-thumb${soldClass}" onclick="closeUserProfile(); fetchItemDetailsAndOpen('${escapeHtml(item.id)}');">
                                     ${imgHtml}
                                     ${soldBadge}
                                     <div class="user-item-info">
@@ -3014,11 +3859,14 @@ function pgLink($v, $p)
             editBtn: document.getElementById('productEditBtn'),
             delBtn: document.getElementById('productDeleteBtn'),
             buyBtn: document.getElementById('productBuyBtn'),
+            detailView: document.getElementById('productDetailView'),
+            editView: document.getElementById('productEditView'),
         };
         let imgs = [],
             imgIdx = 0,
             prodId = null,
-            prodUid = null;
+            prodUid = null,
+            prodSold = false;
 
         function setImg(i) {
             if (i >= 0 && i < imgs.length) {
@@ -3051,6 +3899,8 @@ function pgLink($v, $p)
         function openPM() {
             pm.modal.classList.add('active');
             document.body.style.overflow = 'hidden';
+            pm.detailView.style.display = '';
+            pm.editView.style.display = 'none';
             setTimeout(adjustH, 100);
         }
 
@@ -3060,7 +3910,53 @@ function pgLink($v, $p)
             document.body.style.overflow = '';
         }
 
-        // Fetch item details and open modal (user popup stays open)
+        function openProductEdit() {
+            pm.detailView.style.display = 'none';
+            pm.editView.style.display = '';
+            document.getElementById('edit_product_id').value = prodId;
+            document.getElementById('edit_product_title').value = pm.title.textContent;
+            document.getElementById('edit_product_description').value = pm.desc.textContent;
+            document.getElementById('edit_product_price').value = pm.price.textContent.replace(/[^0-9]/g, '');
+            document.getElementById('edit_product_sold').checked = prodSold;
+        }
+
+        function cancelProductEdit() {
+            pm.detailView.style.display = '';
+            pm.editView.style.display = 'none';
+        }
+
+        async function saveProductEdit(e) {
+            e.preventDefault();
+            const form = document.getElementById('productEditForm');
+            const formData = new FormData(form);
+            formData.append('ajax', '1');
+            formData.append('update_item', '1');
+            try {
+                const resp = await fetch('admin.php', { method: 'POST', body: formData });
+                const result = await resp.json();
+                if (result.success) {
+                    pm.title.textContent = result.title;
+                    pm.desc.textContent = result.description;
+                    pm.price.textContent = result.price;
+                    prodSold = result.sold;
+                    if (result.sold) {
+                        pm.buyBtn.textContent = '[ ELKELT ]';
+                        pm.buyBtn.classList.add('sold');
+                        pm.buyBtn.disabled = true;
+                    } else {
+                        pm.buyBtn.textContent = '[ VÁSÁRLÁS ]';
+                        pm.buyBtn.classList.remove('sold');
+                        pm.buyBtn.disabled = false;
+                    }
+                    cancelProductEdit();
+                } else {
+                    alert('Hiba a mentés során!');
+                }
+            } catch (err) {
+                alert('Hálózati hiba!');
+            }
+        }
+
         function fetchItemDetailsAndOpen(itemId) {
             fetch('admin.php?get_item_data=' + itemId)
                 .then(r => r.json())
@@ -3071,6 +3967,7 @@ function pgLink($v, $p)
                     }
                     prodId = d.id;
                     prodUid = d.user_id;
+                    prodSold = d.sold;
                     imgs = d.images;
                     imgIdx = 0;
                     pm.title.textContent = d.title;
@@ -3113,7 +4010,7 @@ function pgLink($v, $p)
                             pm.reportBtn.style.display = 'none';
                             pm.editBtn.style.display = 'block';
                             pm.delBtn.style.display = 'block';
-                            pm.editBtn.onclick = () => location.href = 'admin.php?view=items&id=' + prodId;
+                            pm.editBtn.onclick = () => openProductEdit();
                             pm.delBtn.onclick = () => {
                                 confirmThenPost('delete_item', {
                                     item_id: prodId
@@ -3173,6 +4070,110 @@ function pgLink($v, $p)
                 alert('Vásárlás funkció admin felületről nem elérhető.');
             }
         });
+
+        // ========== VIZSGALOCK ==========
+        (function() {
+            const toggleBtn = document.getElementById('vizsgalockToggleBtn');
+            const exceptionsSection = document.getElementById('vizsgalockExceptionsSection');
+            const exceptionsBody = document.getElementById('vizsgalockExceptionsBody');
+            const userSelect = document.getElementById('vizsgalockUserSelect');
+            const navBtn = document.getElementById('vizsgalockNavBtn');
+
+            let vlLocked = false;
+
+            function escHtml(s) {
+                if (!s) return '';
+                return String(s).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+            }
+
+            function renderState(locked, exceptions, availableUsers) {
+                vlLocked = locked;
+                if (locked) {
+                    if (toggleBtn) {
+                        toggleBtn.textContent = '⚠️ VIZSGALOCK: ON ⚠️';
+                        toggleBtn.className = 'vizsgalock-toggle-btn on';
+                    }
+                    if (exceptionsSection) exceptionsSection.classList.add('visible');
+                    if (navBtn) navBtn.classList.add('locked');
+                } else {
+                    if (toggleBtn) {
+                        toggleBtn.textContent = 'VIZSGALOCK: OFF';
+                        toggleBtn.className = 'vizsgalock-toggle-btn off';
+                    }
+                    if (exceptionsSection) exceptionsSection.classList.remove('visible');
+                    if (navBtn) navBtn.classList.remove('locked');
+                }
+
+                if (exceptionsBody) {
+                    if (exceptions && exceptions.length > 0) {
+                        exceptionsBody.innerHTML = exceptions.map(u =>
+                            `<tr>
+                                <td>${escHtml(u.username)}</td>
+                                <td style="color:rgba(255,170,0,0.5);font-size:0.72rem;">${u.added_at ? u.added_at.slice(0,10) : '-'}</td>
+                                <td><button class="vl-remove-btn" onclick="window._vlRemove(${u.id})">TÖRÖL</button></td>
+                            </tr>`
+                        ).join('');
+                    } else {
+                        exceptionsBody.innerHTML = '<tr><td colspan="3" class="vizsgalock-empty">[ NINCS KIVÉTEL ]</td></tr>';
+                    }
+                }
+
+                if (userSelect) {
+                    userSelect.innerHTML = '<option value="">-- Felhasználó kiválasztása --</option>';
+                    if (availableUsers && availableUsers.length > 0) {
+                        availableUsers.forEach(u => {
+                            const opt = document.createElement('option');
+                            opt.value = u.id;
+                            opt.textContent = u.username;
+                            userSelect.appendChild(opt);
+                        });
+                    }
+                }
+            }
+
+            function loadStatus() {
+                fetch('admin.php?vizsgalock_status=1')
+                    .then(r => r.json())
+                    .then(d => {
+                        if (!d.error) renderState(d.locked, d.exceptions, d.available_users);
+                    })
+                    .catch(() => {});
+            }
+
+            window.doVizsgalockToggle = function() {
+                fetch('admin.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'vizsgalock_toggle=1'
+                }).then(r => r.json()).then(d => {
+                    if (!d.error) loadStatus();
+                });
+            };
+
+            window.doVizsgalockAddException = function() {
+                const uid = userSelect ? userSelect.value : '';
+                if (!uid) return;
+                fetch('admin.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'vizsgalock_add_exception=1&user_id=' + encodeURIComponent(uid)
+                }).then(r => r.json()).then(d => {
+                    if (!d.error) loadStatus();
+                });
+            };
+
+            window._vlRemove = function(uid) {
+                fetch('admin.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'vizsgalock_remove_exception=1&user_id=' + encodeURIComponent(uid)
+                }).then(r => r.json()).then(d => {
+                    if (!d.error) loadStatus();
+                });
+            };
+
+            loadStatus();
+        })();
 
         // ========== SCROLL MEGŐRZÉSE A SIDEBARBAN ==========
         (function() {

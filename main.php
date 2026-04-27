@@ -218,7 +218,7 @@ try {
                     (SELECT image_path FROM item_images WHERE item_id = i.id AND is_primary = 1 LIMIT 1) as primary_image
                 FROM items i
                 JOIN users u ON i.user_id = u.id
-                WHERE i.title LIKE :q OR i.description LIKE :q
+                WHERE (i.title LIKE :q OR i.description LIKE :q) AND i.sold = FALSE
                 ORDER BY i.created_at DESC
                 LIMIT 10
             ");
@@ -241,7 +241,7 @@ try {
 
             // Fetch item details
             $stmt = $conn->prepare("
-                SELECT i.id, i.title, i.description, i.price, i.created_at, u.username as seller_name, i.user_id
+                SELECT i.id, i.title, i.description, i.price, i.created_at, u.username as seller_name, i.user_id, i.sold
                 FROM items i
                 JOIN users u ON i.user_id = u.id
                 WHERE i.id = ?
@@ -316,6 +316,25 @@ try {
     // TERMÉK FELTÖLTÉS KEZELÉSE
     // =============================================
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_item'])) {
+        // VIZSGALOCK ellenőrzés
+        $vlBlocked = false;
+        try {
+            $vlChk = $conn->query("SELECT is_locked FROM vizsgalock_settings WHERE id=1");
+            if ($vlChk && ($vlRow = $vlChk->fetch(PDO::FETCH_ASSOC)) && $vlRow['is_locked']) {
+                $curUid = (int)$_SESSION['user_id'];
+                $admChk = $conn->prepare("SELECT COUNT(*) FROM admins WHERE user_id=?");
+                $admChk->execute([$curUid]);
+                $excChk = $conn->prepare("SELECT COUNT(*) FROM vizsgalock_exceptions WHERE user_id=?");
+                $excChk->execute([$curUid]);
+                if (!$admChk->fetchColumn() && !$excChk->fetchColumn()) {
+                    $vlBlocked = true;
+                    $_SESSION['upload_error'] = 'A VIZSGALOCK aktiválva van. Hirdetés feladása jelenleg nem lehetséges.';
+                    header("Location: main.php");
+                    exit();
+                }
+            }
+        } catch (Exception $e) {}
+
         $title       = trim($_POST['item_title'] ?? '');
         $description = trim($_POST['item_description'] ?? '');
         $price       = trim($_POST['item_price'] ?? '');
@@ -555,8 +574,8 @@ try {
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $offset = ($page - 1) * $itemsPerPage;
 
-    // Get total items count
-    $totalStmt = $conn->query("SELECT COUNT(*) FROM items");
+    // Get total items count (csak nem elkelt termékek)
+    $totalStmt = $conn->query("SELECT COUNT(*) FROM items WHERE sold = FALSE");
     $totalItems = $totalStmt->fetchColumn();
     $totalPages = ceil($totalItems / $itemsPerPage);
 
@@ -571,11 +590,12 @@ try {
     }
     $seed = $_SESSION['items_seed'];
 
-    // Fetch items for current page with session-based RAND seed
+    // Fetch items for current page with session-based RAND seed (csak nem elkelt termékek)
     $stmt = $conn->prepare("
         SELECT i.*, u.username as seller_name
         FROM items i
         JOIN users u ON i.user_id = u.id
+        WHERE i.sold = FALSE
         ORDER BY RAND(:seed)
         LIMIT :offset, :itemsPerPage
     ");
@@ -671,51 +691,19 @@ try {
         }
 
         @keyframes noise {
-
-            0%,
-            100% {
-                transform: translate(0, 0);
-            }
-
-            10% {
-                transform: translate(-5%, -5%);
-            }
-
-            20% {
-                transform: translate(-10%, 5%);
-            }
-
-            30% {
-                transform: translate(5%, -10%);
-            }
-
-            40% {
-                transform: translate(-5%, 15%);
-            }
-
-            50% {
-                transform: translate(-10%, 5%);
-            }
-
-            60% {
-                transform: translate(15%, 0);
-            }
-
-            70% {
-                transform: translate(0, 10%);
-            }
-
-            80% {
-                transform: translate(-15%, 0);
-            }
-
-            90% {
-                transform: translate(10%, 5%);
-            }
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-5%, -5%); }
+            20% { transform: translate(-10%, 5%); }
+            30% { transform: translate(5%, -10%); }
+            40% { transform: translate(-5%, 15%); }
+            50% { transform: translate(-10%, 5%); }
+            60% { transform: translate(15%, 0); }
+            70% { transform: translate(0, 10%); }
+            80% { transform: translate(-15%, 0); }
+            90% { transform: translate(10%, 5%); }
         }
 
-        .orb-1,
-        .orb-2 {
+        .orb-1, .orb-2 {
             position: fixed;
             width: min(60vw, 600px);
             height: min(60vw, 600px);
@@ -741,35 +729,15 @@ try {
         }
 
         @keyframes float1 {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(10vw, 10vh) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-5vw, 15vh) scale(0.9);
-            }
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(10vw, 10vh) scale(1.1); }
+            66% { transform: translate(-5vw, 15vh) scale(0.9); }
         }
 
         @keyframes float2 {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(-10vw, -10vh) scale(1.2);
-            }
-
-            66% {
-                transform: translate(5vw, -15vh) scale(0.8);
-            }
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-10vw, -10vh) scale(1.2); }
+            66% { transform: translate(5vw, -15vh) scale(0.8); }
         }
 
         /* Top bar - KÖZÉPRE IGAZÍTOTT VERZIÓ */
@@ -1622,7 +1590,7 @@ try {
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 3000;
+            z-index: 4500;
         }
 
         .report-modal.show {
@@ -1750,8 +1718,7 @@ try {
             -webkit-user-select: none;
         }
 
-        input,
-        textarea {
+        input, textarea {
             user-select: text;
             -webkit-user-select: text;
         }
@@ -2065,6 +2032,172 @@ try {
 
         .submit-btn:active {
             transform: translateY(0);
+        }
+
+        /* =====================
+        DELETE CONFIRM MODAL
+        ===================== */
+        .delete-confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 5000;
+        }
+
+        .delete-confirm-modal.show {
+            display: flex;
+        }
+
+        .delete-confirm-modal-content {
+            background: rgba(20, 10, 10, 0.95);
+            border: 2px solid #ff4444;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(255, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .delete-confirm-modal-header {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .delete-confirm-modal-icon {
+            font-size: 2rem;
+        }
+
+        .delete-confirm-modal-title {
+            font-size: 1.3rem;
+            color: #ff4444;
+            margin: 0;
+            flex: 1;
+        }
+
+        .delete-confirm-modal-close {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.2rem;
+        }
+
+        .delete-confirm-modal-close:hover {
+            color: #ff4444;
+        }
+
+        .delete-confirm-modal-body {
+            margin-bottom: 1.5rem;
+        }
+
+        .delete-confirm-modal-text {
+            font-size: 1rem;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .delete-confirm-modal-warning {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .delete-confirm-modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .delete-confirm-cancel-btn {
+            padding: 0.7rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: transparent;
+            color: #ffffff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .delete-confirm-cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #ffffff;
+        }
+
+        .delete-confirm-delete-btn {
+            padding: 0.7rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            background: #ff4444;
+            color: #ffffff;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .delete-confirm-delete-btn:hover {
+            background: #ff6666;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.4);
+        }
+
+        /* Light mode overrides for delete confirm modal */
+        body[data-theme="light"] .delete-confirm-modal {
+            background: rgba(220, 230, 180, 0.85) !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-content {
+            background: rgba(255, 245, 240, 0.98) !important;
+            border: 2px solid #d32f2f !important;
+            box-shadow: 0 20px 60px rgba(200, 0, 0, 0.2) !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-title {
+            color: #d32f2f !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-text {
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-warning {
+            color: rgba(26, 31, 0, 0.5) !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-close {
+            color: rgba(26, 31, 0, 0.5) !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-close:hover {
+            color: #d32f2f !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-cancel-btn {
+            border-color: rgba(26, 31, 0, 0.3) !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-cancel-btn:hover {
+            background: rgba(0, 0, 0, 0.05) !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-delete-btn {
+            background: #d32f2f !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-delete-btn:hover {
+            background: #ff4444 !important;
+            box-shadow: 0 4px 15px rgba(200, 0, 0, 0.3) !important;
         }
 
         /* =====================
@@ -2417,6 +2550,22 @@ try {
             box-shadow: 0 10px 30px rgba(0, 200, 0, 0.4);
         }
 
+        /* ========== ELKELT GOMB STÍLUSA (témafüggetlen) ========== */
+        .product-buy-btn.sold {
+            background: #555 !important;
+            color: #aaa !important;
+            cursor: not-allowed !important;
+            border: 1px solid #666 !important;
+            box-shadow: none !important;
+            pointer-events: none;
+        }
+
+        .product-buy-btn.sold:hover {
+            background: #555 !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
         /* =====================
         LIGHTBOX
         ===================== */
@@ -2567,17 +2716,7 @@ try {
         }
 
         @media (prefers-reduced-motion: reduce) {
-
-            .noise,
-            .orb-1,
-            .orb-2,
-            .item-card,
-            .account-dropdown,
-            .pagination-btn,
-            .modal-card,
-            .modal-overlay,
-            .product-modal-card,
-            .product-modal-overlay {
+            .noise, .orb-1, .orb-2, .item-card, .account-dropdown, .pagination-btn, .modal-card, .modal-overlay, .product-modal-card, .product-modal-overlay {
                 animation: none;
                 transition: none;
             }
@@ -3134,6 +3273,25 @@ try {
         </div>
     </div>
 
+    <!-- Delete Confirm Modal -->
+    <div class="delete-confirm-modal" id="deleteConfirmModal">
+        <div class="delete-confirm-modal-content">
+            <div class="delete-confirm-modal-header">
+                <span class="delete-confirm-modal-icon">⚠️</span>
+                <h3 class="delete-confirm-modal-title unselectable">Hirdetés törlése</h3>
+                <button class="delete-confirm-modal-close unselectable" onclick="closeDeleteConfirmModal()">✕</button>
+            </div>
+            <div class="delete-confirm-modal-body">
+                <p class="delete-confirm-modal-text unselectable">Biztosan törölni szeretnéd ezt a hirdetést?</p>
+                <p class="delete-confirm-modal-warning unselectable">A törlés végleges, nem vonható vissza.</p>
+            </div>
+            <div class="delete-confirm-modal-actions">
+                <button class="delete-confirm-cancel-btn unselectable" onclick="closeDeleteConfirmModal()">Mégse</button>
+                <button class="delete-confirm-delete-btn unselectable" id="confirmDeleteBtn">Törlés</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Product Detail Modal -->
     <div class="product-modal-overlay" id="productModal">
         <div class="product-modal-card">
@@ -3229,11 +3387,12 @@ try {
                         data-item-date="<?php echo date('Y-m-d', strtotime($item['created_at'])); ?>"
                         data-item-description="<?php echo htmlspecialchars($item['description']); ?>"
                         data-item-images='<?php echo json_encode($allImages); ?>'
-                        data-item-user-id="<?php echo $item['user_id']; ?>">
+                        data-item-user-id="<?php echo $item['user_id']; ?>"
+                        data-item-sold="0">
 
                         <?php
                         $isOwnerCard = ($item['user_id'] == $_SESSION['user_id']);
-                        $showCardMenu = true; // always show menu (report for others, edit/delete for owner/admin)
+                        $showCardMenu = true;
                         ?>
                         <div class="card-menu">
                             <div class="card-menu-button unselectable" onclick="toggleMenu(this); event.stopPropagation();">⋮</div>
@@ -3302,6 +3461,7 @@ try {
         let currentImageIndex = 0;
         let currentProductId = null;
         let currentProductUserId = null;
+        let currentProductSold = false;
 
         // Upload modal functionality
         const modal = document.getElementById('uploadModal');
@@ -3486,6 +3646,48 @@ try {
             if (e.key === 'Escape' && reportModal.classList.contains('show')) closeReportModal();
         });
 
+        // Delete confirm modal functionality
+        let pendingDeleteItemId = null;
+        const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+        function openDeleteConfirmModal(itemId) {
+            pendingDeleteItemId = itemId;
+            deleteConfirmModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDeleteConfirmModal() {
+            deleteConfirmModal.classList.remove('show');
+            document.body.style.overflow = '';
+            pendingDeleteItemId = null;
+        }
+
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (pendingDeleteItemId) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="item_id" value="${pendingDeleteItemId}">
+                    <input type="hidden" name="delete_item" value="1">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+
+        deleteConfirmModal.addEventListener('click', function(e) {
+            if (e.target === deleteConfirmModal) {
+                closeDeleteConfirmModal();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && deleteConfirmModal.classList.contains('show')) {
+                closeDeleteConfirmModal();
+            }
+        });
+
         // Product modal functionality
         const productModal = document.getElementById('productModal');
         const closeProductModalBtn = document.getElementById('closeProductModalBtn');
@@ -3536,6 +3738,27 @@ try {
             }
         }
 
+        function updateProductBuyBtn(sold) {
+            const buyBtn = document.getElementById('productBuyBtn');
+            if (sold) {
+                buyBtn.textContent = 'Elkelt';
+                buyBtn.classList.add('sold');
+                buyBtn.disabled = true;
+                buyBtn.onclick = null;
+            } else {
+                buyBtn.textContent = '🛒 Vásárlás';
+                buyBtn.classList.remove('sold');
+                buyBtn.disabled = false;
+                buyBtn.onclick = function() {
+                    if (currentProductId) {
+                        window.location.href = 'vasarlas.php?item_id=' + encodeURIComponent(currentProductId);
+                    } else {
+                        alert('Hiba: nincs termék kiválasztva.');
+                    }
+                };
+            }
+        }
+
         document.querySelectorAll('.item-card').forEach(card => {
             card.addEventListener('click', function(e) {
                 if (e.target.closest('.card-menu') || e.target.closest('.report-modal')) return;
@@ -3547,11 +3770,13 @@ try {
                 const description = this.dataset.itemDescription;
                 const images = JSON.parse(this.dataset.itemImages || '[]');
                 const userId = this.dataset.itemUserId;
+                const sold = this.dataset.itemSold === '1';
 
                 currentProductId = productId;
                 currentProductUserId = userId;
                 currentProductImages = images;
                 currentImageIndex = 0;
+                currentProductSold = sold;
 
                 document.getElementById('productTitle').textContent = title;
                 document.getElementById('productPrice').textContent = price;
@@ -3599,7 +3824,6 @@ try {
                     if (!isOwner || isAdmin) {
                         reportBtn.style.display = 'block';
                         reportBtn.onclick = () => {
-                            closeProductModal();
                             openReportModal(productId);
                         };
                     } else {
@@ -3610,7 +3834,6 @@ try {
                     if (isOwner || isAdmin) {
                         editBtn.style.display = 'block';
                         editBtn.onclick = () => {
-                            closeProductModal();
                             openEditModal(
                                 productId,
                                 document.getElementById('productTitle').textContent,
@@ -3626,31 +3849,15 @@ try {
                     if (isOwner || isAdmin) {
                         deleteBtn.style.display = 'block';
                         deleteBtn.onclick = () => {
-                            if (confirm('Biztosan törlöd ezt a terméket?')) {
-                                const form = document.createElement('form');
-                                form.method = 'POST';
-                                form.innerHTML = `
-                                <input type="hidden" name="item_id" value="${productId}">
-                                <input type="hidden" name="delete_item" value="1">
-                            `;
-                                document.body.appendChild(form);
-                                form.submit();
-                            }
+                            openDeleteConfirmModal(productId);
                         };
                     } else {
                         deleteBtn.style.display = 'none';
                     }
                 <?php endif; ?>
 
-                // --- VÁSÁRLÁS GOMB MŰKÖDÉSE ---
-                // A termék azonosító már be van állítva (currentProductId), így átirányít a vasarlas.php-ra
-                document.getElementById('productBuyBtn').onclick = function() {
-                    if (currentProductId) {
-                        window.location.href = 'vasarlas.php?item_id=' + encodeURIComponent(currentProductId);
-                    } else {
-                        alert('Hiba: nincs termék kiválasztva.');
-                    }
-                };
+                // Vásárlás gomb frissítése
+                updateProductBuyBtn(sold);
 
                 openProductModal();
             });
@@ -3690,17 +3897,6 @@ try {
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && productModal.classList.contains('active')) closeProductModal();
-        });
-
-        // A termékmodál alapértelmezett vásárlás gomb kezelő (ha nincs megnyitott termék, akkor a kártyaklikkel állítódik be)
-        // A fenti kártya kattintás felülírja, de ha a modált más módon (pl. keresésből) nyitjuk, akkor ott is be kell állítani.
-        // Az alábbi sor biztonsági tartalék, de az onClick a kártyákból már be van állítva.
-        document.getElementById('productBuyBtn').addEventListener('click', function() {
-            if (currentProductId) {
-                window.location.href = 'vasarlas.php?item_id=' + encodeURIComponent(currentProductId);
-            } else {
-                alert('Hiba: nincs termék kiválasztva.');
-            }
         });
 
         function toggleProductMenu(button) {
@@ -3856,6 +4052,7 @@ try {
                     currentProductUserId = item.user_id;
                     currentProductImages = item.images;
                     currentImageIndex = 0;
+                    currentProductSold = item.sold ? true : false;
 
                     document.getElementById('productTitle').textContent = item.title;
                     document.getElementById('productPrice').textContent = `${Number(item.price).toLocaleString('hu-HU')} Ft`;
@@ -3900,7 +4097,6 @@ try {
                     if (!isOwner || isAdmin) {
                         reportBtn.style.display = 'block';
                         reportBtn.onclick = () => {
-                            closeProductModal();
                             openReportModal(item.id);
                         };
                     } else {
@@ -3910,21 +4106,11 @@ try {
                     if (isOwner || isAdmin) {
                         editBtn.style.display = 'block';
                         editBtn.onclick = () => {
-                            closeProductModal();
                             openEditModal(item.id, item.title, item.description, item.price);
                         };
                         deleteBtn.style.display = 'block';
                         deleteBtn.onclick = () => {
-                            if (confirm('Biztosan törlöd ezt a terméket?')) {
-                                const form = document.createElement('form');
-                                form.method = 'POST';
-                                form.innerHTML = `
-                                    <input type="hidden" name="item_id" value="${item.id}">
-                                    <input type="hidden" name="delete_item" value="1">
-                                `;
-                                document.body.appendChild(form);
-                                form.submit();
-                            }
+                            openDeleteConfirmModal(item.id);
                         };
                     } else {
                         editBtn.style.display = 'none';
@@ -3932,9 +4118,7 @@ try {
                     }
 
                     // Vásárlás gomb frissítése
-                    document.getElementById('productBuyBtn').onclick = function() {
-                        window.location.href = 'vasarlas.php?item_id=' + encodeURIComponent(item.id);
-                    };
+                    updateProductBuyBtn(currentProductSold);
 
                     openProductModal();
                 })

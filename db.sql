@@ -159,6 +159,22 @@ CALL AddColumnIfNotExists('uzenetek', 'is_read', 'BOOLEAN DEFAULT FALSE');   -- 
 -- Takarítás
 DROP PROCEDURE IF EXISTS AddColumnIfNotExists;
 
+-- VIZSGALOCK beállítások tábla
+CREATE TABLE IF NOT EXISTS vizsgalock_settings (
+    id INT PRIMARY KEY DEFAULT 1,
+    is_locked BOOLEAN DEFAULT FALSE,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT IGNORE INTO vizsgalock_settings (id, is_locked) VALUES (1, FALSE);
+
+-- VIZSGALOCK kivételek tábla
+CREATE TABLE IF NOT EXISTS vizsgalock_exceptions (
+    user_id INT PRIMARY KEY,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_vl_exceptions_users FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- Admin felhasználó hozzáadása az adminok közé (ha létezik az admin nevű user)
 INSERT INTO
     admins (user_id, assigned_at)

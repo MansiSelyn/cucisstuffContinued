@@ -69,6 +69,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (strpos($_POST['email'], '@') === false) {
             $status = "Érvénytelen email cím";
         } else {
+            // VIZSGALOCK ellenőrzés
+            try {
+                $vlConn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+                if (!$vlConn->connect_error) {
+                    $vlRes = $vlConn->query("SELECT is_locked FROM vizsgalock_settings WHERE id=1");
+                    if ($vlRes && ($vlRow = $vlRes->fetch_assoc()) && $vlRow['is_locked']) {
+                        $status = "Regisztráció jelenleg nem lehetséges (VIZSGALOCK aktív).";
+                        $vlConn->close();
+                        goto register_done;
+                    }
+                    $vlConn->close();
+                }
+            } catch (Exception $e) {}
+
             $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
             if ($conn->connect_error) {
                 $status = "Adatbázis hiba";
@@ -107,6 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $conn->close();
             }
         }
+        register_done:;
     }
 }
 ?>

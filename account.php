@@ -122,8 +122,9 @@ try {
     if (isset($_GET['get_item']) && !empty($_GET['get_item'])) {
         header('Content-Type: application/json');
         $itemId = $_GET['get_item'];
+        // MÓDOSÍTÁS: i.sold mező hozzáadva
         $stmt = $conn->prepare("
-            SELECT i.id, i.title, i.description, i.price, i.created_at, u.username as seller_name, i.user_id
+            SELECT i.id, i.title, i.description, i.price, i.created_at, i.sold, u.username as seller_name, i.user_id
             FROM items i
             JOIN users u ON i.user_id = u.id
             WHERE i.id = ?
@@ -139,6 +140,41 @@ try {
         $images = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
         $item['images'] = $images;
         echo json_encode($item);
+        exit;
+    }
+
+    // =============================================
+    // AJAX: GET SELLER PROFILE (JSON) - a seller popuphoz
+    // =============================================
+    if (isset($_GET['get_seller']) && !empty($_GET['get_seller'])) {
+        header('Content-Type: application/json');
+        $sellerId = (int)$_GET['get_seller'];
+        $sellerStmt = $conn->prepare("
+            SELECT u.id, u.username, u.profile_picture, u.created_at,
+                   COUNT(DISTINCT i.id) AS item_count,
+                   (SELECT COUNT(*) FROM admins WHERE user_id = u.id) AS is_admin
+            FROM users u
+            LEFT JOIN items i ON i.user_id = u.id
+            WHERE u.id = ?
+            GROUP BY u.id, u.username, u.profile_picture, u.created_at
+        ");
+        $sellerStmt->execute([$sellerId]);
+        $seller = $sellerStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$seller) {
+            echo json_encode(['error' => 'Felhasználó nem található']);
+            exit;
+        }
+        $latestStmt = $conn->prepare("
+            SELECT i.id, i.title, i.price,
+                   (SELECT image_path FROM item_images WHERE item_id = i.id AND is_primary = 1 LIMIT 1) as thumb
+            FROM items i
+            WHERE i.user_id = ?
+            ORDER BY i.created_at DESC
+            LIMIT 4
+        ");
+        $latestStmt->execute([$sellerId]);
+        $seller['latest_items'] = $latestStmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($seller);
         exit;
     }
 
@@ -297,7 +333,7 @@ try {
     }
 
     // ------------------------------------------------------------
-    // TERMÉK MÓDOSÍTÁS / TÖRLÉS (POST) - a meglévő logika
+    // TERMÉK MÓDOSÍTÁS / TÖRLÉS (POST)
     // ------------------------------------------------------------
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_item'])) {
         $itemId  = $_POST['item_id'] ?? '';
@@ -320,6 +356,47 @@ try {
             }
         } else {
             $error = "Érvénytelen adatok vagy nincs jogosultság!";
+        }
+    }
+
+    // Termék törlése
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_item'])) {
+        $itemId = $_POST['item_id'] ?? '';
+        $ownerCheck = $conn->prepare("SELECT user_id FROM items WHERE id = ?");
+        $ownerCheck->execute([$itemId]);
+        $ownerRow = $ownerCheck->fetch(PDO::FETCH_ASSOC);
+        if ($itemId && $ownerRow && $ownerRow['user_id'] == $userId) {
+            // Töröljük a képeket is
+            $imgStmt = $conn->prepare("SELECT image_path FROM item_images WHERE item_id = ?");
+            $imgStmt->execute([$itemId]);
+            while ($imgPath = $imgStmt->fetchColumn()) {
+                if (file_exists($imgPath)) unlink($imgPath);
+            }
+            $conn->prepare("DELETE FROM item_images WHERE item_id = ?")->execute([$itemId]);
+            $conn->prepare("DELETE FROM items WHERE id = ?")->execute([$itemId]);
+            // Könyvtár törlése
+            $dir = 'uploads/' . $itemId . '/';
+            if (is_dir($dir)) {
+                array_map('unlink', glob($dir . '*'));
+                rmdir($dir);
+            }
+            header("Location: account.php?deleted=1");
+            exit();
+        }
+    }
+
+    // Termék jelentés (report)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['report_item'])) {
+        $itemId = $_POST['item_id'] ?? '';
+        $reason = trim($_POST['report_reason'] ?? '');
+        if ($itemId && $reason) {
+            try {
+                $ins = $conn->prepare("INSERT INTO reports (item_id, user_id, reason) VALUES (?, ?, ?)");
+                $ins->execute([$itemId, $userId, $reason]);
+                $reportSuccess = true;
+            } catch (Exception $e) {
+                $reportError = 'Hiba a bejelentés során.';
+            }
         }
     }
 
@@ -347,7 +424,7 @@ try {
     try {
         $ordersStmt = $conn->prepare("
             SELECT o.*, i.title AS item_title, i.price AS item_price, 
-                   u.username AS seller_name,
+                   u.username AS seller_name, u.id AS seller_id,
                    (SELECT image_path FROM item_images WHERE item_id = o.item_id AND is_primary = 1 LIMIT 1) as item_image
             FROM orders o
             JOIN items i ON o.item_id = i.id
@@ -362,6 +439,9 @@ try {
     }
 
     $editSuccess = isset($_GET['edit']) && $_GET['edit'] === 'success';
+    $deleteSuccess = isset($_GET['deleted']) && $_GET['deleted'] == '1';
+    $reportSuccess = isset($reportSuccess) && $reportSuccess;
+    $reportError = $reportError ?? '';
 } catch (PDOException $e) {
     die("Adatbázis hiba: " . $e->getMessage());
 }
@@ -446,7 +526,13 @@ try {
 
         .back-btn:hover {
             background: var(--orange-bright);
-            color: #FFF3E0;
+            color: #000 !important;
+            box-shadow: 0 0 15px var(--orange-glow);
+        }
+
+        body[data-theme="light"] .back-btn:hover {
+            background: var(--orange-bright);
+            color: #1a1f00 !important;
         }
 
         .admin-btn {
@@ -757,7 +843,7 @@ try {
         }
 
         .mini-card {
-            background: rgba(0, 0, 0, 0.2);
+            background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
             overflow: hidden;
@@ -800,11 +886,12 @@ try {
 
         /* ---------- RENDELÉSEK STÍLUSAI ---------- */
         .order-card {
-            background: rgba(0, 0, 0, 0.2);
+            background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 14px;
             padding: 1rem;
             transition: 0.3s;
+            overflow: hidden;
         }
 
         .order-card:hover {
@@ -855,6 +942,7 @@ try {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            cursor: pointer;
         }
 
         .order-card .order-price {
@@ -867,6 +955,17 @@ try {
             font-size: 0.78rem;
             color: var(--text-muted);
             margin-top: 0.3rem;
+        }
+
+        .order-card .order-meta strong {
+            color: var(--orange-bright);
+            cursor: pointer;
+            transition: color 0.18s;
+        }
+
+        .order-card .order-meta strong:hover {
+            text-decoration: underline;
+            color: #fff;
         }
 
         .order-card .order-details {
@@ -900,6 +999,7 @@ try {
             font-weight: 700;
             letter-spacing: 0.5px;
             text-transform: uppercase;
+            white-space: nowrap;
         }
 
         .status-pending {
@@ -1099,7 +1199,7 @@ try {
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 6000;
+            z-index: 6500;
             opacity: 0;
             transition: opacity 0.25s ease;
         }
@@ -1360,6 +1460,22 @@ try {
             color: #ff0000;
         }
 
+        /* Light mode product menu */
+        body[data-theme="light"] .product-menu-content {
+            background: rgba(248, 252, 230, 0.98) !important;
+            border: 1px solid #B0CB1F !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 20px rgba(176, 203, 31, 0.3) !important;
+        }
+
+        body[data-theme="light"] .product-menu-item {
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .product-menu-item:hover {
+            background: rgba(176, 203, 31, 0.2) !important;
+            color: #7a9200 !important;
+        }
+
         .product-gallery {
             position: relative;
             height: 100%;
@@ -1569,6 +1685,16 @@ try {
             box-shadow: 0 10px 30px rgba(0, 200, 0, 0.4);
         }
 
+        /* ========== ELKELT GOMB – TELJESEN SZÜRKE ========== */
+        .product-buy-btn.sold {
+            background: #666 !important;
+            color: #ddd !important;
+            cursor: not-allowed !important;
+            border: 1px solid #888 !important;
+            box-shadow: none !important;
+            pointer-events: none;
+        }
+
         .lightbox-overlay {
             position: fixed;
             inset: 0;
@@ -1627,8 +1753,465 @@ try {
             transform: scale(1.1);
         }
 
+        /* ========== SELLER POPUP STÍLUSOK ========== */
+        .seller-popup-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 6000;
+            background: rgba(0, 0, 0, 0.98);
+            backdrop-filter: blur(16px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .seller-popup-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .seller-popup-card {
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 5, 5, 0.99);
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.98);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .seller-popup-overlay.active .seller-popup-card {
+            transform: scale(1);
+        }
+
+        .seller-popup-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(5, 5, 5, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .seller-popup-close {
+            background: rgba(255, 140, 0, 0.1);
+            border: 1px solid var(--glass-border);
+            color: var(--orange-bright);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .seller-popup-close:hover {
+            background: var(--orange-bright);
+            color: #000;
+        }
+
+        .seller-popup-topbar-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--orange-bright);
+            flex: 1;
+        }
+
+        .seller-popup-body {
+            flex: 1;
+            max-width: 560px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .seller-popup-avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--orange-bright), #ff5500);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #000;
+            margin: 0 auto 1.2rem;
+            box-shadow: 0 0 40px rgba(255, 140, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .seller-popup-avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .seller-popup-name {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--orange-bright);
+            margin-bottom: 0.35rem;
+        }
+
+        .seller-popup-meta {
+            text-align: center;
+            font-size: 0.88rem;
+            margin-bottom: 2rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .seller-popup-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .seller-stat {
+            flex: 1;
+            background: rgba(255, 140, 0, 0.07);
+            border: 1px solid rgba(255, 140, 0, 0.15);
+            border-radius: 16px;
+            padding: 1.1rem;
+            text-align: center;
+        }
+
+        .seller-stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--orange-bright);
+        }
+
+        .seller-stat-label {
+            font-size: 0.78rem;
+            margin-top: 3px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .seller-popup-items-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 0.9rem;
+        }
+
+        .seller-popup-items-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
+            margin-bottom: 2rem;
+        }
+
+        .seller-item-thumb {
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 140, 0, 0.12);
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .seller-item-thumb:hover {
+            border-color: var(--orange-bright);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(255, 140, 0, 0.2);
+        }
+
+        .seller-item-thumb img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .seller-item-thumb-placeholder {
+            width: 100%;
+            height: 110px;
+            background: rgba(255, 140, 0, 0.07);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 140, 0, 0.35);
+            font-size: 1.8rem;
+        }
+
+        .seller-item-info {
+            padding: 0.6rem 0.75rem;
+        }
+
+        .seller-item-title {
+            font-size: 0.82rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .seller-item-price {
+            font-size: 0.8rem;
+            color: var(--orange-bright);
+            font-weight: 600;
+            margin-top: 3px;
+        }
+
+        .seller-popup-msg-btn {
+            width: 100%;
+            padding: 1.1rem;
+            background: linear-gradient(135deg, var(--orange-bright), #ff5500);
+            border: none;
+            border-radius: 16px;
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            text-decoration: none;
+            margin-top: auto;
+        }
+
+        .seller-popup-msg-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 140, 0, 0.4);
+        }
+
+        .seller-popup-loading {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 1rem;
+        }
+
+        /* Light mode seller popup */
+        body[data-theme="light"] .seller-popup-avatar {
+            background: linear-gradient(135deg, #B0CB1F, #8aA000) !important;
+            box-shadow: 0 0 40px rgba(176, 203, 31, 0.3) !important;
+        }
+
+        body[data-theme="light"] .seller-popup-name {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .seller-popup-meta,
+        body[data-theme="light"] .seller-stat-label,
+        body[data-theme="light"] .seller-popup-items-title,
+        body[data-theme="light"] .seller-item-title {
+            color: #2a3a00 !important;
+            opacity: 1;
+        }
+
+        body[data-theme="light"] .seller-item-price {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .seller-stat-value {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .seller-popup-topbar-title {
+            color: #7a9200 !important;
+        }
+
+        body[data-theme="light"] .seller-popup-close {
+            background: rgba(176, 203, 31, 0.2);
+            border-color: #B0CB1F;
+            color: #7a9200;
+        }
+
+        body[data-theme="light"] .seller-popup-close:hover {
+            background: #B0CB1F;
+            color: #1a1f00;
+        }
+
         .unselectable {
             user-select: none;
+        }
+
+        /* ========== DELETE CONFIRM MODAL ========== */
+        .delete-confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 5000;
+        }
+
+        .delete-confirm-modal.show {
+            display: flex;
+        }
+
+        .delete-confirm-modal-content {
+            background: rgba(20, 10, 10, 0.95);
+            border: 2px solid #ff4444;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(255, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .delete-confirm-modal-header {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .delete-confirm-modal-icon {
+            font-size: 2rem;
+        }
+
+        .delete-confirm-modal-title {
+            font-size: 1.3rem;
+            color: #ff4444;
+            margin: 0;
+            flex: 1;
+        }
+
+        .delete-confirm-modal-close {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.2rem;
+        }
+
+        .delete-confirm-modal-close:hover {
+            color: #ff4444;
+        }
+
+        .delete-confirm-modal-body {
+            margin-bottom: 1.5rem;
+        }
+
+        .delete-confirm-modal-text {
+            font-size: 1rem;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .delete-confirm-modal-warning {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .delete-confirm-modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .delete-confirm-cancel-btn {
+            padding: 0.7rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: transparent;
+            color: #ffffff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .delete-confirm-cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #ffffff;
+        }
+
+        .delete-confirm-delete-btn {
+            padding: 0.7rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            background: #ff4444;
+            color: #ffffff;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .delete-confirm-delete-btn:hover {
+            background: #ff6666;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.4);
+        }
+
+        /* Light mode overrides for delete confirm modal */
+        body[data-theme="light"] .delete-confirm-modal {
+            background: rgba(220, 230, 180, 0.85) !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-content {
+            background: rgba(255, 245, 240, 0.98) !important;
+            border: 2px solid #d32f2f !important;
+            box-shadow: 0 20px 60px rgba(200, 0, 0, 0.2) !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-title {
+            color: #d32f2f !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-text {
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-warning {
+            color: rgba(26, 31, 0, 0.5) !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-close {
+            color: rgba(26, 31, 0, 0.5) !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-modal-close:hover {
+            color: #d32f2f !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-cancel-btn {
+            border-color: rgba(26, 31, 0, 0.3) !important;
+            color: #1a1f00 !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-cancel-btn:hover {
+            background: rgba(0, 0, 0, 0.05) !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-delete-btn {
+            background: #d32f2f !important;
+        }
+
+        body[data-theme="light"] .delete-confirm-delete-btn:hover {
+            background: #ff4444 !important;
+            box-shadow: 0 4px 15px rgba(200, 0, 0, 0.3) !important;
         }
 
         @media (max-width: 900px) {
@@ -1806,10 +2389,12 @@ try {
                                     <div class="order-image-placeholder">📷</div>
                                 <?php endif; ?>
                                 <div class="order-info">
-                                    <div class="order-title"><?= htmlspecialchars($order['item_title']) ?></div>
+                                    <div class="order-title" data-item-id="<?= htmlspecialchars($order['item_id']) ?>">
+                                        <?= htmlspecialchars($order['item_title']) ?>
+                                    </div>
                                     <div class="order-price"><?= number_format($order['item_price'], 0, ',', ' ') ?> Ft</div>
                                     <div class="order-meta">
-                                        Eladó: <strong><?= htmlspecialchars($order['seller_name']) ?></strong>
+                                        Eladó: <strong onclick="event.stopPropagation(); openSellerPopup(<?= $order['seller_id'] ?>);"><?= htmlspecialchars($order['seller_name']) ?></strong>
                                     </div>
                                 </div>
                             </div>
@@ -1980,6 +2565,7 @@ try {
                 <div class="product-menu" id="productMenuContainer" style="display: none;">
                     <div class="product-menu-button unselectable" onclick="toggleProductMenu(this)">⋮</div>
                     <div class="product-menu-content" id="productMenuContent">
+                        <button class="product-menu-item unselectable" id="productReportBtn" style="display:none;">⚠️ Bejelentés</button>
                         <button class="product-menu-item unselectable" id="productEditBtn" style="display:none;">✏️ Módosítás</button>
                         <button class="product-menu-item delete unselectable" id="productDeleteBtn" style="display:none;">🗑️ Törlés</button>
                     </div>
@@ -2006,10 +2592,60 @@ try {
         </div>
     </div>
 
+    <!-- Lightbox -->
     <div class="lightbox-overlay" id="lightboxOverlay">
         <div class="lightbox-content">
             <img src="" alt="Nagyított kép" class="lightbox-image" id="lightboxImage">
             <button class="lightbox-close unselectable" id="lightboxClose">✕</button>
+        </div>
+    </div>
+
+    <!-- Seller Profile Popup -->
+    <div class="seller-popup-overlay" id="sellerPopupOverlay">
+        <div class="seller-popup-card" id="sellerPopupCard">
+            <div class="seller-popup-topbar">
+                <button class="seller-popup-close unselectable" id="sellerPopupClose">✕</button>
+                <div class="seller-popup-topbar-title unselectable">👤 Eladó profilja</div>
+            </div>
+            <div class="seller-popup-body" id="sellerPopupContent">
+                <div class="seller-popup-loading unselectable">⏳ Betöltés...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Modal (termék bejelentés) -->
+    <div class="modal-overlay" id="reportItemModal">
+        <div class="modal-card" style="max-width: 500px;">
+            <button class="modal-close unselectable" onclick="closeReportModal()">✕</button>
+            <h3 class="modal-title unselectable">⚠️ Termék bejelentése</h3>
+            <form method="post" id="reportForm">
+                <input type="hidden" name="item_id" id="reportItemId">
+                <input type="hidden" name="report_item" value="1">
+                <div class="form-group">
+                    <label>Indoklás</label>
+                    <textarea name="report_reason" rows="4" required placeholder="Kérjük, részletezd a problémát..."></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Bejelentés küldése</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div class="delete-confirm-modal" id="deleteConfirmModal">
+        <div class="delete-confirm-modal-content">
+            <div class="delete-confirm-modal-header">
+                <span class="delete-confirm-modal-icon">⚠️</span>
+                <h3 class="delete-confirm-modal-title unselectable">Hirdetés törlése</h3>
+                <button class="delete-confirm-modal-close unselectable" onclick="closeDeleteConfirmModal()">✕</button>
+            </div>
+            <div class="delete-confirm-modal-body">
+                <p class="delete-confirm-modal-text unselectable">Biztosan törölni szeretnéd ezt a hirdetést?</p>
+                <p class="delete-confirm-modal-warning unselectable">A törlés végleges, nem vonható vissza.</p>
+            </div>
+            <div class="delete-confirm-modal-actions">
+                <button class="delete-confirm-cancel-btn unselectable" onclick="closeDeleteConfirmModal()">Mégse</button>
+                <button class="delete-confirm-delete-btn unselectable" id="confirmDeleteBtn">Törlés</button>
+            </div>
         </div>
     </div>
 
@@ -2147,6 +2783,10 @@ try {
                     m.classList.remove('active');
                     document.body.style.overflow = '';
                 });
+                if (productModal.classList.contains('active')) closeProductModal();
+                if (sellerOverlay.classList.contains('active')) closeSellerPopup();
+                if (editItemModal.classList.contains('show')) closeEditItemModal();
+                if (document.getElementById('deleteConfirmModal').classList.contains('show')) closeDeleteConfirmModal();
             }
         });
 
@@ -2316,6 +2956,8 @@ try {
         const editTitle = document.getElementById('edit_title');
         const editDesc = document.getElementById('edit_description');
         const editPrice = document.getElementById('edit_price');
+        const reportItemModal = document.getElementById('reportItemModal');
+        const reportItemId = document.getElementById('reportItemId');
 
         function setMainImage(index) {
             if (index >= 0 && index < currentProductImages.length && currentProductImages[index]) {
@@ -2356,12 +2998,69 @@ try {
 
         function closeEditItemModal() {
             editItemModal.classList.remove('show');
-            document.body.style.overflow = '';
+            document.body.style.overflow = productModal.classList.contains('active') ? 'hidden' : '';
         }
+
+        function openReportModal(itemId) {
+            reportItemId.value = itemId;
+            reportItemModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeReportModal() {
+            reportItemModal.classList.remove('active');
+            document.body.style.overflow = productModal.classList.contains('active') ? 'hidden' : '';
+        }
+
         editItemModal.addEventListener('click', function(e) {
             if (e.target === editItemModal) closeEditItemModal();
         });
 
+        reportItemModal.addEventListener('click', function(e) {
+            if (e.target === reportItemModal) closeReportModal();
+        });
+
+        // ========== DELETE CONFIRM MODAL ==========
+        let pendingDeleteItemId = null;
+        const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+        function openDeleteConfirmModal(itemId) {
+            pendingDeleteItemId = itemId;
+            deleteConfirmModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDeleteConfirmModal() {
+            deleteConfirmModal.classList.remove('show');
+            document.body.style.overflow = '';
+            pendingDeleteItemId = null;
+        }
+
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (pendingDeleteItemId) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="item_id" value="${pendingDeleteItemId}">
+                    <input type="hidden" name="delete_item" value="1">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+
+        deleteConfirmModal.addEventListener('click', function(e) {
+            if (e.target === deleteConfirmModal) closeDeleteConfirmModal();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && deleteConfirmModal.classList.contains('show')) {
+                closeDeleteConfirmModal();
+            }
+        });
+
+        // ========== fetchItemDetails MÓDOSÍTÁSOKKAL ==========
         function fetchItemDetails(itemId) {
             fetch(`?get_item=${itemId}`).then(r => r.json()).then(item => {
                 if (item.error) return;
@@ -2397,30 +3096,57 @@ try {
                 nextBtn.classList.toggle('hidden', !item.images || item.images.length <= 1);
 
                 const menuContainer = document.getElementById('productMenuContainer');
+                const reportBtn = document.getElementById('productReportBtn');
                 const deleteBtn = document.getElementById('productDeleteBtn');
                 const editBtn = document.getElementById('productEditBtn');
+                const buyBtn = document.getElementById('productBuyBtn');
                 const isOwner = (parseInt(item.user_id) === <?php echo (int)$_SESSION['user_id']; ?>);
-                menuContainer.style.display = 'block';
+
+                reportBtn.style.display = 'none';
+                editBtn.style.display = 'none';
+                deleteBtn.style.display = 'none';
+                buyBtn.style.display = 'none';
+
+                let hasVisibleMenu = false;
+
                 if (isOwner) {
                     editBtn.style.display = 'block';
-                    editBtn.onclick = () => {
-                        closeProductModal();
-                        openEditItemModal(item.id, item.title, item.description, item.price);
-                    };
                     deleteBtn.style.display = 'block';
-                    deleteBtn.onclick = () => {
-                        if (confirm('Biztosan törlöd ezt a terméket?')) {
-                            const form = document.createElement('form');
-                            form.method = 'POST';
-                            form.innerHTML = `<input type="hidden" name="item_id" value="${item.id}"><input type="hidden" name="delete_item" value="1">`;
-                            document.body.appendChild(form);
-                            form.submit();
-                        }
-                    };
+                    hasVisibleMenu = true;
+                    buyBtn.style.display = 'none';
                 } else {
-                    editBtn.style.display = 'none';
-                    deleteBtn.style.display = 'none';
+                    reportBtn.style.display = 'block';
+                    hasVisibleMenu = true;
+                    buyBtn.style.display = 'flex';
+
+                    // ---- MÓDOSÍTÁS: sold alapján teljesen szürke gomb ----
+                    if (item.sold == 1) {
+                        buyBtn.textContent = 'Elkelt';
+                        buyBtn.classList.add('sold');
+                        buyBtn.disabled = true;
+                        buyBtn.onclick = null;
+                    } else {
+                        buyBtn.textContent = '🛒 Vásárlás';
+                        buyBtn.classList.remove('sold');
+                        buyBtn.disabled = false;
+                        buyBtn.onclick = () => {
+                            window.location.href = 'vasarlas.php?item_id=' + encodeURIComponent(item.id);
+                        };
+                    }
                 }
+
+                menuContainer.style.display = hasVisibleMenu ? 'block' : 'none';
+
+                editBtn.onclick = () => {
+                    openEditItemModal(item.id, item.title, item.description, item.price);
+                };
+                deleteBtn.onclick = () => {
+                    openDeleteConfirmModal(item.id);
+                };
+                reportBtn.onclick = () => {
+                    openReportModal(item.id);
+                };
+
                 openProductModal();
             }).catch(err => console.error(err));
         }
@@ -2429,6 +3155,104 @@ try {
             const menu = button.nextElementSibling;
             menu.classList.toggle('show');
         }
+
+        // Seller popup
+        const sellerOverlay = document.getElementById('sellerPopupOverlay');
+        const sellerContent = document.getElementById('sellerPopupContent');
+        const sellerCloseBtn = document.getElementById('sellerPopupClose');
+
+        function openSellerPopup(sellerId) {
+            sellerContent.innerHTML = '<div class="seller-popup-loading unselectable">⏳ Betöltés...</div>';
+            sellerOverlay.style.display = 'flex';
+            sellerOverlay.offsetHeight;
+            sellerOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            fetch(`?get_seller=${encodeURIComponent(sellerId)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        sellerContent.innerHTML = `<p style="color:red;text-align:center;padding:2rem;" class="unselectable">${escapeHtml(data.error)}</p>`;
+                        return;
+                    }
+
+                    const currentUserId = <?php echo (int)$_SESSION['user_id']; ?>;
+                    const memberSince = data.created_at ? data.created_at.substring(0, 10) : '—';
+                    const adminBadge = parseInt(data.is_admin) ? ' <span class="admin-badge unselectable">Admin</span>' : '';
+                    const initial = data.username ? data.username.charAt(0).toUpperCase() : '?';
+
+                    document.querySelector('.seller-popup-topbar-title').textContent = '👤 ' + data.username;
+
+                    let avatarHtml;
+                    if (data.profile_picture && data.profile_picture.trim() !== '') {
+                        avatarHtml = `<img src="${escapeHtml(data.profile_picture)}" class="seller-popup-avatar-img" alt="${escapeHtml(data.username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                    } else {
+                        avatarHtml = `<div class="seller-popup-avatar unselectable">${initial}</div>`;
+                    }
+
+                    let itemsHtml = '';
+                    if (data.latest_items && data.latest_items.length > 0) {
+                        itemsHtml = `<div class="seller-popup-items-title unselectable">Legutóbbi hirdetések</div>
+                        <div class="seller-popup-items-grid">`;
+                        data.latest_items.forEach(item => {
+                            const imgHtml = item.thumb ?
+                                `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="seller-item-thumb-placeholder unselectable" style="display:none;">📷</div>` :
+                                `<div class="seller-item-thumb-placeholder unselectable">📷</div>`;
+                            itemsHtml += `
+                                <div class="seller-item-thumb" onclick="closeSellerPopup(); fetchItemDetails('${escapeHtml(item.id)}');">
+                                    ${imgHtml}
+                                    <div class="seller-item-info">
+                                        <div class="seller-item-title unselectable">${escapeHtml(item.title)}</div>
+                                        <div class="seller-item-price unselectable">${Number(item.price).toLocaleString('hu-HU')} Ft</div>
+                                    </div>
+                                </div>`;
+                        });
+                        itemsHtml += '</div>';
+                    }
+
+                    const msgBtn = (parseInt(sellerId) !== currentUserId) ?
+                        `<a href="uzenetek.php?with=${encodeURIComponent(sellerId)}" class="seller-popup-msg-btn unselectable">💬 Üzenet küldése</a>` :
+                        `<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem 0;" class="unselectable">Ez a saját profilod</div>`;
+
+                    sellerContent.innerHTML = `
+                        <div class="seller-popup-avatar unselectable" style="display: flex; align-items: center; justify-content: center;">
+                            ${avatarHtml}
+                        </div>
+                        <div class="seller-popup-name unselectable">${escapeHtml(data.username)}${adminBadge}</div>
+                        <div class="seller-popup-meta unselectable">Tag azóta: ${memberSince}</div>
+                        <div class="seller-popup-stats">
+                            <div class="seller-stat unselectable">
+                                <div class="seller-stat-value unselectable">${data.item_count}</div>
+                                <div class="seller-stat-label unselectable">Hirdetés</div>
+                            </div>
+                        </div>
+                        ${itemsHtml}
+                        ${msgBtn}
+                    `;
+                })
+                .catch(() => {
+                    sellerContent.innerHTML = '<p style="color:red;text-align:center;padding:2rem;" class="unselectable">Hálózati hiba történt.</p>';
+                });
+        }
+
+        function closeSellerPopup() {
+            sellerOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+            setTimeout(() => {
+                sellerOverlay.style.display = 'none';
+            }, 300);
+        }
+
+        sellerCloseBtn.addEventListener('click', closeSellerPopup);
+        sellerOverlay.addEventListener('click', e => {
+            if (e.target === sellerOverlay) closeSellerPopup();
+        });
+
+        document.getElementById('productSeller').addEventListener('click', function() {
+            const sellerId = this.getAttribute('data-seller-id');
+            if (sellerId) openSellerPopup(sellerId);
+        });
+
         closeProductModalBtn.addEventListener('click', closeProductModal);
         productModal.addEventListener('click', (e) => {
             if (e.target === productModal) closeProductModal();
@@ -2454,7 +3278,6 @@ try {
         lightboxOverlay.addEventListener('click', (e) => {
             if (e.target === lightboxOverlay) closeLightbox();
         });
-        document.getElementById('productBuyBtn').addEventListener('click', () => alert('Vásárlás funkció még nem elérhető!'));
 
         function escapeHtml(str) {
             if (!str) return '';
@@ -2468,6 +3291,14 @@ try {
 
         document.querySelectorAll('.mini-card').forEach(card => {
             card.addEventListener('click', function(e) {
+                const itemId = this.dataset.itemId;
+                if (itemId) fetchItemDetails(itemId);
+            });
+        });
+
+        document.querySelectorAll('.order-title').forEach(el => {
+            el.addEventListener('click', function(e) {
+                e.stopPropagation();
                 const itemId = this.dataset.itemId;
                 if (itemId) fetchItemDetails(itemId);
             });
